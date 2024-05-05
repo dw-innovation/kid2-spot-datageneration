@@ -3,13 +3,14 @@ import json
 import os
 from argparse import ArgumentParser
 from typing import List
+from pathlib import Path
 
 import numpy as np
 import openai
 import pandas as pd
 from datageneration.data_model import RelSpatial, LocPoint, Area, Property, Relation, Relations, GeneratedPrompt, \
     GeneratedIMRSentence
-from datageneration.utils import write_output
+from datageneration.utils import write_output, write_dict_output, write_output_csv, translate_queries_to_yaml
 from dotenv import load_dotenv
 from openai import OpenAI
 from tqdm import tqdm
@@ -397,7 +398,7 @@ class GPTDataGenerator:
 
         return results
 
-    def generate_sentences(self, generated_prompts) -> List[GeneratedIMRSentence]:
+    def generate_sentences(self, generated_prompts, output_gpt_generations) -> List[GeneratedIMRSentence]:
         generated_sentences = []
         for generated_prompt in tqdm(generated_prompts, total=len(generated_prompts)):
             generated_sentence = self.generate_sentence(generated_prompt)
@@ -410,6 +411,8 @@ class GPTDataGenerator:
                 sentence=generated_sentence
             )
             generated_sentences.append(generated_imr_sentence)
+
+            write_output(generated_sentences, output_gpt_generations)
         return generated_sentences
 
     def generate_sentence(self, generated_prompt: GeneratedPrompt) -> str:
@@ -428,11 +431,15 @@ if __name__ == '__main__':
     parser.add_argument('--output_prompt_generations', required=True)
     parser.add_argument('--persona_path', required=True)
     parser.add_argument('--styles_path', required=True)
+    parser.add_argument('--prob_usage_of_relative_spatial_terms', type=float, default=0.4)
     parser.add_argument('--generate_prompts', action='store_true',
                         help='Activate it if you want to generate prompts that will be sent to LLM')
     parser.add_argument('--generate_sentences', action='store_true',
-                        help='Activate it if you want to generate sentences with LLM')
-    parser.add_argument('--prob_usage_of_relative_spatial_terms', type=float, default=0.4)
+                        help='Activate it if you want to generate sentences with GPT')
+    parser.add_argument('--translate_to_yaml', action='store_true',
+                        help='Activate it if you want to translate the queries to the final YAML format')
+    parser.add_argument('--save_yaml_csv', action='store_true',
+                        help='Activate if you want to save a CSV file on top of the JSONL for better readability')
     args = parser.parse_args()
 
     output_prompt_generations = args.output_prompt_generations
@@ -444,6 +451,8 @@ if __name__ == '__main__':
     prob_usage_of_relative_spatial_terms = args.prob_usage_of_relative_spatial_terms
     generate_sentences = args.generate_sentences
     generate_prompts = args.generate_prompts
+    translate_to_yaml = args.translate_to_yaml
+    save_yaml_csv = args.save_yaml_csv
 
     rel_spatial_terms = load_rel_spatial_terms(relative_spatial_terms_path=relative_spatial_terms_path)
     personas = load_list_of_strings(list_of_strings_path=persona_path)
@@ -461,10 +470,24 @@ if __name__ == '__main__':
         generated_queries = gen.generate_prompts(candidate_loc_points)
         write_output(generated_queries, output_prompt_generations)
 
+        if translate_to_yaml:
+            generated_queries_yaml = translate_queries_to_yaml(generated_queries)
+            write_dict_output(generated_queries_yaml, output_prompt_generations, True)
+
+            if save_yaml_csv:
+                write_output_csv(generated_queries_yaml, output_prompt_generations)
+
     if generate_sentences:
         if not generated_queries:
             with open(output_prompt_generations, "r") as f:
                 generated_queries = [GeneratedPrompt(**json.loads(each_line)) for each_line in f]
 
-            generated_sentences = gen.generate_sentences(generated_queries)
-            write_output(generated_sentences, output_gpt_generations)
+            generated_sentences = gen.generate_sentences(generated_queries, output_gpt_generations)
+
+            if translate_to_yaml:
+                generated_sentences_yaml = translate_queries_to_yaml(generated_sentences)
+                write_dict_output(generated_sentences_yaml, output_gpt_generations)
+
+                if save_yaml_csv:
+                    write_output_csv(generated_sentences_yaml, output_gpt_generations, True)
+

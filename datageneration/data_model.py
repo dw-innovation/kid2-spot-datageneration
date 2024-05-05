@@ -14,15 +14,15 @@ class TagType(Enum):
 # Tag Info
 def remove_duplicate_tag_attributes(tag_attributes):
     processed_tag_attributes = []
-    attribute_keys = []
+    # attribute_keys = []
 
     for tag_attribute in tag_attributes:
-        if str(tag_attribute) in attribute_keys:
+        processed_tag_attribute = TagAttribute(descriptors=tag_attribute.descriptors, tags=tag_attribute.tags)
+        if processed_tag_attribute in processed_tag_attributes:
             continue
         else:
             # attribute_keys.append(str(tag_attribute))
-            processed_tag_attributes.append(
-                TagAttribute(descriptors=tag_attribute.descriptors, tags=tag_attribute.tags))
+            processed_tag_attributes.append(processed_tag_attribute)
             # TagAttribute(key=tag_attribute.key, operator=tag_attribute.operator, value=tag_attribute.value))
     return processed_tag_attributes
 

@@ -1,25 +1,40 @@
 from typing import List
 
 import numpy as np
+from random import randint
 from datageneration.data_model import TagAttributeExample, TagAttribute, Property
 
 
 # numerical value generator
-def get_random_decimal_with_metric(range):
+def get_random_decimal_with_metric(max_digits: int) -> str:
     '''
     TODO: this should be reworked -- threshold should be defined based on metric
     '''
-    h_ = np.random.choice(np.arange(range), 1)[0]
+    digits = randint(1, max_digits)
+    low = np.power(10, digits - 1)
+    high = np.power(10, digits) - 1
+    num = randint(low, high)
+    # h_ = np.random.choice(np.arange(range), 1)[0]
     if np.random.choice([True, False], 1)[0]:
-        h_ = h_ / np.random.choice([10, 100], 1)[0]
+        num = num / np.random.choice([10, 100], 1)[0]
 
-    h_ = str(h_) + " " + np.random.choice(["mm", "cm", "m", "km", "in", "ft", "yd", "mi", "le"], 1)[0]  # "cm",
-    return h_
+    dist = str(num) + " " + np.random.choice(["m", "km", "in", "ft", "yd", "mi", "le"], 1)[0]  # "cm",
 
+    return dist
+    # h_ = np.random.choice(np.arange(range), 1)[0]
+    # if np.random.choice([True, False], 1)[0]:
+    #     h_ = h_ / np.random.choice([10, 100], 1)[0]
+    #
+    # h_ = str(h_) + " " + np.random.choice(["mm", "cm", "m", "km", "in", "ft", "yd", "mi", "le"], 1)[0]  # "cm",
+    # return h_
 
-def get_random_integer(max_value: int, min_value: int) -> int:
-    return np.random.choice(np.arange(max_value), min_value)[0]
+def get_random_integer(max_digits: int) -> int:
+    digits = randint(1, max_digits)
+    low = np.power(10, digits - 1)
+    high = np.power(10, digits) - 1
 
+    return randint(low, high)
+    # return np.random.choice(np.arange(max_value), min_value)[0]
 
 class PropertyGenerator:
     def __init__(self, named_property_examples: List[TagAttributeExample]):
@@ -86,10 +101,10 @@ class PropertyGenerator:
         tag = tag_attribute.tags[0]
         if tag.key == "height":
             # todo rename this
-            generated_numerical_value = get_random_decimal_with_metric(99999)
+            generated_numerical_value = get_random_decimal_with_metric(max_digits=5)
         else:
             # todo rename this
-            generated_numerical_value = str(get_random_integer(max_value=200, min_value=1))
+            generated_numerical_value = str(get_random_integer(max_digits=3))
 
         return Property(name=descriptor, operator=operator, value=generated_numerical_value)
         # return Property(key=tag_attribute.key, operator=tag_attribute.operator, value=generated_numerical_value, name=tag_attribute.key)

@@ -1,6 +1,10 @@
 import itertools
 import json
 from typing import List
+import yaml
+import copy
+import csv
+from pathlib import Path
 
 SEPERATORS = ['=', '>', '~']
 
@@ -10,6 +14,93 @@ def write_output(generated_combs, output_file):
         for generated_comb in generated_combs:
             json.dump(generated_comb.model_dump(mode="json"), out_file)
             out_file.write('\n')
+
+def write_dict_output(generated_combs, output_file, add_yaml_to_filename=True):
+    if add_yaml_to_filename:
+        parent_dir = Path(output_file).parent
+        filename_without_extension = Path(output_file).stem
+        file_extension = Path(output_file).suffix
+        output_file = parent_dir / (filename_without_extension + "_yaml" + file_extension)
+
+    with open(output_file, "w") as out_file:
+        for generated_comb in generated_combs:
+            json.dump(generated_comb, out_file)
+            out_file.write('\n')
+
+def write_output_csv(generated_combs, output_file):
+    parent_dir = Path(output_file).parent
+    filename_without_extension = Path(output_file).stem
+    new_output_file = parent_dir / (filename_without_extension + ".csv")
+
+    keys = generated_combs[0].keys()
+    with open(new_output_file, 'w', newline='') as output_file:
+        dict_writer = csv.DictWriter(output_file, keys)
+        dict_writer.writeheader()
+        dict_writer.writerows(generated_combs)
+
+
+def translate_queries_to_yaml(combs):
+    new_combs = [c.dict() for c in combs]
+
+    for comb in new_combs:
+        query = comb["query"]
+
+        for entity in query["entities"]:
+            if len(entity["properties"]) == 0:
+                entity.pop('properties', None)
+            else:
+                for property in entity["properties"]:
+                    if property["operator"] is None:
+                        property.pop('operator', None)
+                    if property["value"] is None:
+                        property.pop('value', None)
+
+        if query["relations"]["relations"] is None:
+            query["relations"].pop('relations', None)
+
+        yaml_string = yaml.dump(query)
+
+        comb["query"] = yaml_string
+
+    return new_combs
+
+#
+#     area:
+#     name: Milford
+#     Mill
+#     type: area
+#
+#
+# entities:
+# - filters:
+# - name: street
+# name
+# operator: '='
+# value: Forest
+# Street
+# id: 0
+# name: community
+# hall
+# - id: 1
+# name: Coworking
+# Space
+# relations:
+# - name: dist
+# source: 0
+# target: 1
+# value: 472 in
+#
+#
+#     "query": {"area": {"type": "bbox", "value": ""},
+#               "entities": [{"id": 0, "name": "bazaar", "type": "nwr", "properties": []},
+#                            {"id": 1, "name": "high-speed train tracks", "type": "nwr",
+#                             "properties": [{"name": "railroad viaduct", "operator": null, "value": null},
+#                                            {"name": "railway underpass", "operator": null, "value": null},
+#                                            {"name": "name", "operator": "~", "value": "aldstra\u00dfe"}]},
+#                            {"id": 2, "name": "radio telescope", "type": "nwr", "properties": []}], "relations": {
+#             "relations": [{"name": "dist", "source": 0, "target": 1, "value": "4 mi"},
+#                           {"name": "dist", "source": 0, "target": 2, "value": "4 mi"}], "type": "within_radius"}}
+
 
 
 class CompoundTagAttributeProcessor:
