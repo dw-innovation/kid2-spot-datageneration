@@ -1,7 +1,7 @@
+import numpy as np
 from enum import Enum
 from typing import List
 
-import numpy as np
 from datageneration.data_model import Relation, Relations
 from datageneration.property_generator import get_random_decimal_with_metric
 
@@ -10,19 +10,6 @@ class RELATION_TASKS(Enum):
     INDIVIDUAL_DISTANCES = 'individual_distances'
     WITHIN_RADIUS = 'within_radius'
     IN_AREA = 'in_area'
-
-
-# def get_random_decimal_with_metric(range):
-#     '''
-#     TODO: this should be reworked -- threshold should be defined based on metric
-#     '''
-#     h_ = np.random.choice(np.arange(range), 1)[0]
-#     if np.random.choice([True, False], 1)[0]:
-#         h_ = h_ / np.random.choice([10, 100], 1)[0]
-#
-#     h_ = str(h_) + " " + np.random.choice(["m", "km", "in", "ft", "yd", "mi", "le"], 1)[0]  # "cm",
-#     return h_
-
 
 class RelationGenerator:
     def __init__(self, max_distance_digits: int):
@@ -103,8 +90,6 @@ class RelationGenerator:
         Returns:
             List[Relation] or None: A list of Relation objects representing the task outcome.
         """
-        # np.random.shuffle(self.tasks)
-        # selected_task = self.tasks[0]
         selected_task = self.get_task(num_entities)
 
         if selected_task == RELATION_TASKS.INDIVIDUAL_DISTANCES.value:

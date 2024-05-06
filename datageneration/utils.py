@@ -1,10 +1,10 @@
-import itertools
-import json
-from typing import List
-import yaml
 import copy
 import csv
+import itertools
+import json
+import yaml
 from pathlib import Path
+from typing import List
 
 SEPERATORS = ['=', '>', '~']
 
@@ -14,6 +14,7 @@ def write_output(generated_combs, output_file):
         for generated_comb in generated_combs:
             json.dump(generated_comb.model_dump(mode="json"), out_file)
             out_file.write('\n')
+
 
 def write_dict_output(generated_combs, output_file, add_yaml_to_filename=True):
     if add_yaml_to_filename:
@@ -26,6 +27,7 @@ def write_dict_output(generated_combs, output_file, add_yaml_to_filename=True):
         for generated_comb in generated_combs:
             json.dump(generated_comb, out_file)
             out_file.write('\n')
+
 
 def write_output_csv(generated_combs, output_file):
     parent_dir = Path(output_file).parent
@@ -50,9 +52,8 @@ def translate_queries_to_yaml(combs):
                 entity.pop('properties', None)
             else:
                 for property in entity["properties"]:
-                    if property["operator"] is None:
+                    if property["operator"] is None and property["value"] is None:
                         property.pop('operator', None)
-                    if property["value"] is None:
                         property.pop('value', None)
 
         if query["relations"]["relations"] is None:
@@ -63,44 +64,6 @@ def translate_queries_to_yaml(combs):
         comb["query"] = yaml_string
 
     return new_combs
-
-#
-#     area:
-#     name: Milford
-#     Mill
-#     type: area
-#
-#
-# entities:
-# - filters:
-# - name: street
-# name
-# operator: '='
-# value: Forest
-# Street
-# id: 0
-# name: community
-# hall
-# - id: 1
-# name: Coworking
-# Space
-# relations:
-# - name: dist
-# source: 0
-# target: 1
-# value: 472 in
-#
-#
-#     "query": {"area": {"type": "bbox", "value": ""},
-#               "entities": [{"id": 0, "name": "bazaar", "type": "nwr", "properties": []},
-#                            {"id": 1, "name": "high-speed train tracks", "type": "nwr",
-#                             "properties": [{"name": "railroad viaduct", "operator": null, "value": null},
-#                                            {"name": "railway underpass", "operator": null, "value": null},
-#                                            {"name": "name", "operator": "~", "value": "aldstra\u00dfe"}]},
-#                            {"id": 2, "name": "radio telescope", "type": "nwr", "properties": []}], "relations": {
-#             "relations": [{"name": "dist", "source": 0, "target": 1, "value": "4 mi"},
-#                           {"name": "dist", "source": 0, "target": 2, "value": "4 mi"}], "type": "within_radius"}}
-
 
 
 class CompoundTagAttributeProcessor:

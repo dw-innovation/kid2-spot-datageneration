@@ -1,19 +1,19 @@
 import itertools
 import json
-import os
-from argparse import ArgumentParser
-from typing import List
-from pathlib import Path
-
 import numpy as np
 import openai
+import os
 import pandas as pd
+from argparse import ArgumentParser
+from dotenv import load_dotenv
+from openai import OpenAI
+from pathlib import Path
+from tqdm import tqdm
+from typing import List
+
 from datageneration.data_model import RelSpatial, LocPoint, Area, Property, Relation, Relations, GeneratedPrompt, \
     GeneratedIMRSentence
 from datageneration.utils import write_output, write_dict_output, write_output_csv, translate_queries_to_yaml
-from dotenv import load_dotenv
-from openai import OpenAI
-from tqdm import tqdm
 
 load_dotenv()
 
@@ -398,7 +398,7 @@ class GPTDataGenerator:
 
         return results
 
-    def generate_sentences(self, generated_prompts, output_gpt_generations) -> List[GeneratedIMRSentence]:
+    def generate_sentences(self, generated_prompts, output_gpt_generations_temp) -> List[GeneratedIMRSentence]:
         generated_sentences = []
         for generated_prompt in tqdm(generated_prompts, total=len(generated_prompts)):
             generated_sentence = self.generate_sentence(generated_prompt)
@@ -412,7 +412,7 @@ class GPTDataGenerator:
             )
             generated_sentences.append(generated_imr_sentence)
 
-            write_output(generated_sentences, output_gpt_generations)
+            write_output(generated_sentences, output_gpt_generations_temp)
         return generated_sentences
 
     def generate_sentence(self, generated_prompt: GeneratedPrompt) -> str:
@@ -482,7 +482,15 @@ if __name__ == '__main__':
             with open(output_prompt_generations, "r") as f:
                 generated_queries = [GeneratedPrompt(**json.loads(each_line)) for each_line in f]
 
-            generated_sentences = gen.generate_sentences(generated_queries, output_gpt_generations)
+                parent_dir = Path(output_gpt_generations).parent
+                filename_without_extension = Path(output_gpt_generations).stem
+                file_extension = Path(output_gpt_generations).suffix
+                output_gpt_generations_temp = parent_dir / (filename_without_extension + "_temp" + file_extension)
+
+            generated_sentences = gen.generate_sentences(generated_queries, output_gpt_generations_temp)
+            write_output(generated_sentences, output_gpt_generations)
+            if os.path.exists(output_gpt_generations_temp):
+                os.remove(output_gpt_generations_temp)
 
             if translate_to_yaml:
                 generated_sentences_yaml = translate_queries_to_yaml(generated_sentences)
@@ -490,4 +498,3 @@ if __name__ == '__main__':
 
                 if save_yaml_csv:
                     write_output_csv(generated_sentences_yaml, output_gpt_generations, True)
-

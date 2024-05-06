@@ -1,32 +1,18 @@
 import json
-from argparse import ArgumentParser
-from typing import List
-
 import numpy as np
 import pandas as pd
+from argparse import ArgumentParser
+from pathlib import Path
+from tqdm import tqdm
+from typing import List
+
 from datageneration.area_generator import AreaGenerator, NamedAreaData, load_named_area_data
 from datageneration.data_model import TagAttributeExample, TagAttribute, Property, TagCombination, Entity, Relations, \
     LocPoint, Area
 from datageneration.property_generator import PropertyGenerator
 from datageneration.relation_generator import RelationGenerator
-from tqdm import tqdm
-from pathlib import Path
+from datageneration.utils import write_output
 
-class NpEncoder(json.JSONEncoder):
-    '''
-    Custom encoder for the json.dumps function that can handle numpy datastructures.
-
-    :param JSONEncoder json.JSONEncoder: Extensible JSON encoder for python datastructures
-    '''
-
-    def default(self, obj):
-        if isinstance(obj, np.integer):
-            return int(obj)
-        if isinstance(obj, np.floating):
-            return float(obj)
-        if isinstance(obj, np.ndarray):
-            return obj.tolist()
-        return super(NpEncoder, self).default(obj)
 
 class QueryCombinationGenerator(object):
     def __init__(self, geolocations: List[NamedAreaData], tag_combinations: List[TagCombination],
@@ -129,7 +115,7 @@ class QueryCombinationGenerator(object):
                     continue
                 current_max_number_of_props = min(len(candidate_attributes), max_number_of_props_in_entity)
                 if current_max_number_of_props > 1:
-                    #selected_num_of_props = np.random.randint(1, max_number_of_props_in_entity)
+                    # selected_num_of_props = np.random.randint(1, max_number_of_props_in_entity)
                     selected_num_of_props = self.get_number_of_props(current_max_number_of_props)
                 else:
                     selected_num_of_props = current_max_number_of_props
@@ -181,41 +167,19 @@ class QueryCombinationGenerator(object):
         node_types = ["nwr", "cluster", "group"]
         loc_points = []
         for _ in tqdm(range(num_queries), total=num_queries):
-            new_loc_points = []
             entities = self.generate_entities(max_number_of_entities_in_prompt=max_number_of_entities_in_prompt,
                                               max_number_of_props_in_entity=max_number_of_props_in_entity,
                                               percentage_of_entities_with_props=percentage_of_entities_with_props)
             area = self.generate_area()
             relations = self.generate_relations(num_entities=len(entities))
-            new_loc_points.append(LocPoint(area=area, entities=entities, relations=relations).dict())
 
-            # Clean up the output and remove all "None" added by the data model (the optional fields)
-            for loc_point in new_loc_points:
-                for entity in loc_point["entities"]:
-
-                    for property in entity["properties"]:
-                        if property["operator"] is None:
-                            property.pop('operator', None)
-                        if property["value"] is None:
-                            property.pop('value', None)
-
-                if loc_point["relations"]["relations"] is None:
-                    loc_point["relations"].pop('relations', None)
-
-            loc_points.extend(new_loc_points)
+            loc_points.append(LocPoint(area=area, entities=entities, relations=relations))
 
         return loc_points
 
     def generate_area(self) -> Area:
         return self.area_generator.run()
 
-def write_output(generated_combs, output_file):
-    output_Path = Path(output_file)
-    output_Path.parent.mkdir(exist_ok=True, parents=True)
-    with open(output_file, "w") as out_file:
-        for generated_comb in generated_combs:
-            json.dump(generated_comb, out_file)
-            out_file.write('\n')
 
 if __name__ == '__main__':
     '''

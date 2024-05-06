@@ -1,7 +1,7 @@
-from typing import List
-
 import numpy as np
 from random import randint
+from typing import List
+
 from datageneration.data_model import TagAttributeExample, TagAttribute, Property
 
 
@@ -14,19 +14,12 @@ def get_random_decimal_with_metric(max_digits: int) -> str:
     low = np.power(10, digits - 1)
     high = np.power(10, digits) - 1
     num = randint(low, high)
-    # h_ = np.random.choice(np.arange(range), 1)[0]
     if np.random.choice([True, False], 1)[0]:
         num = num / np.random.choice([10, 100], 1)[0]
 
     dist = str(num) + " " + np.random.choice(["m", "km", "in", "ft", "yd", "mi", "le"], 1)[0]  # "cm",
 
     return dist
-    # h_ = np.random.choice(np.arange(range), 1)[0]
-    # if np.random.choice([True, False], 1)[0]:
-    #     h_ = h_ / np.random.choice([10, 100], 1)[0]
-    #
-    # h_ = str(h_) + " " + np.random.choice(["mm", "cm", "m", "km", "in", "ft", "yd", "mi", "le"], 1)[0]  # "cm",
-    # return h_
 
 def get_random_integer(max_digits: int) -> int:
     digits = randint(1, max_digits)
@@ -34,7 +27,6 @@ def get_random_integer(max_digits: int) -> int:
     high = np.power(10, digits) - 1
 
     return randint(low, high)
-    # return np.random.choice(np.arange(max_value), min_value)[0]
 
 class PropertyGenerator:
     def __init__(self, named_property_examples: List[TagAttributeExample]):
