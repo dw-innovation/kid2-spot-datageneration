@@ -66,8 +66,20 @@ class TestAreaGenerator(unittest.TestCase):
         assert state_present
 
     def test_two_word_areas(self):
-        # todo not implemented
-        pass
+        locs_with_cities_single_word, locs_with_cities_two_words = self.area_generator.categorize_cities_with_two_words(self.geolocation_data)
+        for city in locs_with_cities_single_word:
+            assert len(city.city.split()) == 1
+
+        for city in locs_with_cities_two_words:
+            assert len(city.city.split()) > 1
+
+        locs_with_states_single_word, locs_with_states_two_words = self.area_generator.categorize_states_with_two_words(self.geolocation_data)
+        for city in locs_with_states_single_word:
+            assert len(city.state.split()) == 1
+
+        for city in locs_with_states_two_words:
+            assert len(city.state.split()) > 1
+
 
     def test_area_run(self):
         '''
