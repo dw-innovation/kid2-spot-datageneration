@@ -17,7 +17,7 @@ def get_random_decimal_with_metric(max_digits: int) -> str:
     if np.random.choice([True, False], 1)[0]:
         num = num / np.random.choice([10, 100], 1)[0]
 
-    dist = str(num) + " " + np.random.choice(["m", "km", "in", "ft", "yd", "mi", "le"], 1)[0]  # "cm",
+    dist = str(num) + " " + np.random.choice(["cm", "m", "km", "in", "ft", "yd", "mi"], 1)[0]
 
     return dist
 

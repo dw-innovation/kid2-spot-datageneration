@@ -10,6 +10,9 @@ from openai import OpenAI
 from pathlib import Path
 from tqdm import tqdm
 from typing import List
+from random import randint
+
+from num2words import num2words
 
 from datageneration.data_model import RelSpatial, LocPoint, Area, Property, Relation, Relations, GeneratedPrompt, \
     GeneratedIMRSentence
@@ -162,18 +165,22 @@ class PromptHelper:
             "\nThe user is searching for {place} that fulfills the following search criteria:\n",
         ]
         self.predefined_places = ["a street", "a place", "a crossing", "a corner", "an area", "a location"]
-        self.name_regex_templates = ["contains the letters", "begins with the letters", "ends with the letters"]
+        self.name_regex_templates = ["", "", "", "contains the letters", "begins with the letters",
+                                     "ends with the letters"]
         self.phrases_for_numerical_comparison = {
             "<": ["less than", "smaller than", "lower than", "beneath", "under"],
             ">": ["greater than", "more than", "larger than", "above", "over", "at least"]
         }
 
-        self.phrases_desc = ["", "more or less", "approximately", "less than", "no more than", "no less than",
-                             "around", "at max", "about", "at least"]
+        self.phrases_desc = ["", "", "", "", "", "", "", " more or less", " approximately", " less than",
+                    " no more than", " no less than", " around", " at max", " about", " at least"]
 
         # todo: the below line does not make sense
-        self.phrases_away = ["", "", "", "away", "away from", "from"]
+        self.phrases_away = ["away", "away from", "from"]
         self.phrases_radius = ["within DIST", "in a radius of DIST", "no more than DIST", "DIST from each other"]
+
+        self.dist_lookup = {"cm": "centimeters", "m": "meters", "km": "kilometers", "in": "inches", "ft": "feet",
+                            "yd": "yards", "mi": "miles"}
 
     def beginning(self, persona, writing_style):
         '''
@@ -210,13 +217,19 @@ class PromptHelper:
         '''
         This helper generates a numerical prompt for numerical properties and properties such as height
         '''
+        if not is_number(entity_property.value) and np.random.choice([True, False]):
+            metric = self.dist_lookup[entity_property.value.rsplit(" ", 1)[-1]]
+            value = entity_property.value.rsplit(" ", 1)[0] + " " + metric
+        else:
+            value = entity_property.value
+
         if entity_property.operator not in self.phrases_for_numerical_comparison:
-            return f": {entity_property.value}"
+            return f": {value}"
         else:
             numerical_phrases = self.phrases_for_numerical_comparison[entity_property.operator]
             np.random.shuffle(numerical_phrases)
             selected_numerical_phrase = numerical_phrases[0]
-            return f": {selected_numerical_phrase} {entity_property.value}"
+            return f": {selected_numerical_phrase} {value}"
 
     def add_name_regex_prompt(self, entity_property: Property) -> str:
         '''
@@ -273,9 +286,34 @@ class PromptHelper:
         overwritten_distance = selected_relative_spatial.distance
         return generated_prompt, overwritten_distance
 
+    def generate_written_word_distance(self, metric: str, max_digits: int) -> tuple:
+        """
+        Generates a random number starting at 100, with the last two digits always being zero, and returns it as both
+        a scalar and written number.
+
+        :param metric: the metric of the old distance
+        :param max_digits: maximum number of digits allowed
+        :return: numeric - new numeric value, written - corresponding number in written words
+        """
+        digits = randint(1, max_digits-2)
+        low = np.power(10, digits - 1)
+        high = np.power(10, digits) - 1
+
+        numeric = randint(low, high) * 100
+        written = num2words(numeric) + " " + metric
+        numeric = str(numeric) + " " + metric
+
+        return numeric, written
+
     def add_desc_away_prompt_helper(self, relation: Relation, selected_phrases_desc: str, selected_phrases_away: str):
         '''Helper function for generating desc away prompts'''
-        generated_prompt = f"Obj. {relation.source} is {selected_phrases_desc} {relation.value} {selected_phrases_away} Obj. {relation.target}\n"
+        if np.random.choice([True, False]):
+            metric = self.dist_lookup[relation.value.rsplit(" ", 1)[-1]]
+            distance = relation.value.rsplit(" ", 1)[0] + " " + metric
+        else:
+            distance = relation.value
+
+        generated_prompt = f"Obj. {relation.source} is{selected_phrases_desc} {distance} {selected_phrases_away} Obj. {relation.target}\n"
         return generated_prompt
 
     def add_desc_away_prompt(self, relation: Relation) -> str:
@@ -288,20 +326,28 @@ class PromptHelper:
         generated_prompt = self.add_desc_away_prompt_helper(relation, selected_phrases_desc, selected_phrases_away)
         return generated_prompt
 
-    def add_prompt_for_within_radius_relation(self, relations: Relations) -> str:
+    def add_prompt_for_within_radius_relation(self, distance: str) -> str:
+        if np.random.choice([True, False]):
+            metric = self.dist_lookup[distance.rsplit(" ", 1)[-1]]
+            distance = distance.rsplit(" ", 1)[0] + " " + metric
+
         np.random.shuffle(self.phrases_radius)
         selected_phrase = self.phrases_radius[0]
-        selected_phrase = selected_phrase.replace('DIST', relations.relations[0].value)
+        selected_phrase = selected_phrase.replace('DIST', distance)
         generated_prompt = f"All objects are {selected_phrase}"
         return generated_prompt
 
 
 class GPTDataGenerator:
     def __init__(self, relative_spatial_terms: List[RelSpatial], personas: List[str],
-                 styles: List[str], prob_usage_of_relative_spatial_terms: float = 0.6):
+                 styles: List[str], prob_usage_of_relative_spatial_terms: float = 0.4,
+                 prob_usage_of_written_numbers: float = 0.3, max_dist_digits: int = 5):
 
         self.relative_spatial_terms = relative_spatial_terms
         self.prob_usage_of_relative_spatial_terms = prob_usage_of_relative_spatial_terms
+        self.prob_usage_of_written_numbers = prob_usage_of_written_numbers
+        self.max_dist_digits = max_dist_digits
+
         self.personas = personas
         self.styles = styles
         self.prompt_helper = PromptHelper(relative_spatial_terms=relative_spatial_terms)
@@ -345,20 +391,50 @@ class GPTDataGenerator:
 
         if relations.type == "individual_distances":
             for relation in relations.relations:
-                rst_chance = self.prob_usage_of_relative_spatial_terms
-                use_relative_spatial_terms = np.random.choice([False, True], p=[1.0 - rst_chance, rst_chance])
+                use_relative_spatial_terms = np.random.choice([False, True], p=[
+                    1.0 - self.prob_usage_of_relative_spatial_terms, self.prob_usage_of_relative_spatial_terms])
+                use_written_distance = np.random.choice([False, True], p=[
+                    1.0 - self.prob_usage_of_written_numbers, self.prob_usage_of_written_numbers])
+                # In case both relative term and written word are selected, randomly only select one of them
+                if use_relative_spatial_terms and use_written_distance:
+                    if random.choice([True, False]):
+                        use_relative_spatial_terms = False
+                    else:
+                        use_written_distance = False
                 if use_relative_spatial_terms:
                     generated_prompt, overwritten_distance = self.prompt_helper.add_relative_spatial_terms(relation)
                     core_relation += generated_prompt
                     self.update_relation_distance(relations=relations,
                                                   relation_to_be_updated=relation,
                                                   distance=overwritten_distance)
+                elif use_written_distance:
+                    metric = relation.value.split()[-1]
+                    numeric_distance, written_distance = self.prompt_helper.generate_written_word_distance(
+                        metric, self.max_dist_digits)
+                    written_distance_relation = Relation(name=relation.name, source=relation.source,
+                                                         target=relation.target, value=written_distance)
+                    core_relation += self.prompt_helper.add_desc_away_prompt(written_distance_relation)
+                    self.update_relation_distance(relations=relations,
+                                                  relation_to_be_updated=relation,
+                                                  distance=numeric_distance)
                 else:
                     core_relation += self.prompt_helper.add_desc_away_prompt(relation)
             core_relation = core_relation[:-1]  # remove trailing linebreak
 
         elif relations.type == "within_radius":
-            core_relation = self.prompt_helper.add_prompt_for_within_radius_relation(relations)
+            metric = relations.relations[0].value.split()[-1]
+            use_written_distance = np.random.choice([False, True], p=[
+                1.0 - self.prob_usage_of_written_numbers, self.prob_usage_of_written_numbers])
+            if use_written_distance:
+                numeric_distance, written_distance = self.prompt_helper.generate_written_word_distance(
+                    metric, self.max_dist_digits)
+                for relation in relations.relations:
+                    self.update_relation_distance(relations=relations,
+                                                  relation_to_be_updated=relation,
+                                                  distance=numeric_distance)
+                core_relation = self.prompt_helper.add_prompt_for_within_radius_relation(written_distance)
+            else:
+                core_relation = self.prompt_helper.add_prompt_for_within_radius_relation(relations.relations[0].value)
         else:
             # this is the case when there is no relation
             core_relation = ''
@@ -432,6 +508,8 @@ if __name__ == '__main__':
     parser.add_argument('--persona_path', required=True)
     parser.add_argument('--styles_path', required=True)
     parser.add_argument('--prob_usage_of_relative_spatial_terms', type=float, default=0.4)
+    parser.add_argument('--prob_usage_of_written_numbers', type=float, default=0.3)
+    parser.add_argument('--max_dist_digits', type=int, default=5)
     parser.add_argument('--generate_prompts', action='store_true',
                         help='Activate it if you want to generate prompts that will be sent to LLM')
     parser.add_argument('--generate_sentences', action='store_true',
@@ -449,6 +527,8 @@ if __name__ == '__main__':
     styles_path = args.styles_path
     tag_query_file = args.tag_query_file
     prob_usage_of_relative_spatial_terms = args.prob_usage_of_relative_spatial_terms
+    prob_usage_of_written_numbers = args.prob_usage_of_written_numbers
+    max_dist_digits = args.max_dist_digits
     generate_sentences = args.generate_sentences
     generate_prompts = args.generate_prompts
     translate_to_yaml = args.translate_to_yaml
@@ -461,7 +541,9 @@ if __name__ == '__main__':
     gen = GPTDataGenerator(relative_spatial_terms=rel_spatial_terms,
                            personas=personas,
                            styles=styles,
-                           prob_usage_of_relative_spatial_terms=prob_usage_of_relative_spatial_terms)
+                           prob_usage_of_relative_spatial_terms=prob_usage_of_relative_spatial_terms,
+                           prob_usage_of_written_numbers=prob_usage_of_written_numbers,
+                           max_dist_digits=max_dist_digits)
 
     generated_queries = None
     if generate_prompts:
