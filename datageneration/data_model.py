@@ -1,7 +1,6 @@
 from enum import Enum
-from typing import List, Optional
-
 from pydantic import BaseModel, Field
+from typing import List, Optional
 
 
 # Tag Combinations
@@ -14,15 +13,15 @@ class TagType(Enum):
 # Tag Info
 def remove_duplicate_tag_attributes(tag_attributes):
     processed_tag_attributes = []
-    attribute_keys = []
+    # attribute_keys = []
 
     for tag_attribute in tag_attributes:
-        if str(tag_attribute) in attribute_keys:
+        processed_tag_attribute = TagAttribute(descriptors=tag_attribute.descriptors, tags=tag_attribute.tags)
+        if processed_tag_attribute in processed_tag_attributes:
             continue
         else:
             # attribute_keys.append(str(tag_attribute))
-            processed_tag_attributes.append(
-                TagAttribute(descriptors=tag_attribute.descriptors, tags=tag_attribute.tags))
+            processed_tag_attributes.append(processed_tag_attribute)
             # TagAttribute(key=tag_attribute.key, operator=tag_attribute.operator, value=tag_attribute.value))
     return processed_tag_attributes
 
@@ -35,12 +34,7 @@ class Tag(BaseModel, frozen=True):
 
 class TagAttribute(BaseModel, frozen=True):
     descriptors: List[str] = Field(description="List of text names")
-    tags: List[Tag]  # MAYBE TAG INSTEAD???
-
-    # name: str = Field(description='This will be filled out from descriptors')
-    # key: str = Field(description="Tag property key")
-    # operator: str = Field(description="Tag property operator")
-    # value: str = Field(description="Tag property value")
+    tags: List[Tag]
 
 
 class TagCombination(BaseModel):
@@ -114,6 +108,7 @@ class GeneratedPrompt(BaseModel):
     style: str
     persona: str
 
+
 ###################################################
 # Data Model for Prompts and Sentence Generations #
 ###################################################
@@ -123,6 +118,7 @@ class GeneratedIMRSentence(BaseModel):
     style: str
     persona: str
     sentence: str
+
 
 if __name__ == '__main__':
     area = Area(type='area', value='Berlin')

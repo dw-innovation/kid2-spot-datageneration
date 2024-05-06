@@ -23,23 +23,25 @@ class TestGenerateCombination(unittest.TestCase):
         self.query_comb_generator = QueryCombinationGenerator(geolocations=geolocations,
                                                               tag_combinations=tag_combinations,
                                                               attribute_examples=attribute_examples,
-                                                              max_distance=2000)
+                                                              max_distance_digits=5)
 
     def test_generate_entities(self):
-        entities = self.query_comb_generator.generate_entities(number_of_entities_in_prompt=3,
-                                                               max_number_of_props_in_entity=0)
+        entities = self.query_comb_generator.generate_entities(max_number_of_entities_in_prompt=3,
+                                                               max_number_of_props_in_entity=0,
+                                                               percentage_of_entities_with_props=0.3)
 
-        assert len(entities) == 3
-
+        assert len(entities) <= 3
+        assert len(entities) > 0
         for entity in entities:
             assert len(entity.properties) == 0
 
-        entities = self.query_comb_generator.generate_entities(number_of_entities_in_prompt=3,
-                                                               max_number_of_props_in_entity=4)
+        entities = self.query_comb_generator.generate_entities(max_number_of_entities_in_prompt=3,
+                                                               max_number_of_props_in_entity=4,
+                                                               percentage_of_entities_with_props=0.3)
 
-        assert len(entities) == 3
+        assert len(entities) <= 3
+        assert len(entities) > 0
         for entity in entities:
-            assert len(entity.properties) >= 1
             assert len(entity.properties) <= 4
 
     def test_property_generate(self):

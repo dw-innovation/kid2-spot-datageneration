@@ -1,15 +1,15 @@
-import unicodedata
-from argparse import ArgumentParser
-from typing import List
-
 import pandas as pd
 import requests
 import taginfo.query as ti
+import unicodedata
+from argparse import ArgumentParser
+from diskcache import Cache
+from tqdm import tqdm
+from typing import List
+
 from datageneration.data_model import Tag, TagAttribute, TagCombination, TagAttributeExample, \
     remove_duplicate_tag_attributes
 from datageneration.utils import CompoundTagAttributeProcessor, SEPERATORS, write_output
-from diskcache import Cache
-from tqdm import tqdm
 
 cache = Cache("tmp")
 
