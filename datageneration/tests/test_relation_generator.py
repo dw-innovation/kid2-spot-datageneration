@@ -6,7 +6,7 @@ from datageneration.relation_generator import RelationGenerator
 
 class TestRelationGenerator(unittest.TestCase):
     def setUp(self):
-        self.relation_generator = RelationGenerator(max_distance=2000)
+        self.relation_generator = RelationGenerator(max_distance_digits=5)
 
     def test_individual_distances(self):
         relations = self.relation_generator.generate_individual_distances(num_entities=3)
@@ -19,7 +19,7 @@ class TestRelationGenerator(unittest.TestCase):
         assert len(set(targets)) == len(relations)
 
     def test_within_radius(self):
-        relations = self.relation_generator.within_radius(num_entities=3)
+        relations = self.relation_generator.generate_within_radius(num_entities=3)
 
         dists = [r.value for r in relations]
         sources = [r.source for r in relations]

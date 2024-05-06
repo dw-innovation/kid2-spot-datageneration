@@ -6,7 +6,8 @@ python -m datageneration.generate_combination_table \
 --tag_attribute_examples_path datageneration/data/att_examples_${VERSION}.jsonl \
 --output_file datageneration/results/${VERSION}/samples.jsonl \
 --write_output \
---max_distance 2000 \
+--max_distance_digits 5 \
+--max_number_of_entities_in_prompt 4 \
 --max_number_of_props_in_entity 4 \
---number_of_entities_in_prompt 4 \
+--percentage_of_entities_with_props 0.3 \
 --samples 500
