@@ -255,6 +255,7 @@ class CombinationRetriever(object):
                 curr_num_examples = 100
             else:
                 curr_num_examples = num_examples
+
             if all_tags['core/prop'] != 'core' and '***example***' in curr_tag:
                 examples = self.request_property_examples(all_tags['key'], num_examples=curr_num_examples)
                 properties_and_their_examples.append(

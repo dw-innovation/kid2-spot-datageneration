@@ -47,7 +47,6 @@ class PropertyGenerator:
         selected_property = np.random.choice(tag_properties.tags)
         tag = selected_property.key + selected_property.operator + selected_property.value
         property_examples = self.select_named_property_example(tag)
-
         if not property_examples:
             return Property(name=descriptor)
             # return Property(key=tag_property.key, operator=tag_property.operator,value=tag_property.value, name=tag_property.value)
@@ -59,8 +58,7 @@ class PropertyGenerator:
         else:
             print("Something does not seem to be right. Please check operator of property ", tag, "!")
 
-        np.random.shuffle(property_examples)
-        selected_example = property_examples[0]
+        selected_example = np.random.choice(property_examples)
 
         return Property(name=descriptor, operator=operator, value=selected_example)
 

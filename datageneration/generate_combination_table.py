@@ -103,9 +103,9 @@ class QueryCombinationGenerator(object):
             selected_tag_comb = self.entity_tag_combinations[selected_idx_for_combinations]
             associated_descriptors = selected_tag_comb['descriptors']
 
-            if "brand" in associated_descriptors:
-                entity_name = "brand=" + self.property_generator("brand")
-                print(entity_name)
+            if "brand name" in associated_descriptors:
+                brand_examples = self.property_generator.select_named_property_example("brand~***example***")
+                entity_name = "brand: " + np.random.choice(brand_examples)
             else:
                 entity_name = np.random.choice(associated_descriptors)
 
