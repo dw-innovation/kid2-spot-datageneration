@@ -325,18 +325,19 @@ class CombinationRetriever(object):
             descriptors = split_descriptors(row['descriptors'])
             comb_type = row['core/prop'].strip()
             tags = split_tags(row['tags'])
-            if 'prop' not in comb_type:
-                processed_tags = []
-                processed_properties = []
-                for tag in tags:
-                    for sep in SEPERATORS:
-                        if sep in tag:
-                            tag_key, tag_value = tag.split(sep)
-                            processed_tags.append(Tag(key=tag_key, operator=sep, value=tag_value))
 
+            processed_tags = []
+            processed_properties = []
+            for tag in tags:
+                for sep in SEPERATORS:
+                    if sep in tag:
+                        tag_key, tag_value = tag.split(sep)
+                        processed_tags.append(Tag(key=tag_key, operator=sep, value=tag_value))
+
+                        if comb_type != 'prop':
                             tag_properties = self.request_related_tag_properties(tag_key=tag_key,
-                                                                                 tag_value=tag_value,
-                                                                                 limit=self.prop_limit)
+                                                                             tag_value=tag_value,
+                                                                             limit=self.prop_limit)
                             processed_properties.extend(tag_properties)
 
             processed_properties = remove_duplicate_tag_properties(processed_properties)
