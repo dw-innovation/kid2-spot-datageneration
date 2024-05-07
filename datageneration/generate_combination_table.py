@@ -17,7 +17,7 @@ from datageneration.utils import write_output
 class QueryCombinationGenerator(object):
     def __init__(self, geolocations: List[NamedAreaData], tag_combinations: List[TagCombination],
                  attribute_examples: List[TagAttributeExample], max_distance_digits: int):
-        self.entity_tag_combinations = list(filter(lambda x: 'core' in x['comb_type'], tag_combinations))
+        self.entity_tag_combinations = list(filter(lambda x: 'core' in x.comb_type.value, tag_combinations))
         self.area_generator = AreaGenerator(geolocations)
         self.property_generator = PropertyGenerator(attribute_examples)
         self.relation_generator = RelationGenerator(max_distance_digits=max_distance_digits)
@@ -101,16 +101,15 @@ class QueryCombinationGenerator(object):
                 continue
             selected_entity_numbers.append(selected_idx_for_combinations)
             selected_tag_comb = self.entity_tag_combinations[selected_idx_for_combinations]
-            associated_descriptors = selected_tag_comb['descriptors']
+            associated_descriptors = selected_tag_comb.descriptors
             entity_name = np.random.choice(associated_descriptors)
+            is_area = selected_tag_comb.is_area
 
             # Randomise whether probabilities should be added to ensure high enough ratio of zero property cases
             add_properties = np.random.choice([True, False], p=[percentage_of_entities_with_props,
                                                                 1 - percentage_of_entities_with_props])
             if add_properties and max_number_of_props_in_entity >= 1:
-                candidate_attributes = selected_tag_comb['tag_attributes']
-                candidate_attributes = list(map(lambda candidate_attribute: TagAttribute(**candidate_attribute),
-                                                candidate_attributes))
+                candidate_attributes = selected_tag_comb.tag_attributes
                 if len(candidate_attributes) == 0:
                     continue
                 current_max_number_of_props = min(len(candidate_attributes), max_number_of_props_in_entity)
@@ -121,9 +120,11 @@ class QueryCombinationGenerator(object):
                     selected_num_of_props = current_max_number_of_props
                 properties = self.generate_properties(candidate_attributes=candidate_attributes,
                                                       num_of_props=selected_num_of_props)
-                selected_entities.append(Entity(id=len(selected_entities), name=entity_name, properties=properties))
+                selected_entities.append(
+                    Entity(id=len(selected_entities), is_area=is_area, name=entity_name, properties=properties))
             else:
-                selected_entities.append(Entity(id=len(selected_entities), name=entity_name, properties=[]))
+                selected_entities.append(
+                    Entity(id=len(selected_entities), is_area=is_area, name=entity_name, properties=[]))
 
         return selected_entities
 
@@ -140,8 +141,8 @@ class QueryCombinationGenerator(object):
         return tag_properties
 
     # todo make it independent from entities
-    def generate_relations(self, num_entities: int) -> Relations:
-        relations = self.relation_generator.run(num_entities=num_entities)
+    def generate_relations(self, entities: List[Entity]) -> Relations:
+        relations = self.relation_generator.run(entities=entities)
         return relations
 
     def run(self, num_queries: int, max_number_of_entities_in_prompt: int, max_number_of_props_in_entity: int,
@@ -171,7 +172,7 @@ class QueryCombinationGenerator(object):
                                               max_number_of_props_in_entity=max_number_of_props_in_entity,
                                               percentage_of_entities_with_props=percentage_of_entities_with_props)
             area = self.generate_area()
-            relations = self.generate_relations(num_entities=len(entities))
+            relations = self.generate_relations(entities=entities)
 
             loc_points.append(LocPoint(area=area, entities=entities, relations=relations))
 
@@ -210,6 +211,8 @@ if __name__ == '__main__':
     percentage_of_entities_with_props = args.percentage_of_entities_with_props
 
     tag_combinations = pd.read_json(tag_combination_path, lines=True).to_dict('records')
+    tag_combinations = [TagCombination(**tag_comb) for tag_comb in tag_combinations]
+
     attribute_examples = pd.read_json(tag_attribute_examples_path, lines=True).to_dict('records')
     geolocations = load_named_area_data(geolocations_file_path)
 

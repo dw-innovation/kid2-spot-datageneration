@@ -1,7 +1,7 @@
 import unittest
 
 import pandas as pd
-from datageneration.data_model import TagAttribute, Tag
+from datageneration.data_model import TagAttribute, Tag, TagCombination
 from datageneration.generate_combination_table import QueryCombinationGenerator
 
 '''
@@ -18,6 +18,7 @@ class TestGenerateCombination(unittest.TestCase):
 
         geolocations = pd.read_json(geolocations_path).to_dict('records')
         tag_combinations = pd.read_json(tag_combinations_path, lines=True).to_dict('records')
+        tag_combinations = [TagCombination(**tag_comb) for tag_comb in tag_combinations]
         attribute_examples = pd.read_json(attribute_examples_path, lines=True).to_dict('records')
 
         self.query_comb_generator = QueryCombinationGenerator(geolocations=geolocations,

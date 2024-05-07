@@ -39,6 +39,7 @@ class TagAttribute(BaseModel, frozen=True):
 
 class TagCombination(BaseModel):
     cluster_id: int = Field(description="Cluster Id")
+    is_area: bool = Field(description="Is this a area? True if it is, otherwise False")
     descriptors: List[str] = Field(description="List of text names")
     comb_type: TagType = Field(descripton="Tag type")
     tags: List[Tag] = Field(description="tags in the combination")
@@ -66,16 +67,17 @@ class Property(BaseModel):
 
 class Entity(BaseModel):
     id: int
+    is_area: bool
     name: str
     type: str = Field(default='nwr')
     properties: Optional[List[Property]] = None
 
 
 class Relation(BaseModel):
-    name: str
+    type: str
     source: int
     target: int
-    value: str
+    value: Optional[str] = None
 
 
 class Relations(BaseModel):

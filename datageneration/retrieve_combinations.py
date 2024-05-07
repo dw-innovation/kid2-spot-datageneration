@@ -316,6 +316,7 @@ class CombinationRetriever(object):
 
         for row in tqdm(self.tag_df.to_dict(orient='records'), total=len(self.tag_df)):
             cluster_id = row['index']
+            is_area = True if row['area/point'] == 'area' else False
             descriptors = split_descriptors(row['descriptors'])
             comb_type = row['type'].strip()
             tags = split_tags(row['tags'])
@@ -335,7 +336,8 @@ class CombinationRetriever(object):
 
             processed_attributes = remove_duplicate_tag_attributes(processed_attributes)
             tag_combinations.append(
-                TagCombination(cluster_id=cluster_id, descriptors=descriptors, comb_type=comb_type, tags=processed_tags,
+                TagCombination(cluster_id=cluster_id, is_area=is_area, descriptors=descriptors, comb_type=comb_type,
+                               tags=processed_tags,
                                tag_attributes=processed_attributes))
         return tag_combinations
 

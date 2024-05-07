@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 from openai import OpenAI
 from pathlib import Path
 from tqdm import tqdm
-from typing import List
+from typing import List, Tuple
 
 from datageneration.data_model import RelSpatial, LocPoint, Area, Property, Relation, Relations, GeneratedPrompt, \
     GeneratedIMRSentence
@@ -175,6 +175,8 @@ class PromptHelper:
         self.phrases_away = ["", "", "", "away", "away from", "from"]
         self.phrases_radius = ["within DIST", "in a radius of DIST", "no more than DIST", "DIST from each other"]
 
+        self.phrases_contains = ["within", "in"]
+
     def beginning(self, persona, writing_style):
         '''
         Create a beginning of a prompt by using beginning template
@@ -255,8 +257,7 @@ class PromptHelper:
         '''
         Randomly selects relative spatial term
         '''
-        np.random.shuffle(self.relative_spatial_terms)
-        selected_relative_spatial = self.relative_spatial_terms[0]
+        selected_relative_spatial = self.shuffle_and_select_phrase(candidate_phrases=self.relative_spatial_terms)
 
         # select randomly descriptor of relative special
         descriptors_of_relative_spatial_terms = selected_relative_spatial.values
@@ -279,21 +280,40 @@ class PromptHelper:
         return generated_prompt
 
     def add_desc_away_prompt(self, relation: Relation) -> str:
-        np.random.shuffle(self.phrases_desc)
-        selected_phrases_desc = self.phrases_desc[0]
-
-        np.random.shuffle(self.phrases_away)
-        selected_phrases_away = self.phrases_away[0]
+        selected_phrases_desc = self.shuffle_and_select_phrase(candidate_phrases=self.phrases_desc)
+        selected_phrases_away = self.shuffle_and_select_phrase(candidate_phrases=self.phrases_away)
 
         generated_prompt = self.add_desc_away_prompt_helper(relation, selected_phrases_desc, selected_phrases_away)
         return generated_prompt
 
+    def shuffle_and_select_phrase(self, candidate_phrases: List[str]) -> str:
+        np.random.shuffle(candidate_phrases)
+        selected_phrases_desc = candidate_phrases[0]
+        return selected_phrases_desc
+
     def add_prompt_for_within_radius_relation(self, relations: Relations) -> str:
-        np.random.shuffle(self.phrases_radius)
-        selected_phrase = self.phrases_radius[0]
+        selected_phrase = self.shuffle_and_select_phrase(candidate_phrases=self.phrases_radius)
         selected_phrase = selected_phrase.replace('DIST', relations.relations[0].value)
         generated_prompt = f"All objects are {selected_phrase}"
         return generated_prompt
+
+    def add_relation_with_contain(self, relations: List[Relation]) -> Tuple[str, Relations]:
+        '''
+        This function identifies the objects having containing relationship, collect the remaining ones which have individual rels with the other ones.
+        :param relations:
+        :return: generated_prompt, List[Relation]: list of individual relations
+        '''
+        selected_phrase = self.shuffle_and_select_phrase(candidate_phrases=self.phrases_contains)
+        generated_prompt = ""
+
+        individual_rels = []
+        for relation in relations:
+            if not relation.value:
+                generated_prompt += f"Obj. {relation.target} is {selected_phrase} Obj. {relation.source}\n"
+            else:
+                individual_rels.append(relation)
+
+        return (generated_prompt, Relations(type='individual_distance', relations=individual_rels))
 
 
 class GPTDataGenerator:
@@ -344,19 +364,13 @@ class GPTDataGenerator:
         core_relation = 'Distances:\n'
 
         if relations.type == "individual_distances":
-            for relation in relations.relations:
-                rst_chance = self.prob_usage_of_relative_spatial_terms
-                use_relative_spatial_terms = np.random.choice([False, True], p=[1.0 - rst_chance, rst_chance])
-                if use_relative_spatial_terms:
-                    generated_prompt, overwritten_distance = self.prompt_helper.add_relative_spatial_terms(relation)
-                    core_relation += generated_prompt
-                    self.update_relation_distance(relations=relations,
-                                                  relation_to_be_updated=relation,
-                                                  distance=overwritten_distance)
-                else:
-                    core_relation += self.prompt_helper.add_desc_away_prompt(relation)
-            core_relation = core_relation[:-1]  # remove trailing linebreak
+            core_relation = self.individual_prompt_generation(core_relation, relations)
+        elif relations.type == 'relation_with_contain':
+            generated_prompt, individual_rels = self.prompt_helper.add_relation_with_contain(relations.relations)
+            core_relation += generated_prompt
 
+            if len(individual_rels.relations) > 0:
+                core_relation = self.individual_prompt_generation(core_relation, individual_rels)
         elif relations.type == "within_radius":
             core_relation = self.prompt_helper.add_prompt_for_within_radius_relation(relations)
         else:
@@ -366,6 +380,21 @@ class GPTDataGenerator:
         core_prompt = core_prompt + core_relation
         core_prompt = search_prompt + core_prompt
         return loc_point, core_prompt
+
+    def individual_prompt_generation(self, core_relation, relations):
+        for relation in relations.relations:
+            rst_chance = self.prob_usage_of_relative_spatial_terms
+            use_relative_spatial_terms = np.random.choice([False, True], p=[1.0 - rst_chance, rst_chance])
+            if use_relative_spatial_terms:
+                generated_prompt, overwritten_distance = self.prompt_helper.add_relative_spatial_terms(relation)
+                core_relation += generated_prompt
+                self.update_relation_distance(relations=relations,
+                                              relation_to_be_updated=relation,
+                                              distance=overwritten_distance)
+            else:
+                core_relation += self.prompt_helper.add_desc_away_prompt(relation)
+        core_relation = core_relation[:-1]  # remove trailing linebreak
+        return core_relation
 
     def assign_persona_styles_to_queries(self, num_of_all_persona_style, num_tag_queries):
         persona_style_ids = list(range(num_of_all_persona_style))
