@@ -8,5 +8,5 @@ echo Generate Property Examples
 python -m datageneration.retrieve_combinations \
 --source datageneration/data/Primary_Keys_filtered10.xlsx \
 --output_file datageneration/data/prop_examples_v12.jsonl \
---prop_example_limit 100000 \
+--prop_example_limit 50000 \
 --generate_property_examples

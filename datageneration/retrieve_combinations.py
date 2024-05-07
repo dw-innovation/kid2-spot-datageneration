@@ -121,8 +121,8 @@ class CombinationRetriever(object):
         self.all_tags_property_ids = self.all_osm_tags_and_properties.keys()
         self.numeric_tags_property_ids = [f.split(">")[0] for f in filter(lambda x: x.endswith(">0"),
                                                                           self.all_tags_property_ids)]
-        self.tags_requiring_many_examples = ["name~***any***", "brand~***any***", "addr:street~***any***",
-                                "addr:housenumber=***any***"]
+        self.tags_requiring_many_examples = ["name~***example***", "brand~***example***", "addr:street~***example***",
+                                "addr:housenumber=***example***"]
 
     def fetch_tag_properties(self, tag_df: pd.DataFrame) -> List[TagProperty]:
         '''
@@ -255,7 +255,7 @@ class CombinationRetriever(object):
                 curr_num_examples = 100
             else:
                 curr_num_examples = num_examples
-            if all_tags['core/prop'] != 'core' and '***any***' in curr_tag:
+            if all_tags['core/prop'] != 'core' and '***example***' in curr_tag:
                 examples = self.request_property_examples(all_tags['key'], num_examples=curr_num_examples)
                 properties_and_their_examples.append(
                     TagPropertyExample(key=curr_tag, examples=examples))
@@ -274,7 +274,7 @@ class CombinationRetriever(object):
         for tag_prop_idx, tag_prop in enumerate(self.tag_properties):
             for tag_prop_tag in tag_prop.tags:
                 tag_prop_tag_value = tag_prop_tag.value
-                if tag_prop_tag.value in ['***any***', 'yes', '***numeric***']:
+                if tag_prop_tag.value in ['***example***', '***numeric***']: #'yes',
                     tag_prop_tag_value = ''
                 if f'{tag_prop_tag.key}{tag_prop_tag.operator}{tag_prop_tag_value}' == other_tag:
                     exists = True

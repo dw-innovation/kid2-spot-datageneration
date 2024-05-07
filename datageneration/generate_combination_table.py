@@ -102,7 +102,12 @@ class QueryCombinationGenerator(object):
             selected_entity_numbers.append(selected_idx_for_combinations)
             selected_tag_comb = self.entity_tag_combinations[selected_idx_for_combinations]
             associated_descriptors = selected_tag_comb['descriptors']
-            entity_name = np.random.choice(associated_descriptors)
+
+            if "brand" in associated_descriptors:
+                entity_name = "brand=" + self.property_generator("brand")
+                print(entity_name)
+            else:
+                entity_name = np.random.choice(associated_descriptors)
 
             # Randomise whether probabilities should be added to ensure high enough ratio of zero property cases
             add_properties = np.random.choice([True, False], p=[percentage_of_entities_with_props,
@@ -188,7 +193,7 @@ if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument('--geolocations_file_path', help='Path to a file containing cities, countries, etc.')
     parser.add_argument('--tag_combination_path', help='tag list file generated via retrieve_combinations')
-    parser.add_argument('--tag_property_examples_path', help='Examples of tag properties')
+    parser.add_argument('--tag_prop_examples_path', help='Examples of tag properties')
     parser.add_argument('--output_file', help='File to save the output')
     parser.add_argument('--max_distance_digits', help='Define max distance', type=int)
     parser.add_argument('--write_output', action='store_true')
@@ -200,7 +205,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     tag_combination_path = args.tag_combination_path
-    tag_property_examples_path = args.tag_property_examples_path
+    tag_prop_examples_path = args.tag_prop_examples_path
     geolocations_file_path = args.geolocations_file_path
     max_distance_digits = args.max_distance_digits
     num_samples = args.samples
@@ -210,7 +215,7 @@ if __name__ == '__main__':
     percentage_of_entities_with_props = args.percentage_of_entities_with_props
 
     tag_combinations = pd.read_json(tag_combination_path, lines=True).to_dict('records')
-    property_examples = pd.read_json(tag_property_examples_path, lines=True).to_dict('records')
+    property_examples = pd.read_json(tag_prop_examples_path, lines=True).to_dict('records')
     geolocations = load_named_area_data(geolocations_file_path)
 
     query_comb_generator = QueryCombinationGenerator(geolocations=geolocations,
