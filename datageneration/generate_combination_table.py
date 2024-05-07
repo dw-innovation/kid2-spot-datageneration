@@ -7,7 +7,7 @@ from tqdm import tqdm
 from typing import List
 
 from datageneration.area_generator import AreaGenerator, NamedAreaData, load_named_area_data
-from datageneration.data_model import TagAttributeExample, TagAttribute, Property, TagCombination, Entity, Relations, \
+from datageneration.data_model import TagPropertyExample, TagProperty, Property, TagCombination, Entity, Relations, \
     LocPoint, Area
 from datageneration.property_generator import PropertyGenerator
 from datageneration.relation_generator import RelationGenerator
@@ -16,10 +16,10 @@ from datageneration.utils import write_output
 
 class QueryCombinationGenerator(object):
     def __init__(self, geolocations: List[NamedAreaData], tag_combinations: List[TagCombination],
-                 attribute_examples: List[TagAttributeExample], max_distance_digits: int):
+                 property_examples: List[TagPropertyExample], max_distance_digits: int):
         self.entity_tag_combinations = list(filter(lambda x: 'core' in x['comb_type'], tag_combinations))
         self.area_generator = AreaGenerator(geolocations)
-        self.property_generator = PropertyGenerator(attribute_examples)
+        self.property_generator = PropertyGenerator(property_examples)
         self.relation_generator = RelationGenerator(max_distance_digits=max_distance_digits)
 
     def index_to_descriptors(self, index):
@@ -108,18 +108,18 @@ class QueryCombinationGenerator(object):
             add_properties = np.random.choice([True, False], p=[percentage_of_entities_with_props,
                                                                 1 - percentage_of_entities_with_props])
             if add_properties and max_number_of_props_in_entity >= 1:
-                candidate_attributes = selected_tag_comb['tag_attributes']
-                candidate_attributes = list(map(lambda candidate_attribute: TagAttribute(**candidate_attribute),
-                                                candidate_attributes))
-                if len(candidate_attributes) == 0:
+                candidate_properties = selected_tag_comb['tag_properties']
+                candidate_properties = list(map(lambda candidate_property: TagProperty(**candidate_property),
+                                                candidate_properties))
+                if len(candidate_properties) == 0:
                     continue
-                current_max_number_of_props = min(len(candidate_attributes), max_number_of_props_in_entity)
+                current_max_number_of_props = min(len(candidate_properties), max_number_of_props_in_entity)
                 if current_max_number_of_props > 1:
                     # selected_num_of_props = np.random.randint(1, max_number_of_props_in_entity)
                     selected_num_of_props = self.get_number_of_props(current_max_number_of_props)
                 else:
                     selected_num_of_props = current_max_number_of_props
-                properties = self.generate_properties(candidate_attributes=candidate_attributes,
+                properties = self.generate_properties(candidate_properties=candidate_properties,
                                                       num_of_props=selected_num_of_props)
                 selected_entities.append(Entity(id=len(selected_entities), name=entity_name, properties=properties))
             else:
@@ -127,14 +127,14 @@ class QueryCombinationGenerator(object):
 
         return selected_entities
 
-    def generate_properties(self, candidate_attributes: List[TagAttribute], num_of_props: int) -> List[Property]:
-        candidate_indices = np.arange(len(candidate_attributes))
+    def generate_properties(self, candidate_properties: List[TagProperty], num_of_props: int) -> List[Property]:
+        candidate_indices = np.arange(len(candidate_properties))
         np.random.shuffle(candidate_indices)
         selected_indices = candidate_indices[:num_of_props]
         tag_properties = []
         for idx in selected_indices:
-            tag_attribute = candidate_attributes[idx]
-            tag_property = self.property_generator.run(tag_attribute)
+            tag_property = candidate_properties[idx]
+            tag_property = self.property_generator.run(tag_property)
             tag_properties.append(tag_property)
 
         return tag_properties
@@ -188,7 +188,7 @@ if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument('--geolocations_file_path', help='Path to a file containing cities, countries, etc.')
     parser.add_argument('--tag_combination_path', help='tag list file generated via retrieve_combinations')
-    parser.add_argument('--tag_attribute_examples_path', help='Examples of tag attributes')
+    parser.add_argument('--tag_property_examples_path', help='Examples of tag properties')
     parser.add_argument('--output_file', help='File to save the output')
     parser.add_argument('--max_distance_digits', help='Define max distance', type=int)
     parser.add_argument('--write_output', action='store_true')
@@ -200,7 +200,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     tag_combination_path = args.tag_combination_path
-    tag_attribute_examples_path = args.tag_attribute_examples_path
+    tag_property_examples_path = args.tag_property_examples_path
     geolocations_file_path = args.geolocations_file_path
     max_distance_digits = args.max_distance_digits
     num_samples = args.samples
@@ -210,12 +210,12 @@ if __name__ == '__main__':
     percentage_of_entities_with_props = args.percentage_of_entities_with_props
 
     tag_combinations = pd.read_json(tag_combination_path, lines=True).to_dict('records')
-    attribute_examples = pd.read_json(tag_attribute_examples_path, lines=True).to_dict('records')
+    property_examples = pd.read_json(tag_property_examples_path, lines=True).to_dict('records')
     geolocations = load_named_area_data(geolocations_file_path)
 
     query_comb_generator = QueryCombinationGenerator(geolocations=geolocations,
                                                      tag_combinations=tag_combinations,
-                                                     attribute_examples=attribute_examples,
+                                                     property_examples=property_examples,
                                                      max_distance_digits=args.max_distance_digits)
 
     generated_combs = query_comb_generator.run(num_queries=num_samples,

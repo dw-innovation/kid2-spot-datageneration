@@ -2,7 +2,7 @@ import numpy as np
 from random import randint
 from typing import List
 
-from datageneration.data_model import TagAttributeExample, TagAttribute, Property
+from datageneration.data_model import TagPropertyExample, TagProperty, Property
 
 
 # numerical value generator
@@ -29,7 +29,7 @@ def get_random_integer(max_digits: int) -> int:
     return randint(low, high)
 
 class PropertyGenerator:
-    def __init__(self, named_property_examples: List[TagAttributeExample]):
+    def __init__(self, named_property_examples: List[TagPropertyExample]):
         self.named_property_examples = named_property_examples
 
     def select_named_property_example(self, property_name: str) -> List[str]:
@@ -37,16 +37,16 @@ class PropertyGenerator:
             if item['key'] == property_name:
                 return item['examples']
 
-    def generate_named_property(self, tag_attribute: TagAttribute) -> Property:
+    def generate_named_property(self, tag_property: TagProperty) -> Property:
         """
-        Generate a Property object based on the given TagAttribute.
+        Generate a Property object based on the given TagProperty.
 
-        This function selects a random example for the specified tag attribute
+        This function selects a random example for the specified tag property
         combination, shuffles the examples to ensure randomness, and then
         constructs a Property object using the selected example.
 
         Parameters:
-        - tag_attribute (TagAttribute): The TagAttribute object containing key, operator,
+        - tag_property (TagProperty): The TagProperty object containing key, operator,
           and value information to generate the property.
 
         Returns:
@@ -54,43 +54,43 @@ class PropertyGenerator:
 
         Example:
         ```python
-        tag_attr = TagAttribute(key='cuisine', operator='=', value='italian')
-        property_obj = generate_named_property(tag_attr)
+        tag_prop = TagProperty(key='cuisine', operator='=', value='italian')
+        property_obj = generate_named_property(tag_prop)
         print(property_obj)
         ```
         """
-        return self.generate_non_numerical_property(tag_attribute)
+        return self.generate_non_numerical_property(tag_property)
 
-    def generate_non_numerical_property(self, tag_attribute) -> Property:
-        descriptor = np.random.choice(tag_attribute.descriptors, 1)[0]
-        tag = tag_attribute.tags[0].key + tag_attribute.tags[0].operator + tag_attribute.tags[0].value
-        attribute_examples = self.select_named_property_example(tag)
-        if not attribute_examples:
+    def generate_non_numerical_property(self, tag_property) -> Property:
+        descriptor = np.random.choice(tag_property.descriptors, 1)[0]
+        tag = tag_property.tags[0].key + tag_property.tags[0].operator + tag_property.tags[0].value
+        property_examples = self.select_named_property_example(tag)
+        if not property_examples:
             return Property(name=descriptor)
-            # return Property(key=tag_attribute.key, operator=tag_attribute.operator,value=tag_attribute.value, name=tag_attribute.value)
+            # return Property(key=tag_property.key, operator=tag_property.operator,value=tag_property.value, name=tag_property.value)
 
         if "~***any***" in tag:
             operator = "~"
         elif "=***any***" in tag:
             operator = "="
         else:
-            print("Something does not seem to be right. Please check operator of attribute ", tag, "!")
+            print("Something does not seem to be right. Please check operator of property ", tag, "!")
 
-        np.random.shuffle(attribute_examples)
-        selected_example = attribute_examples[0]
+        np.random.shuffle(property_examples)
+        selected_example = property_examples[0]
 
         return Property(name=descriptor, operator=operator, value=selected_example)
 
-    def generate_proper_noun_property(self, tag_attribute: TagAttribute) -> Property:
+    def generate_proper_noun_property(self, tag_property: TagProperty) -> Property:
         '''Proper nouns are names such as name=Laughen_restaurant'''
-        return self.generate_non_numerical_property(tag_attribute)
+        return self.generate_non_numerical_property(tag_property)
 
-    def generate_numerical_property(self, tag_attribute: TagAttribute) -> Property:
+    def generate_numerical_property(self, tag_property: TagProperty) -> Property:
         # todo --> we might need specific numerical function if we need to define logical max/min values.
-        descriptor = np.random.choice(tag_attribute.descriptors, 1)[0]
+        descriptor = np.random.choice(tag_property.descriptors, 1)[0]
         # operator = "="
         operator = np.random.choice([">", "=", "<"])
-        tag = tag_attribute.tags[0]
+        tag = tag_property.tags[0]
         if tag.key == "height":
             # todo rename this
             generated_numerical_value = get_random_decimal_with_metric(max_digits=5)
@@ -99,35 +99,35 @@ class PropertyGenerator:
             generated_numerical_value = str(get_random_integer(max_digits=3))
 
         return Property(name=descriptor, operator=operator, value=generated_numerical_value)
-        # return Property(key=tag_attribute.key, operator=tag_attribute.operator, value=generated_numerical_value, name=tag_attribute.key)
+        # return Property(key=tag_property.key, operator=tag_aproperty.operator, value=generated_numerical_value, name=tag_property.key)
 
-    def generate_color_property(self, tag_attribute: TagAttribute) -> Property:
+    def generate_color_property(self, tag_attribute: TagProperty) -> Property:
         raise NotImplemented
 
-    def run(self, tag_attribute: TagAttribute) -> Property:
+    def run(self, tag_property: TagProperty) -> Property:
         '''
-        Generate a property based on a tag attribute.
+        Generate a property based on a tag property.
 
         Parameters:
-            tag_attribute (TagAttribute): The tag attribute object containing information about the attribute.
+            tag_property (TagProperty): The tag property object containing information about the property.
 
         Returns:
             Property: The generated property.
 
-        This method checks the type of the tag attribute and generates a property accordingly.
-        If the attribute is numeric, it generates a numerical property.
-        If the attribute key contains 'name', it generates a proper noun property.
-        If the attribute key contains 'color', it generates a color property.
+        This method checks the type of the tag property and generates a property accordingly.
+        If the property is numeric, it generates a numerical property.
+        If the property key contains 'name', it generates a proper noun property.
+        If the property key contains 'color', it generates a color property.
         Otherwise, it generates a named property.
         '''
-        # if '***numeric***' in tag_attribute.value:
-        if any(t.value == '***numeric***' for t in tag_attribute.tags):
-            generated_property = self.generate_numerical_property(tag_attribute)
+        # if '***numeric***' in tag_property.value:
+        if any(t.value == '***numeric***' for t in tag_property.tags):
+            generated_property = self.generate_numerical_property(tag_property)
         else:
-            if any(t.key == 'name' for t in tag_attribute.tags):
-                generated_property = self.generate_proper_noun_property(tag_attribute)
-            elif any(t.key == 'color' for t in tag_attribute.tags):
-                generated_property = self.generate_color_property(tag_attribute)
+            if any(t.key == 'name' for t in tag_property.tags):
+                generated_property = self.generate_proper_noun_property(tag_property)
+            elif any(t.key == 'color' for t in tag_property.tags):
+                generated_property = self.generate_color_property(tag_property)
             else:
-                generated_property = self.generate_named_property(tag_attribute)
+                generated_property = self.generate_named_property(tag_property)
         return generated_property

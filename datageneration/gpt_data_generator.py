@@ -234,7 +234,7 @@ class PromptHelper:
 
     def add_other_non_numerical_prompt(self, entity_property: Property) -> str:
         '''
-        handler for core/attr type of properties having no value and properties such as cuisine
+        handler for core/prop type of properties having no value and properties such as cuisine
         '''
         return f": {entity_property.value}" if entity_property.value else ""
 

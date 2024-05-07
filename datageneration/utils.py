@@ -66,7 +66,7 @@ def translate_queries_to_yaml(combs):
     return new_combs
 
 
-class CompoundTagAttributeProcessor:
+class CompoundTagPropertyProcessor:
     def expand_list(self, tag_compounds: str) -> List[str]:
         processed_tag_compounds = []
         tag_compounds = tag_compounds.split('|')

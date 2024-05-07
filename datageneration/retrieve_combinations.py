@@ -7,9 +7,9 @@ from diskcache import Cache
 from tqdm import tqdm
 from typing import List
 
-from datageneration.data_model import Tag, TagAttribute, TagCombination, TagAttributeExample, \
-    remove_duplicate_tag_attributes
-from datageneration.utils import CompoundTagAttributeProcessor, SEPERATORS, write_output
+from datageneration.data_model import Tag, TagProperty, TagCombination, TagPropertyExample, \
+    remove_duplicate_tag_properties
+from datageneration.utils import CompoundTagPropertyProcessor, SEPERATORS, write_output
 
 cache = Cache("tmp")
 
@@ -64,7 +64,7 @@ def isRoman(s):
     return True
 
 
-comp_att_processor = CompoundTagAttributeProcessor()
+comp_prop_processor = CompoundTagPropertyProcessor()
 
 
 def split_descriptors(descriptors: str) -> List[str]:
@@ -78,8 +78,8 @@ def split_descriptors(descriptors: str) -> List[str]:
     return processed_descriptors
 
 
-def split_tags(tags: str) -> List[TagAttribute]:
-    '''this function splits the compound tags. it uses comp_attr_process for handling complex compounds such as highway'''
+def split_tags(tags: str) -> List[TagProperty]:
+    '''this function splits the compound tags. it uses comp_prop_process for handling complex compounds such as highway'''
     processed_tags = set()
     for tag in tags.split(','):
         tag = tag.lstrip().strip()
@@ -94,7 +94,7 @@ def split_tags(tags: str) -> List[TagAttribute]:
                 continue
 
             if '[' in tag:
-                compound_tag = comp_att_processor.run(tag)
+                compound_tag = comp_prop_processor.run(tag)
                 for alt_tag in compound_tag:
                     processed_tags.add(alt_tag)
             else:
@@ -103,7 +103,7 @@ def split_tags(tags: str) -> List[TagAttribute]:
 
 
 class CombinationRetriever(object):
-    def __init__(self, source, att_limit):
+    def __init__(self, source, prop_limit):
         if source.endswith('xlsx'):
             tag_df = pd.read_excel(source, engine='openpyxl')
         else:
@@ -111,32 +111,34 @@ class CombinationRetriever(object):
 
         tag_df.drop_duplicates(subset='descriptors', inplace=True)
         tag_df["index"] = [i for i in range(len(tag_df))]
-        all_osm_tags_and_attributes = self.process_tag_attributes(tag_df)
+        all_osm_tags_and_properties = self.process_tag_properties(tag_df)
 
-        self.tag_attributes = self.fetch_tag_attributes(tag_df)
-        self.att_limit = att_limit
+        self.tag_properties = self.fetch_tag_properties(tag_df)
+        self.prop_limit = prop_limit
         self.tag_df = tag_df
-        self.all_osm_tags_and_attributes = all_osm_tags_and_attributes
+        self.all_osm_tags_and_properties = all_osm_tags_and_properties
 
-        self.all_tags_attributes_ids = self.all_osm_tags_and_attributes.keys()
-        self.numeric_tags_attributes_ids = [f.split(">")[0] for f in filter(lambda x: x.endswith(">0"),
-                                                                            self.all_tags_attributes_ids)]
+        self.all_tags_property_ids = self.all_osm_tags_and_properties.keys()
+        self.numeric_tags_property_ids = [f.split(">")[0] for f in filter(lambda x: x.endswith(">0"),
+                                                                          self.all_tags_property_ids)]
+        self.tags_requiring_many_examples = ["name~***any***", "brand~***any***", "addr:street~***any***",
+                                "addr:housenumber=***any***"]
 
-    def fetch_tag_attributes(self, tag_df: pd.DataFrame) -> List[TagAttribute]:
+    def fetch_tag_properties(self, tag_df: pd.DataFrame) -> List[TagProperty]:
         '''
-        Process attributes from the Primary Key table (DataFrame)
+        Process properties from the Primary Key table (DataFrame)
 
         Args:
-            tag_df (DataFrame): DataFrame containing tags and tag attributes
+            tag_df (DataFrame): DataFrame containing tags and tag properties
 
         Returns:
-            list: List of TagAttribute objects
+            list: List of TagProperty objects
         '''
-        tag_attributes_df = tag_df[tag_df['type'] != 'core']
-        tag_attributes = []
-        for tag_attr in tag_attributes_df.to_dict(orient='records'):
-            descriptors = split_descriptors(tag_attr['descriptors'])
-            splited_tags = split_tags(tag_attr['tags'])
+        tag_property_df = tag_df[tag_df['core/prop'] != 'core']
+        tag_properties = []
+        for tag_prop in tag_property_df.to_dict(orient='records'):
+            descriptors = split_descriptors(tag_prop['descriptors'])
+            splited_tags = split_tags(tag_prop['tags'])
             processed_tags = []
 
             for _tag in splited_tags:
@@ -150,23 +152,23 @@ class CombinationRetriever(object):
                         continue
                 processed_tags.append(Tag(key=_tag_splits[0], value=_tag_splits[1], operator=tag_operator))
 
-            tag_attributes.append(TagAttribute(descriptors=descriptors, tags=processed_tags))
-        return tag_attributes
+            tag_properties.append(TagProperty(descriptors=descriptors, tags=processed_tags))
+        return tag_properties
 
-    def process_tag_attributes(self, tag_df):
+    def process_tag_properties(self, tag_df):
         """
-        Process tags, attributes from a DataFrame (PrimaryKey table).
+        Process tags, properties from a DataFrame (PrimaryKey table).
 
         Args:
-            tag_df (DataFrame): DataFrame containing tag attributes.
+            tag_df (DataFrame): DataFrame containing tag properties.
 
         Returns:
-            dict: Dictionary containing processed tag attributes.
+            dict: Dictionary containing processed tag properties.
         """
-        # all tags and attributes
-        all_osm_tags_and_attributes = {}
+        # all tags and properties
+        all_osm_tags_and_properties = {}
         for tags in tag_df.to_dict(orient='records'):
-            tag_type = tags['type']
+            tag_type = tags['core/prop']
             if isinstance(tag_type, float):
                 print(f'{tags} has no type, might be an invalid')
                 continue
@@ -183,37 +185,37 @@ class CombinationRetriever(object):
                         tag_operator = seperator
                         continue
 
-                if _tag in all_osm_tags_and_attributes:
-                    if all_osm_tags_and_attributes[_tag]["type"] != tag_type:
-                        all_osm_tags_and_attributes[_tag] = {'tags': tags_list, 'key': _tag_splits[0],
+                if _tag in all_osm_tags_and_properties:
+                    if all_osm_tags_and_properties[_tag]["core/prop"] != tag_type:
+                        all_osm_tags_and_properties[_tag] = {'tags': tags_list, 'key': _tag_splits[0],
                                                              'operator': tag_operator,
                                                              'value': _tag_splits[1],
-                                                             'type': "core/attr", 'descriptors': descriptors}
+                                                             'core/prop': "core/prop", 'descriptors': descriptors}
                 else:
-                    all_osm_tags_and_attributes[_tag] = {'tags': tags_list, 'key': _tag_splits[0],
+                    all_osm_tags_and_properties[_tag] = {'tags': tags_list, 'key': _tag_splits[0],
                                                          'operator': tag_operator, 'value': _tag_splits[1],
-                                                         'type': tag_type, 'descriptors': descriptors}
+                                                         'core/prop': tag_type, 'descriptors': descriptors}
 
-        return all_osm_tags_and_attributes
+        return all_osm_tags_and_properties
 
-    def request_attribute_examples(self, attribute_key: str, num_examples: int) -> List[str]:
+    def request_property_examples(self, property_key: str, num_examples: int) -> List[str]:
         """
-        It is a helper function for generate_attribute_examples. Retrieve examples of attribute keys. For example: cuisine -> italian, turkish, etc.
+        It is a helper function for generate_property_examples. Retrieve examples of property keys. For example: cuisine -> italian, turkish, etc.
 
         Args:
-            attribute_key (str): The key of the attribute for which examples are requested.
+            property_key (str): The key of the property for which examples are requested.
             num_examples (int): The number of examples to retrieve.
 
         Returns:
-            List[str]: A list of attribute examples.
+            List[str]: A list of property examples.
 
-        This method fetches examples associated with the non-numerical attributes from TagInfo API. It retrieves examples recursively page by page until the number of examples are equal to the threshold. The examples
+        This method fetches examples associated with the non-numerical properties from TagInfo API. It retrieves examples recursively page by page until the number of examples are equal to the threshold. The examples
         are split by semicolons (';'), and only examples that pass the 'isRoman' function
         check are included.
         """
 
         def fetch_examples_recursively(curr_page, fetched_examples):
-            examples = ti.get_page_of_key_values(attribute_key, curr_page)
+            examples = ti.get_page_of_key_values(property_key, curr_page)
             if len(examples) == 0:
                 return fetched_examples
             for example in examples:
@@ -230,113 +232,117 @@ class CombinationRetriever(object):
         fetched_examples = fetch_examples_recursively(1, fetched_examples)
         return list(fetched_examples)
 
-    def generate_attribute_examples(self, num_examples: int = 100) -> List[TagAttributeExample]:
+    def generate_property_examples(self, num_examples: int = 100000) -> List[TagPropertyExample]:
         """
-        Generate attribute examples for each tags whose type is 'attr' or 'core/attr'.
+        Generate property examples for each tags whose type is 'prop' or 'core/prop'.
 
         Args:
-            num_examples (int): Number of examples to generate for each attribute (default is 100).
+            num_examples (int): Number of examples to generate for each property (default is 100).
 
         Returns:
-            List[TagAttributeExample]: List of TagAttributeExample objects containing attribute keys and their examples.
+            List[TagPropertyExample]: List of TagPropertyExample objects containing property keys and their examples.
 
-        This method generates examples for specific tag attributes based on predefined criteria.
-        It iterates through all tag attributes and retrieves examples using the `request_attribute_examples`
-        method. Examples are only generated for tag attributes with type other than 'core' and having the value
-        'numerical'. TagAttributeExample objects are created for each attribute along with their examples,
+        This method generates examples for specific tag properties based on predefined criteria.
+        It iterates through all tag properties and retrieves examples using the `request_property_examples`
+        method. Examples are only generated for tag properties with type other than 'core' and having the value
+        'numerical'. TagPropertyExample objects are created for each property along with their examples,
         which are then returned as a list.
 
         """
-        attributes_and_their_examples = []
-        for key, value in self.all_osm_tags_and_attributes.items():
-            if value['type'] != 'core' and '***any***' in key:
-                examples = self.request_attribute_examples(value['key'], num_examples=num_examples)
-                attributes_and_their_examples.append(
-                    TagAttributeExample(key=key, examples=examples))
-        return attributes_and_their_examples
+        properties_and_their_examples = []
+        for curr_tag, all_tags in self.all_osm_tags_and_properties.items():
+            if curr_tag not in self.tags_requiring_many_examples:
+                curr_num_examples = 100
+            else:
+                curr_num_examples = num_examples
+            if all_tags['core/prop'] != 'core' and '***any***' in curr_tag:
+                examples = self.request_property_examples(all_tags['key'], num_examples=curr_num_examples)
+                properties_and_their_examples.append(
+                    TagPropertyExample(key=curr_tag, examples=examples))
+        return properties_and_their_examples
 
-    def check_other_tag_in_attributes(self, other_tag: str) -> tuple:
+    def check_other_tag_in_properties(self, other_tag: str) -> tuple:
         '''
-        check if the combination in the attribute list
+        check if the combination in the property list
         Args:
             other_tag (str): e.g. name=, name~
         Returns:
-            tuple(bool, int): True and its index in self.tag_attributes, False and its index -1 otherwise.
+            tuple(bool, int): True and its index in self.tag_properties, False and its index -1 otherwise.
         '''
         exists = False
 
-        for tag_attr_idx, tag_attr in enumerate(self.tag_attributes):
-            for tag_attr_tag in tag_attr.tags:
-                tag_attr_tag_value = tag_attr_tag.value
-                if tag_attr_tag.value in ['***any***', 'yes', '***numeric***']:
-                    tag_attr_tag_value = ''
-                if f'{tag_attr_tag.key}{tag_attr_tag.operator}{tag_attr_tag_value}' == other_tag:
+        for tag_prop_idx, tag_prop in enumerate(self.tag_properties):
+            for tag_prop_tag in tag_prop.tags:
+                tag_prop_tag_value = tag_prop_tag.value
+                if tag_prop_tag.value in ['***any***', 'yes', '***numeric***']:
+                    tag_prop_tag_value = ''
+                if f'{tag_prop_tag.key}{tag_prop_tag.operator}{tag_prop_tag_value}' == other_tag:
                     exists = True
-                    return (exists, tag_attr_idx)
+                    return (exists, tag_prop_idx)
 
         return (exists, -1)
 
-    def request_related_tag_attributes(self, tag_key: str, tag_value: str, limit: str = 100) -> List[TagAttribute]:
+    def request_related_tag_properties(self, tag_key: str, tag_value: str, limit: str = 100) -> List[TagProperty]:
         combinations = request_tag_combinations(tag_key=tag_key, tag_value=tag_value)['data']
-        selected_attributes = []
+        selected_properties = []
         for combination in combinations:
-            if len(selected_attributes) == limit:
-                return list(selected_attributes)
+            if len(selected_properties) == limit:
+                return list(selected_properties)
 
             for seperator in SEPERATORS:
-                exist_attribute, att_index = self.check_other_tag_in_attributes(
+                exist_property, prop_index = self.check_other_tag_in_properties(
                     other_tag=combination['other_key'] + seperator + combination['other_value'])
-                if exist_attribute:
+                if exist_property:
                     break
 
-            if exist_attribute:
-                fetched_tag_attr = self.tag_attributes[att_index]
-                selected_attributes.append(fetched_tag_attr)
+            if exist_property:
+                fetched_tag_prop = self.tag_properties[prop_index]
+                selected_properties.append(fetched_tag_prop)
             # else:
             #     print(f'{combination} does not exist')
-            #     if (combination['other_key'] in self.numeric_tags_attributes_ids and
+            #     if (combination['other_key'] in self.numeric_tags_properties_ids and
             #             combination['other_value'].isnumeric()):
             #         if int(combination['other_value']) > 0:
             #             rewritten_tag = combination['other_key'] + ">0"
             #
             #             print("rewritten tag")
             #             print(rewritten_tag)
-        return selected_attributes
+        return selected_properties
 
-    def generate_tag_list_with_attributes(self) -> List[TagCombination]:
+    def generate_tag_list_with_properties(self) -> List[TagCombination]:
         """
-        Generates a list of TagCombination objects with associated attributes. Given core osm tag, it fetches the
+        Generates a list of TagCombination objects with associated properties. Given core osm tag, it fetches the
         associated combinations. Next, the combinations with a type of "core" are discarded.
 
         Returns:
             List[TagCombination]: A list of TagCombination objects containing cluster ID, descriptors,
-                                  combination type, tags, and tag attributes.
+                                  combination type, tags, and tag properties.
         """
         tag_combinations = []
 
         for row in tqdm(self.tag_df.to_dict(orient='records'), total=len(self.tag_df)):
             cluster_id = row['index']
             descriptors = split_descriptors(row['descriptors'])
-            comb_type = row['type'].strip()
+            comb_type = row['core/prop'].strip()
             tags = split_tags(row['tags'])
-            if 'attr' not in comb_type:
+            if 'prop' not in comb_type:
                 processed_tags = []
-                processed_attributes = []
+                processed_properties = []
                 for tag in tags:
                     for sep in SEPERATORS:
                         if sep in tag:
                             tag_key, tag_value = tag.split(sep)
                             processed_tags.append(Tag(key=tag_key, operator=sep, value=tag_value))
 
-                            tag_attributes = self.request_related_tag_attributes(tag_key=tag_key,
+                            tag_properties = self.request_related_tag_properties(tag_key=tag_key,
                                                                                  tag_value=tag_value,
-                                                                                 limit=self.att_limit)
-                            processed_attributes.extend(tag_attributes)
+                                                                                 limit=self.prop_limit)
+                            processed_properties.extend(tag_properties)
 
-            processed_attributes = remove_duplicate_tag_attributes(processed_attributes)
+            processed_properties = remove_duplicate_tag_properties(processed_properties)
             tag_combinations.append(
                 TagCombination(cluster_id=cluster_id, descriptors=descriptors, comb_type=comb_type, tags=processed_tags,
-                               tag_attributes=processed_attributes))
+                               tag_properties=processed_properties))
         return tag_combinations
 
 
@@ -348,28 +354,28 @@ if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument('--source', help='domain-specific primary keys', required=True)
     parser.add_argument('--output_file', help='Path to save the tag list', required=True)
-    parser.add_argument('--att_limit', help='Enter the number of examples to be fetched by taginfo', default=100)
-    parser.add_argument('--att_example_limit', help='Enter the number of examples of the attributes', default=100)
-    parser.add_argument('--generate_tag_list_with_attributes', help='Generate tag list with attributes',
+    parser.add_argument('--prop_limit', help='Enter the number of related tags to be fetched by taginfo', default=100)
+    parser.add_argument('--prop_example_limit', help='Enter the number of example values of the properties', default=100000)
+    parser.add_argument('--generate_tag_list_with_properties', help='Generate tag list with properties',
                         action='store_true')
-    parser.add_argument('--generate_attribute_examples', help='Generate attribute examples',
+    parser.add_argument('--generate_property_examples', help='Generate property examples',
                         action='store_true')
 
     args = parser.parse_args()
 
     source = args.source
-    att_limit = args.att_limit
-    att_example_limit = args.att_example_limit
+    prop_limit = args.prop_limit
+    prop_example_limit = int(args.prop_example_limit)
     output_file = args.output_file
-    generate_tag_list_with_attributes = args.generate_tag_list_with_attributes
-    generate_attribute_examples = args.generate_attribute_examples
+    generate_tag_list_with_properties = args.generate_tag_list_with_properties
+    generate_property_examples = args.generate_property_examples
 
-    comb_retriever = CombinationRetriever(source=source, att_limit=att_limit)
+    comb_retriever = CombinationRetriever(source=source, prop_limit=prop_limit)
 
-    if generate_tag_list_with_attributes:
-        tag_combinations = comb_retriever.generate_tag_list_with_attributes()
+    if generate_tag_list_with_properties:
+        tag_combinations = comb_retriever.generate_tag_list_with_properties()
         write_output(generated_combs=tag_combinations, output_file=output_file)
 
-    if generate_attribute_examples:
-        att_examples = comb_retriever.generate_attribute_examples(num_examples=att_example_limit)
-        write_output(generated_combs=att_examples, output_file=output_file)
+    if generate_property_examples:
+        prop_examples = comb_retriever.generate_property_examples(num_examples=prop_example_limit)
+        write_output(generated_combs=prop_examples, output_file=output_file)
