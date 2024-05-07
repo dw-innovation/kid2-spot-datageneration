@@ -8,6 +8,8 @@ python -m datageneration.gpt_data_generator \
 --persona_path datageneration/prompts/personas.txt \
 --styles_path datageneration/prompts/styles.txt \
 --prob_usage_of_relative_spatial_terms 0.4 \
+--prob_usage_of_written_numbers 0.3 \
+--max_dist_digits 5 \
 --generate_prompts \
 --translate_to_yaml \
 --save_yaml_csv
