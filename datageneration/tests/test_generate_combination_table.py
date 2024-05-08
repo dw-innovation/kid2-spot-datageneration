@@ -20,7 +20,7 @@ class TestGenerateCombination(unittest.TestCase):
         tag_combinations = pd.read_json(tag_combinations_path, lines=True).to_dict('records')
         property_examples = pd.read_json(property_examples_path, lines=True).to_dict('records')
 
-        self.query_comb_generator = QueryCombinationGenerator(geolocations=geolocations,
+        self.query_comb_generator = QueryCombinationGenerator(geolocation_file=geolocations,
                                                               tag_combinations=tag_combinations,
                                                               property_examples=property_examples,
                                                               max_distance_digits=5)

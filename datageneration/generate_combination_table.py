@@ -15,10 +15,10 @@ from datageneration.utils import write_output
 
 
 class QueryCombinationGenerator(object):
-    def __init__(self, geolocations: List[NamedAreaData], tag_combinations: List[TagCombination],
+    def __init__(self, geolocation_file: str, tag_combinations: List[TagCombination],
                  property_examples: List[TagPropertyExample], max_distance_digits: int):
         self.entity_tag_combinations = list(filter(lambda x: 'core' in x['comb_type'], tag_combinations))
-        self.area_generator = AreaGenerator(geolocations)
+        self.area_generator = AreaGenerator(geolocation_file)
         self.property_generator = PropertyGenerator(property_examples)
         self.relation_generator = RelationGenerator(max_distance_digits=max_distance_digits)
 
@@ -201,6 +201,7 @@ if __name__ == '__main__':
     parser.add_argument('--max_number_of_entities_in_prompt', type=int, default=4)
     parser.add_argument('--max_number_of_props_in_entity', type=int, default=4)
     parser.add_argument('--percentage_of_entities_with_props', type=float, default=0.3)
+    parser.add_argument('--percentage_of_two_word_areas', type=float, default=0.5)
 
     args = parser.parse_args()
 
@@ -213,15 +214,16 @@ if __name__ == '__main__':
     max_number_of_entities_in_prompt = args.max_number_of_entities_in_prompt
     max_number_of_props_in_entity = args.max_number_of_props_in_entity
     percentage_of_entities_with_props = args.percentage_of_entities_with_props
+    percentage_of_two_word_areas = args.percentage_of_two_word_areas
 
     tag_combinations = pd.read_json(tag_combination_path, lines=True).to_dict('records')
     property_examples = pd.read_json(tag_prop_examples_path, lines=True).to_dict('records')
-    geolocations = load_named_area_data(geolocations_file_path)
 
-    query_comb_generator = QueryCombinationGenerator(geolocations=geolocations,
+    query_comb_generator = QueryCombinationGenerator(geolocation_file=geolocations_file_path,
                                                      tag_combinations=tag_combinations,
                                                      property_examples=property_examples,
-                                                     max_distance_digits=args.max_distance_digits)
+                                                     max_distance_digits=args.max_distance_digits,
+                                                     percentage_of_two_word_areas=percentage_of_two_word_areas)
 
     generated_combs = query_comb_generator.run(num_queries=num_samples,
                                                max_number_of_entities_in_prompt=max_number_of_entities_in_prompt,
