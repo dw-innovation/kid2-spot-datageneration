@@ -1,7 +1,7 @@
 import unittest
 
 import pandas as pd
-from datageneration.data_model import TagAttribute, Tag
+from datageneration.data_model import TagProperty, Tag
 from datageneration.generate_combination_table import QueryCombinationGenerator
 
 '''
@@ -14,15 +14,15 @@ class TestGenerateCombination(unittest.TestCase):
     def setUp(self):
         geolocations_path = 'datageneration/tests/data/countries+states+cities.json'
         tag_combinations_path = 'datageneration/tests/data/tag_combinations_test.jsonl'
-        attribute_examples_path = 'datageneration/tests/data/att_examples_test.jsonl'
+        property_examples_path = 'datageneration/tests/data/prop_examples_test.jsonl'
 
         geolocations = pd.read_json(geolocations_path).to_dict('records')
         tag_combinations = pd.read_json(tag_combinations_path, lines=True).to_dict('records')
-        attribute_examples = pd.read_json(attribute_examples_path, lines=True).to_dict('records')
+        property_examples = pd.read_json(property_examples_path, lines=True).to_dict('records')
 
         self.query_comb_generator = QueryCombinationGenerator(geolocation_file=geolocations,
                                                               tag_combinations=tag_combinations,
-                                                              attribute_examples=attribute_examples,
+                                                              property_examples=property_examples,
                                                               max_distance_digits=5)
 
     def test_generate_entities(self):
@@ -45,19 +45,19 @@ class TestGenerateCombination(unittest.TestCase):
             assert len(entity.properties) <= 4
 
     def test_property_generate(self):
-        candidate_attributes = [
-            TagAttribute(descriptors=["name"], tags=[Tag(key="name", operator="~", value="***any***")]),
-            TagAttribute(descriptors=['street name'], tags=[Tag(key="addr:street", operator="~", value="***any***")]),
-            TagAttribute(descriptors=['house number', 'building number'],tags=[Tag(key="addr:housenumber", operator="~", value="***any***")]),
-            TagAttribute(descriptors=["height"], tags=[Tag(key="height", operator="=", value="***numeric***")])
+        candidate_properties = [
+            TagProperty(descriptors=["name"], tags=[Tag(key="name", operator="~", value="***any***")]),
+            TagProperty(descriptors=['street name'], tags=[Tag(key="addr:street", operator="~", value="***any***")]),
+            TagProperty(descriptors=['house number', 'building number'], tags=[Tag(key="addr:housenumber", operator="~", value="***any***")]),
+            TagProperty(descriptors=["height"], tags=[Tag(key="height", operator="=", value="***numeric***")])
         ]
         properties = self.query_comb_generator.generate_properties(
-            candidate_attributes=candidate_attributes,
+            candidate_properties=candidate_properties,
             num_of_props=4)
 
         assert len(properties) == 4
 
-        properties = self.query_comb_generator.generate_properties(candidate_attributes=candidate_attributes,
+        properties = self.query_comb_generator.generate_properties(candidate_properties=candidate_properties,
                                                                    num_of_props=3)
 
         assert len(properties) == 3

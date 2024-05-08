@@ -1,6 +1,6 @@
 import unittest
 
-from datageneration.utils import CompoundTagAttributeProcessor
+from datageneration.utils import CompoundTagPropertyProcessor
 
 '''
 Execute it as follows: python -m datageneration.tests.test_retrieve_combination
@@ -8,9 +8,9 @@ Execute it as follows: python -m datageneration.tests.test_retrieve_combination
 
 
 class TestUtils(unittest.TestCase):
-    def test_compound_tag_attribute(self):
+    def test_compound_tag_property(self):
         compound_tags = '''["sidewalk"|"sidewalk:right"|"sidewalk:left"|"sidewalk:both"|"sidewalk:foot"|"sidewalk:right:foot"|"sidewalk:left:foot"|"sidewalk:both:foot"]=["both"|"left"|"right"|"separate"|"yes"|"designated"]'''
-        processor = CompoundTagAttributeProcessor()
+        processor = CompoundTagPropertyProcessor()
         results = processor.run(compound_tags)
 
         for result in results:

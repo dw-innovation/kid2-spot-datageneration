@@ -6,24 +6,24 @@ from typing import List, Optional
 # Tag Combinations
 class TagType(Enum):
     CORE = 'core'
-    ATTR = 'attr'
-    CORE_ATTR = 'core/attr'
+    PROP = 'prop'
+    CORE_PROP = 'core/prop'
 
 
 # Tag Info
-def remove_duplicate_tag_attributes(tag_attributes):
-    processed_tag_attributes = []
-    # attribute_keys = []
+def remove_duplicate_tag_properties(tag_properties):
+    processed_tag_properties = []
+    # property_keys = []
 
-    for tag_attribute in tag_attributes:
-        processed_tag_attribute = TagAttribute(descriptors=tag_attribute.descriptors, tags=tag_attribute.tags)
-        if processed_tag_attribute in processed_tag_attributes:
+    for tag_property in tag_properties:
+        processed_tag_property = TagProperty(descriptors=tag_property.descriptors, tags=tag_property.tags)
+        if processed_tag_property in processed_tag_properties:
             continue
         else:
-            # attribute_keys.append(str(tag_attribute))
-            processed_tag_attributes.append(processed_tag_attribute)
-            # TagAttribute(key=tag_attribute.key, operator=tag_attribute.operator, value=tag_attribute.value))
-    return processed_tag_attributes
+            # property_keys.append(str(tag_property))
+            processed_tag_properties.append(processed_tag_property)
+            # TagProperty(key=tag_property.key, operator=tag_property.operator, value=tag_property.value))
+    return processed_tag_properties
 
 
 class Tag(BaseModel, frozen=True):
@@ -32,7 +32,7 @@ class Tag(BaseModel, frozen=True):
     value: str = Field(description="Tag property value")
 
 
-class TagAttribute(BaseModel, frozen=True):
+class TagProperty(BaseModel, frozen=True):
     descriptors: List[str] = Field(description="List of text names")
     tags: List[Tag]
 
@@ -42,10 +42,10 @@ class TagCombination(BaseModel):
     descriptors: List[str] = Field(description="List of text names")
     comb_type: TagType = Field(descripton="Tag type")
     tags: List[Tag] = Field(description="tags in the combination")
-    tag_attributes: List[TagAttribute] = Field(description="List of tag attributes")
+    tag_properties: List[TagProperty] = Field(description="List of tag properties")
 
 
-class TagAttributeExample(BaseModel):
+class TagPropertyExample(BaseModel):
     key: str
     examples: List[str]
 
