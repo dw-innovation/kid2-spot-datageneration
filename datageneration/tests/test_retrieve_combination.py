@@ -10,7 +10,7 @@ Execute it as follows: python -m unittest datageneration.tests.test_retrieve_com
 
 class TestCombinationRetriever(unittest.TestCase):
     def setUp(self):
-        self.retriever = CombinationRetriever(source='datageneration/tests/data/Primary_Keys_test.xlsx',
+        self.retriever = CombinationRetriever(source='datageneration/tests/data/Primary_Keys_filtered10.xlsx',
                                               prop_limit=100)
 
     def compare_tags(self, tested_tags, all_tags):
@@ -24,11 +24,12 @@ class TestCombinationRetriever(unittest.TestCase):
     def test_fetch_properties_from_primary_key_table(self):
         tag_properties = self.retriever.fetch_tag_properties(tag_df=self.retriever.tag_df)
         assert tag_properties
+
         must_exist_tag_properties = [
             TagProperty(descriptors=['lanes going in each direction', 'lanes in each direction'],
                         tags=[Tag(key='lanes:forward', operator='=', value='***numeric***'),
                                Tag(key='lanes:backward', operator='=', value='***numeric***')]),
-            TagProperty(descriptors=['cuisine'], tags=[Tag(key='cuisine', operator='=', value='***any***')]),
+            TagProperty(descriptors=['cuisine'], tags=[Tag(key='cuisine', operator='=', value='***example***')]),
             TagProperty(descriptors=['car lanes', 'traffic lanes', 'street lanes'],
                         tags=[Tag(key='lanes', operator='=', value='***numeric***')])
         ]
@@ -59,8 +60,8 @@ class TestCombinationRetriever(unittest.TestCase):
         for result in results:
             processed_results.extend(list(map(lambda x: f'{x.key}{x.operator}{x.value}', result.tags)))
 
-        assert 'name~***any***' in processed_results
-        assert 'cuisine=***any***' in processed_results
+        assert 'name~***example***' in processed_results
+        assert 'cuisine=***example***' in processed_results
         assert 'building=water_tower' not in processed_results
         assert 'leisure=bowling_alley' not in processed_results
 
@@ -70,7 +71,7 @@ class TestCombinationRetriever(unittest.TestCase):
         for result in results:
             processed_results.extend(list(map(lambda x: f'{x.key}{x.operator}{x.value}', result.tags)))
 
-        assert 'name~***any***' in processed_results
+        assert 'name~***example***' in processed_results
         assert 'lanes=***numeric***' in processed_results
         assert 'bridge=yes' in processed_results
         assert 'cycleway=lane' in processed_results

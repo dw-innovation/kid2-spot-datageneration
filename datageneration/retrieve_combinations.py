@@ -275,7 +275,7 @@ class CombinationRetriever(object):
         for tag_prop_idx, tag_prop in enumerate(self.tag_properties):
             for tag_prop_tag in tag_prop.tags:
                 tag_prop_tag_value = tag_prop_tag.value
-                if tag_prop_tag.value in ['***example***', '***numeric***']: #'yes',
+                if tag_prop_tag.value in ['***example***', 'yes', '***numeric***']:
                     tag_prop_tag_value = ''
                 if f'{tag_prop_tag.key}{tag_prop_tag.operator}{tag_prop_tag_value}' == other_tag:
                     exists = True
@@ -323,6 +323,7 @@ class CombinationRetriever(object):
 
         for row in tqdm(self.tag_df.to_dict(orient='records'), total=len(self.tag_df)):
             cluster_id = row['index']
+            is_area = True if row['area/point'] == 'area' else False
             descriptors = split_descriptors(row['descriptors'])
             comb_type = row['core/prop'].strip()
             tags = split_tags(row['tags'])
@@ -343,8 +344,8 @@ class CombinationRetriever(object):
 
             processed_properties = remove_duplicate_tag_properties(processed_properties)
             tag_combinations.append(
-                TagCombination(cluster_id=cluster_id, descriptors=descriptors, comb_type=comb_type, tags=processed_tags,
-                               tag_properties=processed_properties))
+                TagCombination(cluster_id=cluster_id, is_area=is_area, descriptors=descriptors, comb_type=comb_type,
+                               tags=processed_tags, tag_properties=processed_properties))
         return tag_combinations
 
 
