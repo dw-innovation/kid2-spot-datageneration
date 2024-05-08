@@ -10,14 +10,19 @@ from datageneration.data_model import Area
 class TestAreaGenerator(unittest.TestCase):
     def setUp(self):
         self.geolocation_file = 'datageneration/tests/data/countries+states+cities.json'
-        self.geolocation_data = load_named_area_data(self.geolocation_file)
-        self.area_generator = AreaGenerator(geolocation_data=self.geolocation_data)
+        self.area_generator = AreaGenerator(geolocation_file=self.geolocation_file, percentage_of_two_word_areas=0.5)
+
+        (self.locs_with_cities_single_word, self.locs_with_cities_two_words, self.locs_with_states_single_word,
+         self.locs_with_states_two_words) = load_named_area_data(geolocation_file=self.geolocation_file)
+        self.geolocation_data = [*self.locs_with_cities_single_word, *self.locs_with_cities_two_words]
 
     def test_load_named_area_data(self):
-        area_data = load_named_area_data(geolocation_file=self.geolocation_file)
 
         must_example = NamedAreaData(city='Koblenz', state='Rhineland-Palatinate', country='Germany')
-        assert must_example in area_data
+        assert must_example in self.locs_with_cities_single_word
+        assert must_example in self.locs_with_states_single_word
+        assert must_example not in self.locs_with_cities_two_words
+        assert must_example not in self.locs_with_states_two_words
 
         # todo: this is an example where there is no state, this does not work!!!
         # must_example = NamedAreaData(city='İzmir', state=None, country='Turkey')
@@ -42,7 +47,7 @@ class TestAreaGenerator(unittest.TestCase):
         assert country_present
 
     def test_generate_city_and_region_and_country(self):
-        city_sample = self.area_generator.generate_city_and_region_and_country()
+        city_sample = self.area_generator.generate_city_and_region_and_country_area()
         assert city_sample.type == 'area'
         assert len(city_sample.value) > 1
         assert ',' in city_sample.value
@@ -57,8 +62,8 @@ class TestAreaGenerator(unittest.TestCase):
         state_present = any(area.state == state for area in self.geolocation_data)
         assert state_present
 
-    def test_generate_administrative_region(self):
-        state_sample = self.area_generator.generate_administrative_region()
+    def test_generate_region(self):
+        state_sample = self.area_generator.generate_region_area()
         assert state_sample.type == 'area'
         assert len(state_sample.value) > 1
 
@@ -66,18 +71,16 @@ class TestAreaGenerator(unittest.TestCase):
         assert state_present
 
     def test_two_word_areas(self):
-        locs_with_cities_single_word, locs_with_cities_two_words = self.area_generator.categorize_cities_with_two_words(self.geolocation_data)
-        for city in locs_with_cities_single_word:
+        for city in self.locs_with_cities_single_word:
             assert len(city.city.split()) == 1
 
-        for city in locs_with_cities_two_words:
+        for city in self.locs_with_cities_two_words:
             assert len(city.city.split()) > 1
 
-        locs_with_states_single_word, locs_with_states_two_words = self.area_generator.categorize_states_with_two_words(self.geolocation_data)
-        for city in locs_with_states_single_word:
+        for city in self.locs_with_states_single_word:
             assert len(city.state.split()) == 1
 
-        for city in locs_with_states_two_words:
+        for city in self.locs_with_states_two_words:
             assert len(city.state.split()) > 1
 
 

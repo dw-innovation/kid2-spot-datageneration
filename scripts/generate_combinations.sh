@@ -10,4 +10,5 @@ python -m datageneration.generate_combination_table \
 --max_number_of_entities_in_prompt 4 \
 --max_number_of_props_in_entity 4 \
 --percentage_of_entities_with_props 0.3 \
+--percentage_of_two_word_areas 0.5 \
 --samples 500
