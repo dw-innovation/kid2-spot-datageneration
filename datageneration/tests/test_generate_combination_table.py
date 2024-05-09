@@ -25,7 +25,8 @@ class TestGenerateCombination(unittest.TestCase):
                                                               property_examples=property_examples,
                                                               max_distance_digits=5,
                                                               percentage_of_two_word_areas=0.5,
-                                                              prop_generating_contain_rel=0.3)
+                                                              prop_generating_contain_rel=0.3,
+                                                              ratio_within_radius_within=0.5)
 
     def test_generate_entities(self):
         entities = self.query_comb_generator.generate_entities(max_number_of_entities_in_prompt=3,

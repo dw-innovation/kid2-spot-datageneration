@@ -13,9 +13,11 @@ class RELATION_TASKS(Enum):
     IN_AREA = 'in_area'
 
 class RelationGenerator:
-    def __init__(self, max_distance_digits: int, prop_generating_contain_rel: float=0.3):
+    def __init__(self, max_distance_digits: int, prop_generating_contain_rel: float,
+                 ratio_within_radius_within: float):
         self.MAX_DISTANCE_DIGITS = max_distance_digits
-        self.prop_generating_contain_rel = [prop_generating_contain_rel, 1 - prop_generating_contain_rel]
+        self.prop_generating_contain_rel = prop_generating_contain_rel
+        self.ratio_within_radius_within = ratio_within_radius_within
         self.tasks = [relation_task.value for relation_task in RELATION_TASKS]
 
     def generate_individual_distances(self, entity_ids: List[int]) -> List[Relation]:
@@ -52,6 +54,14 @@ class RelationGenerator:
 
     def generate_relation_with_contain(self, area_entities: List[Entity], point_entities: List[Entity],
                                         max_within_combs: int) -> Relations:
+        """
+
+
+        :param area_entities:
+        :param point_entities:
+        :param max_within_combs:
+        :return:
+        """
         num_within_combs = np.random.choice(np.arange(1,max_within_combs+1))
         remaining_area_entities = copy.deepcopy(area_entities)
         remaining_point_entities = copy.deepcopy(point_entities)
@@ -88,24 +98,44 @@ class RelationGenerator:
 
         assert len(drawn_area_entities) == len(point_entities_connecting_to_area_entity)
 
-        relations = self.generate_relation_with_contain_helper(drawn_area_entities,
-                     point_entities_connecting_to_area_entity)
-
         if len(other_entity_ids) > 1:
+            relations = self.generate_relation_with_contain_helper(drawn_area_entities,
+                                               point_entities_connecting_to_area_entity)
             relations.extend(self.generate_individual_distances(other_entity_ids))
             relation_type = "individual_distances_with_contains"
         else:
-            relation_type = "contains_relation"
+            if np.random.choice([True, False], p=[self.ratio_within_radius_within,
+                                                  1 - self.ratio_within_radius_within]):
+                relations = self.generate_relation_with_contain_helper(drawn_area_entities,
+                                                   point_entities_connecting_to_area_entity, True)
+                relation_type = "contains_within_radius"
+            else:
+                relations = self.generate_relation_with_contain_helper(drawn_area_entities,
+                                                   point_entities_connecting_to_area_entity)
+                relation_type = "contains_relation"
 
         return Relations(type=relation_type, relations=relations)
 
     def generate_relation_with_contain_helper(self, drawn_area_entities: List[Entity],
-                                              point_entities_connecting_to_area_entity: List[Entity]) -> List[Relation]:
+             point_entities_connecting_to_area_entity: List[List[Entity]], add_dist: bool=False) -> List[Relation]:
+        """
+        Generate the relation format for contains relations. A distance value (replicating a "contains_within_radius"
+        relation) is only assigned if the argument add_dist is True.
+
+        :param drawn_area_entities: the entities that server as areas in the contains relations
+        :param point_entities_connecting_to_area_entity: a list of connected points for each area
+        :param add_dist: boolean whether distances should be assigned, or None
+        :return: the list of relations
+        """
         relations = []
+        if add_dist:
+            dist = get_random_decimal_with_metric(self.MAX_DISTANCE_DIGITS)
+        else:
+            dist = None
         for aid, area in enumerate(drawn_area_entities):
             for point in point_entities_connecting_to_area_entity[aid]:
                     relations.append(
-                        Relation(type='contains', source=area.id, target=point.id, value=None))
+                        Relation(type='contains', source=area.id, target=point.id, value=dist))
 
         return relations
 
@@ -160,7 +190,8 @@ class RelationGenerator:
                 point_entities.append(entity)
         max_within_combs = min(len(area_entities), len(point_entities))
 
-        generating_contain_rel = np.random.choice([True, False], p=self.prop_generating_contain_rel)
+        generating_contain_rel = np.random.choice([True, False], p=[self.prop_generating_contain_rel,
+                                                                    1 - self.prop_generating_contain_rel])
         if generating_contain_rel and max_within_combs>0:
             relations = self.generate_relation_with_contain(area_entities, point_entities, max_within_combs)
         else:

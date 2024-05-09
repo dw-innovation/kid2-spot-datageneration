@@ -18,12 +18,14 @@ from datageneration.utils import write_output
 class QueryCombinationGenerator(object):
     def __init__(self, geolocation_file: str, tag_combinations: List[TagCombination],
                  property_examples: List[TagPropertyExample], max_distance_digits: int,
-                 percentage_of_two_word_areas: float, prop_generating_contain_rel: float):
+                 percentage_of_two_word_areas: float, prop_generating_contain_rel: float,
+                 ratio_within_radius_within: float):
         self.entity_tag_combinations = list(filter(lambda x: 'core' in x.comb_type.value, tag_combinations))
         self.area_generator = AreaGenerator(geolocation_file, percentage_of_two_word_areas)
         self.property_generator = PropertyGenerator(property_examples)
         self.relation_generator = RelationGenerator(max_distance_digits=max_distance_digits,
-                                                    prop_generating_contain_rel=prop_generating_contain_rel)
+                                                    prop_generating_contain_rel=prop_generating_contain_rel,
+                                                    ratio_within_radius_within=ratio_within_radius_within)
 
     def index_to_descriptors(self, index):
         return self.all_tags[int(index)]['descriptors']
@@ -154,6 +156,17 @@ class QueryCombinationGenerator(object):
         return relations
 
     def sort_entitites(self, entities: List[Entity], relations: Relations) -> (List[Entity], Relations):
+        """
+        In the process of selecting areas and points that are in a "contains" relations with another, the IDs in
+        the IMR can become fairly messy, as the random entity selection does not select based on area or point entities.
+        This sorting step is performed to generate a uniform output (contains relations before distance relations,
+        always first the area and then all the contained points). It puts the entities in the correct order and
+        adjusts the IDs.
+
+        :param entities: The entities of the query
+        :param relations: The relations of the query
+        :return: The sorted entities and relations
+        """
         sorted_entities = []
         sorted_relations = copy.deepcopy(relations)
         lookup_table = dict()
@@ -204,7 +217,7 @@ class QueryCombinationGenerator(object):
                                               percentage_of_entities_with_props=percentage_of_entities_with_props)
             relations = self.generate_relations(entities=entities)
 
-            if relations.type == "individual_distances_with_contains":
+            if relations.type in ["individual_distances_with_contains", "contains_within_radius", "contains_relation"]:
                 entities, relations = self.sort_entitites(entities, relations)
 
             loc_points.append(LocPoint(area=area, entities=entities, relations=relations))
@@ -232,6 +245,7 @@ if __name__ == '__main__':
     parser.add_argument('--percentage_of_entities_with_props', type=float, default=0.3)
     parser.add_argument('--percentage_of_two_word_areas', type=float, default=0.5)
     parser.add_argument('--prop_generating_contain_rel', type=float, default=0.3)
+    parser.add_argument('--ratio_within_radius_within', type=float, default=0.3)
 
     args = parser.parse_args()
 
@@ -246,6 +260,7 @@ if __name__ == '__main__':
     percentage_of_entities_with_props = args.percentage_of_entities_with_props
     percentage_of_two_word_areas = args.percentage_of_two_word_areas
     prop_generating_contain_rel = args.prop_generating_contain_rel
+    ratio_within_radius_within = args.ratio_within_radius_within
 
     tag_combinations = pd.read_json(tag_combination_path, lines=True).to_dict('records')
     tag_combinations = [TagCombination(**tag_comb) for tag_comb in tag_combinations]
@@ -256,7 +271,8 @@ if __name__ == '__main__':
                                                      property_examples=property_examples,
                                                      max_distance_digits=args.max_distance_digits,
                                                      percentage_of_two_word_areas=percentage_of_two_word_areas,
-                                                     prop_generating_contain_rel=prop_generating_contain_rel)
+                                                     prop_generating_contain_rel=prop_generating_contain_rel,
+                                                     ratio_within_radius_within=ratio_within_radius_within)
 
     generated_combs = query_comb_generator.run(num_queries=num_samples,
                                                max_number_of_entities_in_prompt=max_number_of_entities_in_prompt,
