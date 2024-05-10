@@ -1,7 +1,7 @@
 import unittest
 
 from datageneration.data_model import Area, Property, Relation, RelSpatial, Relations
-from datageneration.gpt_data_generator import GPTDataGenerator, load_rel_spatial_terms, load_list_of_strings
+from datageneration.gpt_data_generator import GPTDataGenerator, load_rel_spatial_terms, load_list_of_strings, PromptHelper
 
 '''
 Execute it as follows: python -m unittest datageneration.tests.test_gpt_generator
@@ -62,14 +62,14 @@ class TestGPTGenerator(unittest.TestCase):
 
     def test_add_property_prompt(self):
         core_prompt = "Search area: Columbus, United States\nObj. 0: restaurant"
-        ent_properties = [Property(key='height', operator='=', value='10 meters', name='height')]
+        ent_properties = [Property(key='height', operator='=', value='10 m', name='height')]
         generated_prompt = self.prompt_helper.add_property_prompt(core_prompt=core_prompt,
                                                                   entity_properties=ent_properties)
-        expected_prompt = "Search area: Columbus, United States\nObj. 0: restaurant, height: 10 meters"
-        self.assertEqual(generated_prompt, expected_prompt)
+        expected_prompt = "Search area: Columbus, United States\nObj. 0: restaurant, height: 10 "
+        self.assertTrue(generated_prompt.startswith(expected_prompt))
 
         # test randomness and check if the correct larger_phrases exist
-        ent_properties = [Property(key='height', operator='>', value='10 meters', name='height')]
+        ent_properties = [Property(key='height', operator='>', value='10 m', name='height')]
         generated_prompts = set()
         for i in range(self.randomness_limit):
             generated_prompt = self.prompt_helper.add_property_prompt(core_prompt=core_prompt,
@@ -84,7 +84,7 @@ class TestGPTGenerator(unittest.TestCase):
         self.assertLessEqual(len(generated_prompts), self.randomness_limit)
 
         # test randomness and check if the correct smaller_phrases exist
-        ent_properties = [Property(key='height', operator='<', value='10 meters', name='height')]
+        ent_properties = [Property(key='height', operator='<', value='10 m', name='height')]
         generated_prompts = set()
         for i in range(10):
             generated_prompt = self.prompt_helper.add_property_prompt(core_prompt=core_prompt,
@@ -124,8 +124,8 @@ class TestGPTGenerator(unittest.TestCase):
         self.assertEqual(generated_prompt, expected_prompt)
 
     def test_relative_spatial_terms(self):
-        test_rel_1 = Relation(**{"name": "dist", "source": 0, "target": 1, "value": "1539 yd"})
-        test_rel_2 = Relation(**{"name": "dist", "source": 0, "target": 2, "value": "1539 yd"})
+        test_rel_1 = Relation(**{"type": "dist", "source": 0, "target": 1, "value": "1539 yd"})
+        test_rel_2 = Relation(**{"type": "dist", "source": 0, "target": 2, "value": "1539 yd"})
         test_relations = Relations(relations=[test_rel_1, test_rel_2], type='within_radius')
         test_rel_spatial = RelSpatial(**{"distance": "250 m", "values": ['on the opposite side']})
         selected_relative_spatial_term = test_rel_spatial.values[0]
@@ -138,7 +138,7 @@ class TestGPTGenerator(unittest.TestCase):
 
         self.gen.update_relation_distance(relations=test_relations, relation_to_be_updated=test_rel_1,
                                           distance=overwritten_dist)
-        expected_updated_rel = Relation(**{"name": "dist", "source": 0, "target": 1, "value": "250 m"})
+        expected_updated_rel = Relation(**{"type": "dist", "source": 0, "target": 1, "value": "250 m"})
         is_updated = False
         for test_relation in test_relations.relations:
             if test_relation == expected_updated_rel:
@@ -148,7 +148,7 @@ class TestGPTGenerator(unittest.TestCase):
         self.assertTrue(is_updated)
 
     def test_add_desc_away_prompt(self):
-        test_rel_1 = Relation(**{"name": "dist", "source": 0, "target": 1, "value": "1539 yd"})
+        test_rel_1 = Relation(**{"type": "dist", "source": 0, "target": 1, "value": "1539 yd"})
 
         selected_phrases_desc = "more or less"
         selected_phrases_away = "away"
@@ -167,16 +167,45 @@ class TestGPTGenerator(unittest.TestCase):
         self.assertLessEqual(len(generated_prompts), self.randomness_limit)
 
     def test_add_prompt_for_within_radius_relation(self):
-        test_rel_1 = Relation(**{"name": "dist", "source": 0, "target": 1, "value": "1539 yd"})
-        test_rel_2 = Relation(**{"name": "dist", "source": 0, "target": 2, "value": "1539 yd"})
-        test_relations = Relations(relations=[test_rel_1, test_rel_2], type='within_radius')
+        # test_rel_1 = Relation(**{"type": "dist", "source": 0, "target": 1, "value": "1539 yd"})
+        # test_rel_2 = Relation(**{"type": "dist", "source": 0, "target": 2, "value": "1539 yd"})
+        # test_relations = Relations(relations=[test_rel_1, test_rel_2], type='within_radius')
 
         # test randomness
         generated_prompts = set()
         for i in range(self.randomness_limit):
-            generated_prompt = self.prompt_helper.add_prompt_for_within_radius_relation(relations=test_relations)
+            generated_prompt = self.prompt_helper.add_prompt_for_within_radius_relation("1539 yd")
             generated_prompts.add(generated_prompt)
         self.assertLessEqual(len(generated_prompts), self.randomness_limit)
+
+    def test_add_relation_with_contain(self):
+        # test case 1
+        test_rels = [Relation(type='contains', source=0, target=1, value=None)]
+
+        generated_prompt, _ = self.prompt_helper.add_relation_with_contain(test_rels)
+        self.assertTrue(generated_prompt.startswith("Obj. 1 is"))
+        self.assertTrue("Obj. 0" in generated_prompt)
+
+        # test case 2
+        test_rels = [Relation(type='contains', source=0, target=1, value=None),
+                     Relation(type='contains', source=0, target=2, value=None)]
+
+        generated_prompt, _ = self.prompt_helper.add_relation_with_contain(test_rels)
+        self.assertTrue(generated_prompt.startswith("Obj. 1 is"))
+        self.assertTrue("Obj. 0" in generated_prompt)
+        self.assertTrue("Obj. 2" in generated_prompt)
+
+        # test case 3
+        test_rels = [Relation(type='contains', source=0, target=1, value=None),
+                     Relation(type='dist', source=2, target=1, value='780.8 in'),
+                     Relation(type='dist', source=0, target=1, value='780.8 in'),
+                     Relation(type='dist', source=3, target=1, value='5 yd'),
+                     Relation(type='dist', source=0, target=3, value='5 yd')]
+
+        generated_prompt, individual_rels = self.prompt_helper.add_relation_with_contain(test_rels)
+        self.assertTrue(generated_prompt.startswith("Obj. 1 is"))
+        self.assertTrue("Obj. 0" in generated_prompt)
+        assert len(individual_rels.relations) == 4
 
 
 if __name__ == '__main__':

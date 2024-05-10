@@ -171,17 +171,22 @@ class QueryCombinationGenerator(object):
         sorted_relations = copy.deepcopy(relations)
         lookup_table = dict()
         id = 0
+        # Loop over all relations, which must be in the order that "contains" relations come first.
         for relation in relations.relations:
+            # If the "source" (area) is not yet known, add that first
             if entities[relation.source] not in sorted_entities:
                 sorted_entities.append(entities[relation.source])
                 sorted_entities[-1].id = id
-                lookup_table[id] = relation.source
+                lookup_table[relation.source] = id
                 id += 1
+            # After the "source" (area) was added, add all their "targets" (points contained within)
             if entities[relation.target] not in sorted_entities:
                 sorted_entities.append(entities[relation.target])
                 sorted_entities[-1].id = id
-                lookup_table[id] = relation.target
+                lookup_table[relation.target] = id
                 id += 1
+
+        # Update the relations based on lookup table to match with the new entity IDs
         for sorted_relation in sorted_relations.relations:
             sorted_relation.source = lookup_table[sorted_relation.source]
             sorted_relation.target = lookup_table[sorted_relation.target]
@@ -207,8 +212,6 @@ class QueryCombinationGenerator(object):
         :param percentage_of_entities_with_props: (float) TODO
         :return: loc_points (List[LocPoint])
         '''
-        # ipek - node types are not used
-        node_types = ["nwr", "cluster", "group"]
         loc_points = []
         for _ in tqdm(range(num_queries), total=num_queries):
             area = self.generate_area()
@@ -218,9 +221,10 @@ class QueryCombinationGenerator(object):
             relations = self.generate_relations(entities=entities)
 
             if relations.type in ["individual_distances_with_contains", "contains_within_radius", "contains_relation"]:
-                entities, relations = self.sort_entitites(entities, relations)
-
-            loc_points.append(LocPoint(area=area, entities=entities, relations=relations))
+                sorted_entities, sorted_relations = self.sort_entitites(entities, relations)
+                loc_points.append(LocPoint(area=area, entities=sorted_entities, relations=sorted_relations))
+            else:
+                loc_points.append(LocPoint(area=area, entities=entities, relations=relations))
 
         return loc_points
 

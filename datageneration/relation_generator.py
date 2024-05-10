@@ -55,12 +55,18 @@ class RelationGenerator:
     def generate_relation_with_contain(self, area_entities: List[Entity], point_entities: List[Entity],
                                         max_within_combs: int) -> Relations:
         """
+        This method generates relations that include at least one relation of type "contains". The contains relations
+        are randomly drawn based on the possible combinations of "area" and "point" entities. Depending on the number
+        of "contains" groups (meaning groups of areas and one or multiple entities contained within it), and other
+        entities not part of the "contains" groups, one of three relation types is possible:
+            - individual_distances_with_contains: Requires any combination of at least two groups and/or entities
+            - contains_within_radius: Requires only one group, but at least two points connected to the area
+            - contains_relation: Requires only one group, with any number of points connected to area
 
-
-        :param area_entities:
-        :param point_entities:
-        :param max_within_combs:
-        :return:
+        :param area_entities: The entities of type "area"
+        :param point_entities: The entities of type "point"
+        :param max_within_combs: The maximum possible number of "contains" relation possible based on the entities
+        :return: The generated relations
         """
         num_within_combs = np.random.choice(np.arange(1,max_within_combs+1))
         remaining_area_entities = copy.deepcopy(area_entities)
@@ -70,12 +76,13 @@ class RelationGenerator:
         point_entities_connecting_to_area_entity = []
 
         for area_num in range(1,num_within_combs+1):
-            # todo: it assumes we will have only one area entity but there might be more.
+            # For each contains relation, draw one are entity and filter it from the "remaining_areas" list
             area_entity = np.random.choice(remaining_area_entities)
             remaining_area_entities = [e for e in remaining_area_entities if e != area_entity]
             drawn_area_entities.append(area_entity)
 
-            # randomly select entities they will be in a contain relation
+            # Randomly select one or multiple entities that will be contained in this area, leave enough behind for
+            # all other "contains" areas in this query, filter drawn entities from "remaining_entities" list
             num_of_point_entities_connecting_to_area_entity = \
                 np.random.choice(np.arange(1,remaining_num_possible_connections-num_within_combs+area_num+1))
             remaining_num_possible_connections -= num_of_point_entities_connecting_to_area_entity
@@ -91,21 +98,25 @@ class RelationGenerator:
             # assert len(remaining_point_entities) == len(point_entities) - remaining_num_possible_connections
             assert point_entities_connecting_to_area_entity[-1] != remaining_point_entities
 
+        # "Other entities" are all not in "contains relations"
         other_entities = [*remaining_point_entities, *remaining_area_entities]
-
+        # Extend other drawn entities to the first point entity of each "contains" group, as they are used to show
+        # individual distances between this group and other entities
         other_entities.extend([e[0] for e in point_entities_connecting_to_area_entity])
         other_entity_ids = [e.id for e in other_entities]
 
         assert len(drawn_area_entities) == len(point_entities_connecting_to_area_entity)
 
+        # Check if only one "contains" group is present, otherwise use "individual_distances_with_contains"
         if len(other_entity_ids) > 1:
             relations = self.generate_relation_with_contain_helper(drawn_area_entities,
                                                point_entities_connecting_to_area_entity)
             relations.extend(self.generate_individual_distances(other_entity_ids))
             relation_type = "individual_distances_with_contains"
         else:
+            # Only assign "contains within radius" if there is only one contains group and more than one point entity
             if np.random.choice([True, False], p=[self.ratio_within_radius_within,
-                                                  1 - self.ratio_within_radius_within]):
+                       1 - self.ratio_within_radius_within]) and len(point_entities_connecting_to_area_entity[0]) > 1:
                 relations = self.generate_relation_with_contain_helper(drawn_area_entities,
                                                    point_entities_connecting_to_area_entity, True)
                 relation_type = "contains_within_radius"

@@ -13,4 +13,4 @@ python -m datageneration.generate_combination_table \
 --percentage_of_two_word_areas 0.5 \
 --prop_generating_contain_rel 0.7 \
 --ratio_within_radius_within 0.6 \
---samples 100
+--samples 500
