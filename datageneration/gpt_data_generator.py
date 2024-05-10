@@ -411,7 +411,7 @@ class GPTDataGenerator:
                     metric = relation.value.split()[-1]
                     numeric_distance, written_distance = self.prompt_helper.generate_written_word_distance(
                         metric, self.max_dist_digits)
-                    written_distance_relation = Relation(name=relation.name, source=relation.source,
+                    written_distance_relation = Relation(type=relation.type, source=relation.source,
                                                          target=relation.target, value=written_distance)
                     core_relation += self.prompt_helper.add_desc_away_prompt(written_distance_relation)
                     self.update_relation_distance(relations=relations,
