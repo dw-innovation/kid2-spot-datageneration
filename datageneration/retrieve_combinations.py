@@ -34,7 +34,7 @@ def request_tag_combinations(tag_key, tag_value):
         return response.json()
 
 
-def isSimilarToEnglish(char):
+def is_similar_to_english(char):
     '''
     Check if a given character only is part of the English alphabet or a slight variation thereof.
 
@@ -52,14 +52,14 @@ def isSimilarToEnglish(char):
     return stripped_char in similar_chars
 
 
-def isRoman(s):
+def is_roman(s):
     '''
     Check if a given string only contains letters of the English alphabet or slight variations thereof.
 
     :param str s: The string to be checked
     '''
     for char in s:
-        if ord(char) > 127 and not isSimilarToEnglish(char):
+        if ord(char) > 127 and not is_similar_to_english(char):
             return False
     return True
 
@@ -122,7 +122,7 @@ class CombinationRetriever(object):
         self.numeric_tags_property_ids = [f.split(">")[0] for f in filter(lambda x: x.endswith(">0"),
                                                                           self.all_tags_property_ids)]
         self.tags_requiring_many_examples = ["name~***example***", "brand~***example***", "addr:street~***example***",
-                                "addr:housenumber=***example***"]
+                                             "addr:housenumber=***example***"]
 
     def fetch_tag_properties(self, tag_df: pd.DataFrame) -> List[TagProperty]:
         '''
@@ -223,7 +223,7 @@ class CombinationRetriever(object):
                 for _example in example.split(';'):
                     if len(fetched_examples) > num_examples - 1:
                         return fetched_examples
-                    if isRoman(_example):
+                    if is_roman(_example):
                         fetched_examples.add(_example)
             # Fetch next page recursively
             return fetch_examples_recursively(curr_page + 1, fetched_examples)
@@ -275,7 +275,7 @@ class CombinationRetriever(object):
         for tag_prop_idx, tag_prop in enumerate(self.tag_properties):
             for tag_prop_tag in tag_prop.tags:
                 tag_prop_tag_value = tag_prop_tag.value
-                if tag_prop_tag.value in ['***example***', 'yes', '***numeric***']:
+                if tag_prop_tag_value in ['***example***', 'yes', '***numeric***']:
                     tag_prop_tag_value = ''
                 if f'{tag_prop_tag.key}{tag_prop_tag.operator}{tag_prop_tag_value}' == other_tag:
                     exists = True
@@ -338,8 +338,8 @@ class CombinationRetriever(object):
 
                         if comb_type != 'prop':
                             tag_properties = self.request_related_tag_properties(tag_key=tag_key,
-                                                                             tag_value=tag_value,
-                                                                             limit=self.prop_limit)
+                                                                                 tag_value=tag_value,
+                                                                                 limit=self.prop_limit)
                             processed_properties.extend(tag_properties)
 
             processed_properties = remove_duplicate_tag_properties(processed_properties)
@@ -358,7 +358,8 @@ if __name__ == '__main__':
     parser.add_argument('--source', help='domain-specific primary keys', required=True)
     parser.add_argument('--output_file', help='Path to save the tag list', required=True)
     parser.add_argument('--prop_limit', help='Enter the number of related tags to be fetched by taginfo', default=100)
-    parser.add_argument('--prop_example_limit', help='Enter the number of example values of the properties', default=100000)
+    parser.add_argument('--prop_example_limit', help='Enter the number of example values of the properties',
+                        default=100000)
     parser.add_argument('--generate_tag_list_with_properties', help='Generate tag list with properties',
                         action='store_true')
     parser.add_argument('--generate_property_examples', help='Generate property examples',
