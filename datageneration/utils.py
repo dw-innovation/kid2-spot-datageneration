@@ -8,6 +8,29 @@ from typing import List
 
 SEPERATORS = ['=', '>', '~']
 
+
+# numerical value generator
+def get_random_decimal_with_metric(max_digits: int) -> str:
+    digits = randint(1, max_digits)
+    low = np.power(10, digits - 1)
+    high = np.power(10, digits) - 1
+    num = randint(low, high)
+    if np.random.choice([True, False], 1)[0]:
+        num = num / np.random.choice([10, 100], 1)[0]
+
+    dist = str(num) + " " + np.random.choice(["cm", "m", "km", "in", "ft", "yd", "mi"], 1)[0]
+
+    return dist
+
+
+def get_random_integer(max_digits: int) -> int:
+    digits = randint(1, max_digits)
+    low = np.power(10, digits - 1)
+    high = np.power(10, digits) - 1
+
+    return randint(low, high)
+
+
 def add_yaml_to_filename(output_file):
     parent_dir = Path(output_file).parent
     filename_without_extension = Path(output_file).stem

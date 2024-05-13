@@ -4,7 +4,7 @@ from typing import List
 import copy
 
 from datageneration.data_model import Relation, Relations, Entity
-from datageneration.property_generator import get_random_decimal_with_metric
+from datageneration.utils import get_random_decimal_with_metric
 
 
 class RELATION_TASKS(Enum):
@@ -22,11 +22,10 @@ class RelationGenerator:
 
     def generate_individual_distances(self, entity_ids: List[int]) -> List[Relation]:
         relations = []
-        for t_no in range(len(entity_ids)):
-            if t_no != len(entity_ids) - 1:
-                relations.append(
-                    Relation(type='dist', source=entity_ids[t_no], target=entity_ids[t_no+1],
-                             value=get_random_decimal_with_metric(self.MAX_DISTANCE_DIGITS)))
+        for t_no in range(len(entity_ids)-1):
+            relations.append(
+                Relation(type='dist', source=entity_ids[t_no], target=entity_ids[t_no+1],
+                         value=get_random_decimal_with_metric(self.MAX_DISTANCE_DIGITS)))
         return relations
 
     def generate_within_radius(self, num_entities: int) -> List[Relation]:
