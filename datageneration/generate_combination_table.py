@@ -151,7 +151,7 @@ class QueryCombinationGenerator(object):
         relations = self.relation_generator.run(entities=entities)
         return relations
 
-    def sort_entitites(self, entities: List[Entity], relations: Relations) -> (List[Entity], Relations):
+    def sort_entities(self, entities: List[Entity], relations: Relations) -> (List[Entity], Relations):
         """
         In the process of selecting areas and points that are in a "contains" relations with another, the IDs in
         the IMR can become fairly messy, as the random entity selection does not select based on area or point entities.
@@ -217,7 +217,7 @@ class QueryCombinationGenerator(object):
             relations = self.generate_relations(entities=entities)
 
             if relations.type in ["individual_distances_with_contains", "contains_within_radius", "contains_relation"]:
-                sorted_entities, sorted_relations = self.sort_entitites(entities, relations)
+                sorted_entities, sorted_relations = self.sort_entities(entities, relations)
                 loc_points.append(LocPoint(area=area, entities=sorted_entities, relations=sorted_relations))
             else:
                 loc_points.append(LocPoint(area=area, entities=entities, relations=relations))
