@@ -18,13 +18,13 @@ from datageneration.utils import write_output
 class QueryCombinationGenerator(object):
     def __init__(self, geolocation_file: str, tag_combinations: List[TagCombination],
                  property_examples: List[TagPropertyExample], max_distance_digits: int,
-                 percentage_of_two_word_areas: float, prop_generating_contain_rel: float,
+                 percentage_of_two_word_areas: float, prob_generating_contain_rel: float,
                  ratio_within_radius_within: float):
         self.entity_tag_combinations = list(filter(lambda x: 'core' in x.comb_type.value, tag_combinations))
         self.area_generator = AreaGenerator(geolocation_file, percentage_of_two_word_areas)
         self.property_generator = PropertyGenerator(property_examples)
         self.relation_generator = RelationGenerator(max_distance_digits=max_distance_digits,
-                                                    prop_generating_contain_rel=prop_generating_contain_rel,
+                                                    prob_generating_contain_rel=prob_generating_contain_rel,
                                                     ratio_within_radius_within=ratio_within_radius_within)
     def get_number_of_entities(self, max_number_of_entities_in_prompt: int) -> int:
         """
@@ -244,7 +244,7 @@ if __name__ == '__main__':
     parser.add_argument('--max_number_of_props_in_entity', type=int, default=4)
     parser.add_argument('--percentage_of_entities_with_props', type=float, default=0.3)
     parser.add_argument('--percentage_of_two_word_areas', type=float, default=0.5)
-    parser.add_argument('--prop_generating_contain_rel', type=float, default=0.3)
+    parser.add_argument('--prob_generating_contain_rel', type=float, default=0.3)
     parser.add_argument('--ratio_within_radius_within', type=float, default=0.3)
 
     args = parser.parse_args()
@@ -259,7 +259,7 @@ if __name__ == '__main__':
     max_number_of_props_in_entity = args.max_number_of_props_in_entity
     percentage_of_entities_with_props = args.percentage_of_entities_with_props
     percentage_of_two_word_areas = args.percentage_of_two_word_areas
-    prop_generating_contain_rel = args.prop_generating_contain_rel
+    prob_generating_contain_rel = args.prob_generating_contain_rel
     ratio_within_radius_within = args.ratio_within_radius_within
 
     tag_combinations = pd.read_json(tag_combination_path, lines=True).to_dict('records')
@@ -271,7 +271,7 @@ if __name__ == '__main__':
                                                      property_examples=property_examples,
                                                      max_distance_digits=args.max_distance_digits,
                                                      percentage_of_two_word_areas=percentage_of_two_word_areas,
-                                                     prop_generating_contain_rel=prop_generating_contain_rel,
+                                                     prob_generating_contain_rel=prob_generating_contain_rel,
                                                      ratio_within_radius_within=ratio_within_radius_within)
 
     generated_combs = query_comb_generator.run(num_queries=num_samples,

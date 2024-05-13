@@ -13,10 +13,10 @@ class RELATION_TASKS(Enum):
     IN_AREA = 'in_area'
 
 class RelationGenerator:
-    def __init__(self, max_distance_digits: int, prop_generating_contain_rel: float,
+    def __init__(self, max_distance_digits: int, prob_generating_contain_rel: float,
                  ratio_within_radius_within: float):
         self.MAX_DISTANCE_DIGITS = max_distance_digits
-        self.prop_generating_contain_rel = prop_generating_contain_rel
+        self.prob_generating_contain_rel = prob_generating_contain_rel
         self.ratio_within_radius_within = ratio_within_radius_within
         self.tasks = [relation_task.value for relation_task in RELATION_TASKS]
 
@@ -200,8 +200,8 @@ class RelationGenerator:
                 point_entities.append(entity)
         max_within_combs = min(len(area_entities), len(point_entities))
 
-        generating_contain_rel = np.random.choice([True, False], p=[self.prop_generating_contain_rel,
-                                                                    1 - self.prop_generating_contain_rel])
+        generating_contain_rel = np.random.choice([True, False], p=[self.prob_generating_contain_rel,
+                                                                    1 - self.prob_generating_contain_rel])
         if generating_contain_rel and max_within_combs>0:
             relations = self.generate_relation_with_contain(area_entities, point_entities, max_within_combs)
         else:

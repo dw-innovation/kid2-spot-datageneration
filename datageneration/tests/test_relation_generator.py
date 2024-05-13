@@ -8,8 +8,8 @@ from datageneration.relation_generator import RelationGenerator
 
 class TestRelationGenerator(unittest.TestCase):
     def setUp(self):
-        self.relation_generator = RelationGenerator(max_distance_digits=5, prop_generating_contain_rel=0.5,
-                    ratio_within_radius_within=0.5)
+        self.relation_generator = RelationGenerator(max_distance_digits=5, prob_generating_contain_rel=0.5,
+                                                    ratio_within_radius_within=0.5)
 
     def test_individual_distances(self):
         entity_ids = [0, 1, 2]
