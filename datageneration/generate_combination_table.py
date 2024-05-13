@@ -26,10 +26,6 @@ class QueryCombinationGenerator(object):
         self.relation_generator = RelationGenerator(max_distance_digits=max_distance_digits,
                                                     prop_generating_contain_rel=prop_generating_contain_rel,
                                                     ratio_within_radius_within=ratio_within_radius_within)
-
-    def index_to_descriptors(self, index):
-        return self.all_tags[int(index)]['descriptors']
-
     def get_number_of_entities(self, max_number_of_entities_in_prompt: int) -> int:
         """
         This method of selecting the number of entities uses an exponential decay method that returns
