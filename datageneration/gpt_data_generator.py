@@ -9,14 +9,15 @@ from dotenv import load_dotenv
 from openai import OpenAI
 from pathlib import Path
 from tqdm import tqdm
-from typing import List
+from typing import List, Tuple
 from random import randint
 
 from num2words import num2words
 
 from datageneration.data_model import RelSpatial, LocPoint, Area, Property, Relation, Relations, GeneratedPrompt, \
     GeneratedIMRSentence
-from datageneration.utils import write_output, write_dict_output, write_output_csv, translate_queries_to_yaml
+from datageneration.utils import (add_yaml_to_filename, write_output, write_dict_output, write_output_csv,
+                                  translate_queries_to_yaml)
 
 load_dotenv()
 
@@ -85,7 +86,7 @@ def chatcompletions_with_backoff(**kwargs):
 # OpenAI parameters
 MODEL = os.getenv('MODEL', 'gpt-3.5-turbo')
 TEMPERATURE = float(os.getenv('TEMPERATURE', 0.7))
-MAX_TOKENS = int(os.getenv('MAX_TOKENS', 8000))
+MAX_TOKENS = int(os.getenv('MAX_TOKENS', 4096))
 
 CLIENT = OpenAI(
     api_key=os.environ["OPENAI_API_KEY"], organization=os.environ["OPENAI_ORG"]
@@ -177,7 +178,8 @@ class PromptHelper:
 
         # todo: the below line does not make sense
         self.phrases_away = ["away", "away from", "from"]
-        self.phrases_radius = ["within DIST", "in a radius of DIST", "no more than DIST", "DIST from each other"]
+        self.phrases_radius = ["within DIST", "in a radius of DIST", "no more than DIST from another", "DIST from each other"]
+        self.phrases_contains = ["within", "in", "inside", "contained in"]
 
         self.dist_lookup = {"cm": "centimeters", "m": "meters", "km": "kilometers", "in": "inches", "ft": "feet",
                             "yd": "yards", "mi": "miles"}
@@ -192,8 +194,7 @@ class PromptHelper:
         '''
         Append the beginning prompt with search phrase. The search phrase is randomly chosen among the search templates. If search templates contain {place}, it randomly selects a place from predefined_places
         '''
-        np.random.shuffle(self.search_templates)
-        search_template = self.search_templates[0]
+        search_template = np.random.choice(self.search_templates)
 
         if '{place}' in search_template:
             np.random.shuffle(self.predefined_places)
@@ -235,8 +236,7 @@ class PromptHelper:
         '''
         It is a helper function for name properties such as name, street names
         '''
-        np.random.shuffle(self.name_regex_templates)
-        selected_name_regex = self.name_regex_templates[0]
+        selected_name_regex = np.random.choice(self.name_regex_templates)
 
         if len(entity_property.value) > 1 and len(selected_name_regex) > 0:
             len_substring = np.random.choice(np.arange(1, len(entity_property.value)))
@@ -268,8 +268,7 @@ class PromptHelper:
         '''
         Randomly selects relative spatial term
         '''
-        np.random.shuffle(self.relative_spatial_terms)
-        selected_relative_spatial = self.relative_spatial_terms[0]
+        selected_relative_spatial = np.random.choice(self.relative_spatial_terms)
 
         # select randomly descriptor of relative special
         descriptors_of_relative_spatial_terms = selected_relative_spatial.values
@@ -317,11 +316,8 @@ class PromptHelper:
         return generated_prompt
 
     def add_desc_away_prompt(self, relation: Relation) -> str:
-        np.random.shuffle(self.phrases_desc)
-        selected_phrases_desc = self.phrases_desc[0]
-
-        np.random.shuffle(self.phrases_away)
-        selected_phrases_away = self.phrases_away[0]
+        selected_phrases_desc = np.random.choice(self.phrases_desc)
+        selected_phrases_away = np.random.choice(self.phrases_away)
 
         generated_prompt = self.add_desc_away_prompt_helper(relation, selected_phrases_desc, selected_phrases_away)
         return generated_prompt
@@ -331,11 +327,28 @@ class PromptHelper:
             metric = self.dist_lookup[distance.rsplit(" ", 1)[-1]]
             distance = distance.rsplit(" ", 1)[0] + " " + metric
 
-        np.random.shuffle(self.phrases_radius)
-        selected_phrase = self.phrases_radius[0]
+        selected_phrase = np.random.choice(self.phrases_radius)
         selected_phrase = selected_phrase.replace('DIST', distance)
         generated_prompt = f"All objects are {selected_phrase}"
         return generated_prompt
+
+    def add_relation_with_contain(self, relations: List[Relation]) -> Tuple[str, Relations]:
+        '''
+        This function identifies the objects having containing relationship, collect the remaining ones which have individual rels with the other ones.
+        :param relations:
+        :return: generated_prompt, List[Relation]: list of individual relations
+        '''
+        selected_phrase = np.random.choice(self.phrases_contains)
+        generated_prompt = ""
+
+        individual_rels = []
+        for relation in relations:
+            if relation.type == "contains":
+                generated_prompt += f"Obj. {relation.target} is {selected_phrase} Obj. {relation.source}\n"
+            else:
+                individual_rels.append(relation)
+
+        return (generated_prompt, Relations(type='individual_distance', relations=individual_rels))
 
 
 class GPTDataGenerator:
@@ -387,58 +400,24 @@ class GPTDataGenerator:
                                                                      entity_properties=entity.properties)
             core_prompt += '\n'
 
-        core_relation = 'Distances:\n'
+        core_relation = ''
 
-        if relations.type == "individual_distances":
-            for relation in relations.relations:
-                use_relative_spatial_terms = np.random.choice([False, True], p=[
-                    1.0 - self.prob_usage_of_relative_spatial_terms, self.prob_usage_of_relative_spatial_terms])
-                use_written_distance = np.random.choice([False, True], p=[
-                    1.0 - self.prob_usage_of_written_numbers, self.prob_usage_of_written_numbers])
-                # In case both relative term and written word are selected, randomly only select one of them
-                if use_relative_spatial_terms and use_written_distance:
-                    if random.choice([True, False]):
-                        use_relative_spatial_terms = False
-                    else:
-                        use_written_distance = False
-                if use_relative_spatial_terms:
-                    generated_prompt, overwritten_distance = self.prompt_helper.add_relative_spatial_terms(relation)
-                    core_relation += generated_prompt
-                    self.update_relation_distance(relations=relations,
-                                                  relation_to_be_updated=relation,
-                                                  distance=overwritten_distance)
-                elif use_written_distance:
-                    metric = relation.value.split()[-1]
-                    numeric_distance, written_distance = self.prompt_helper.generate_written_word_distance(
-                        metric, self.max_dist_digits)
-                    written_distance_relation = Relation(name=relation.name, source=relation.source,
-                                                         target=relation.target, value=written_distance)
-                    core_relation += self.prompt_helper.add_desc_away_prompt(written_distance_relation)
-                    self.update_relation_distance(relations=relations,
-                                                  relation_to_be_updated=relation,
-                                                  distance=numeric_distance)
-                else:
-                    core_relation += self.prompt_helper.add_desc_away_prompt(relation)
-            core_relation = core_relation[:-1]  # remove trailing linebreak
-
-        elif relations.type == "within_radius":
-            metric = relations.relations[0].value.split()[-1]
-            use_written_distance = np.random.choice([False, True], p=[
-                1.0 - self.prob_usage_of_written_numbers, self.prob_usage_of_written_numbers])
-            if use_written_distance:
-                numeric_distance, written_distance = self.prompt_helper.generate_written_word_distance(
-                    metric, self.max_dist_digits)
-                for relation in relations.relations:
-                    self.update_relation_distance(relations=relations,
-                                                  relation_to_be_updated=relation,
-                                                  distance=numeric_distance)
-                core_relation = self.prompt_helper.add_prompt_for_within_radius_relation(written_distance)
-            else:
-                core_relation = self.prompt_helper.add_prompt_for_within_radius_relation(relations.relations[0].value)
+        if relations.type in ["individual_distances_with_contains", "contains_within_radius", "contains_relation"]:
+            generated_prompt, individual_rels = self.prompt_helper.add_relation_with_contain(relations.relations)
+            core_relation += generated_prompt
+            if relations.type == "contains_within_radius":
+                core_relation += self.radius_prompt_generation(relations)
         else:
-            # this is the case when there is no relation
-            core_relation = ''
-            core_prompt = core_prompt[:-1]  # remove trailing linebreak
+            individual_rels = relations
+
+        if relations.type in ["individual_distances", "individual_distances_with_contains"]:
+                core_relation += self.individual_prompt_generation(individual_rels)
+        elif relations.type == "within_radius":
+                core_relation += self.radius_prompt_generation(individual_rels)
+
+        if len(core_relation) > 0:
+            core_relation = "Distances:\n" + core_relation
+
         core_prompt = core_prompt + core_relation
         core_prompt = search_prompt + core_prompt
         return loc_point, core_prompt
@@ -450,6 +429,57 @@ class GPTDataGenerator:
         cycled_persona_style_ids = itertools.cycle(persona_style_ids)
         persona_style_tag_pairs = [(x, next(cycled_persona_style_ids)) for x in num_tag_queries_ids]
         return persona_style_tag_pairs
+
+    def individual_prompt_generation(self, relations):
+        indiv_prompt = ""
+        for relation in relations.relations:
+            use_relative_spatial_terms = np.random.choice([False, True], p=[
+                1.0 - self.prob_usage_of_relative_spatial_terms, self.prob_usage_of_relative_spatial_terms])
+            use_written_distance = np.random.choice([False, True], p=[
+                1.0 - self.prob_usage_of_written_numbers, self.prob_usage_of_written_numbers])
+            # In case both relative term and written word are selected, randomly only select one of them
+            if use_relative_spatial_terms and use_written_distance:
+                if random.choice([True, False]):
+                    use_relative_spatial_terms = False
+                else:
+                    use_written_distance = False
+            if use_relative_spatial_terms:
+                generated_prompt, overwritten_distance = self.prompt_helper.add_relative_spatial_terms(relation)
+                indiv_prompt += generated_prompt
+                self.update_relation_distance(relations=relations,
+                                              relation_to_be_updated=relation,
+                                              distance=overwritten_distance)
+            elif use_written_distance:
+                metric = relation.value.split()[-1]
+                numeric_distance, written_distance = self.prompt_helper.generate_written_word_distance(
+                    metric, self.max_dist_digits)
+                written_distance_relation = Relation(type=relation.type, source=relation.source,
+                                                     target=relation.target, value=written_distance)
+                indiv_prompt += self.prompt_helper.add_desc_away_prompt(written_distance_relation)
+                self.update_relation_distance(relations=relations,
+                                              relation_to_be_updated=relation,
+                                              distance=numeric_distance)
+            else:
+                indiv_prompt += self.prompt_helper.add_desc_away_prompt(relation)
+        indiv_prompt = indiv_prompt[:-1]  # remove trailing linebreak
+        return indiv_prompt
+
+    def radius_prompt_generation(self, relations):
+        radius_prompt = ""
+        metric = relations.relations[0].value.split()[-1]
+        use_written_distance = np.random.choice([False, True], p=[
+            1.0 - self.prob_usage_of_written_numbers, self.prob_usage_of_written_numbers])
+        if use_written_distance:
+            numeric_distance, written_distance = self.prompt_helper.generate_written_word_distance(
+                metric, self.max_dist_digits)
+            for relation in relations.relations:
+                self.update_relation_distance(relations=relations,
+                                              relation_to_be_updated=relation,
+                                              distance=numeric_distance)
+            radius_prompt += self.prompt_helper.add_prompt_for_within_radius_relation(written_distance)
+        else:
+            radius_prompt += self.prompt_helper.add_prompt_for_within_radius_relation(relations.relations[0].value)
+        return radius_prompt
 
     def generate_prompts(self, tag_queries: List[LocPoint]) -> List[GeneratedPrompt]:
         '''
@@ -479,20 +509,20 @@ class GPTDataGenerator:
         for generated_prompt in tqdm(generated_prompts, total=len(generated_prompts)):
             generated_sentence = self.generate_sentence(generated_prompt)
 
-            generated_imr_sentence = GeneratedIMRSentence(
-                query=generated_prompt.query,
-                prompt=generated_prompt.prompt,
-                style=generated_prompt.style,
-                persona=generated_prompt.persona,
+            generated_imr_sentence = dict(
+                query=generated_prompt["query"],
+                prompt=generated_prompt["prompt"],
+                style=generated_prompt["style"],
+                persona=generated_prompt["persona"],
                 sentence=generated_sentence
             )
             generated_sentences.append(generated_imr_sentence)
 
-            write_output(generated_sentences, output_gpt_generations_temp)
+            write_dict_output(generated_sentences, output_gpt_generations_temp, True)
         return generated_sentences
 
     def generate_sentence(self, generated_prompt: GeneratedPrompt) -> str:
-        generated_sentence = request_openai(prompt=generated_prompt.prompt)
+        generated_sentence = request_openai(prompt=generated_prompt["prompt"])
         return generated_sentence
 
 
@@ -518,6 +548,7 @@ if __name__ == '__main__':
                         help='Activate it if you want to translate the queries to the final YAML format')
     parser.add_argument('--save_yaml_csv', action='store_true',
                         help='Activate if you want to save a CSV file on top of the JSONL for better readability')
+
     args = parser.parse_args()
 
     output_prompt_generations = args.output_prompt_generations
@@ -546,37 +577,35 @@ if __name__ == '__main__':
                            max_dist_digits=max_dist_digits)
 
     generated_queries = None
+    generated_queries_yaml = None
     if generate_prompts:
         with open(tag_query_file, "r") as f:
             candidate_loc_points = [LocPoint(**json.loads(each_line)) for each_line in f]
         generated_queries = gen.generate_prompts(candidate_loc_points)
         write_output(generated_queries, output_prompt_generations)
 
-        if translate_to_yaml:
-            generated_queries_yaml = translate_queries_to_yaml(generated_queries)
-            write_dict_output(generated_queries_yaml, output_prompt_generations, True)
+        generated_queries_yaml = translate_queries_to_yaml(generated_queries)
+        write_dict_output(generated_queries_yaml, output_prompt_generations, True)
 
-            if save_yaml_csv:
-                write_output_csv(generated_queries_yaml, output_prompt_generations)
+        if save_yaml_csv:
+            write_output_csv(generated_queries_yaml, output_prompt_generations)
 
     if generate_sentences:
-        if not generated_queries:
+        if not generated_queries_yaml:
             with open(output_prompt_generations, "r") as f:
                 generated_queries = [GeneratedPrompt(**json.loads(each_line)) for each_line in f]
+            generated_queries_yaml = translate_queries_to_yaml(generated_queries)
 
-                parent_dir = Path(output_gpt_generations).parent
-                filename_without_extension = Path(output_gpt_generations).stem
-                file_extension = Path(output_gpt_generations).suffix
-                output_gpt_generations_temp = parent_dir / (filename_without_extension + "_temp" + file_extension)
+        parent_dir = Path(output_gpt_generations).parent
+        filename_without_extension = Path(output_gpt_generations).stem
+        file_extension = Path(output_gpt_generations).suffix
+        output_gpt_generations_temp = parent_dir / (filename_without_extension + "_temp" + file_extension)
 
-            generated_sentences = gen.generate_sentences(generated_queries, output_gpt_generations_temp)
-            write_output(generated_sentences, output_gpt_generations)
-            if os.path.exists(output_gpt_generations_temp):
-                os.remove(output_gpt_generations_temp)
+        generated_sentences = gen.generate_sentences(generated_queries_yaml, output_gpt_generations_temp)
+        write_dict_output(generated_sentences, output_gpt_generations, True)
 
-            if translate_to_yaml:
-                generated_sentences_yaml = translate_queries_to_yaml(generated_sentences)
-                write_dict_output(generated_sentences_yaml, output_gpt_generations)
+        if os.path.exists(output_gpt_generations_temp):
+            os.remove(output_gpt_generations_temp)
 
-                if save_yaml_csv:
-                    write_output_csv(generated_sentences_yaml, output_gpt_generations, True)
+        if save_yaml_csv:
+            write_output_csv(generated_sentences, output_gpt_generations, True)

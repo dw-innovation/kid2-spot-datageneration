@@ -3,30 +3,7 @@ from random import randint
 from typing import List
 
 from datageneration.data_model import TagPropertyExample, TagProperty, Property
-
-
-# numerical value generator
-def get_random_decimal_with_metric(max_digits: int) -> str:
-    '''
-    TODO: this should be reworked -- threshold should be defined based on metric
-    '''
-    digits = randint(1, max_digits)
-    low = np.power(10, digits - 1)
-    high = np.power(10, digits) - 1
-    num = randint(low, high)
-    if np.random.choice([True, False], 1)[0]:
-        num = num / np.random.choice([10, 100], 1)[0]
-
-    dist = str(num) + " " + np.random.choice(["cm", "m", "km", "in", "ft", "yd", "mi"], 1)[0]
-
-    return dist
-
-def get_random_integer(max_digits: int) -> int:
-    digits = randint(1, max_digits)
-    low = np.power(10, digits - 1)
-    high = np.power(10, digits) - 1
-
-    return randint(low, high)
+from datageneration.utils import get_random_integer, get_random_decimal_with_metric
 
 class PropertyGenerator:
     def __init__(self, named_property_examples: List[TagPropertyExample]):

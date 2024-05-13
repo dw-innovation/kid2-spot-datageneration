@@ -5,6 +5,7 @@ from argparse import ArgumentParser
 from pathlib import Path
 from tqdm import tqdm
 from typing import List
+import copy
 
 from datageneration.area_generator import AreaGenerator, NamedAreaData, load_named_area_data
 from datageneration.data_model import TagPropertyExample, TagProperty, Property, TagCombination, Entity, Relations, \
@@ -16,15 +17,15 @@ from datageneration.utils import write_output
 
 class QueryCombinationGenerator(object):
     def __init__(self, geolocation_file: str, tag_combinations: List[TagCombination],
-                 property_examples: List[TagPropertyExample], max_distance_digits: int):
-        self.entity_tag_combinations = list(filter(lambda x: 'core' in x['comb_type'], tag_combinations))
-        self.area_generator = AreaGenerator(geolocation_file)
+                 property_examples: List[TagPropertyExample], max_distance_digits: int,
+                 percentage_of_two_word_areas: float, prob_generating_contain_rel: float,
+                 ratio_within_radius_within: float):
+        self.entity_tag_combinations = list(filter(lambda x: 'core' in x.comb_type.value, tag_combinations))
+        self.area_generator = AreaGenerator(geolocation_file, percentage_of_two_word_areas)
         self.property_generator = PropertyGenerator(property_examples)
-        self.relation_generator = RelationGenerator(max_distance_digits=max_distance_digits)
-
-    def index_to_descriptors(self, index):
-        return self.all_tags[int(index)]['descriptors']
-
+        self.relation_generator = RelationGenerator(max_distance_digits=max_distance_digits,
+                                                    prob_generating_contain_rel=prob_generating_contain_rel,
+                                                    ratio_within_radius_within=ratio_within_radius_within)
     def get_number_of_entities(self, max_number_of_entities_in_prompt: int) -> int:
         """
         This method of selecting the number of entities uses an exponential decay method that returns
@@ -101,21 +102,20 @@ class QueryCombinationGenerator(object):
                 continue
             selected_entity_numbers.append(selected_idx_for_combinations)
             selected_tag_comb = self.entity_tag_combinations[selected_idx_for_combinations]
-            associated_descriptors = selected_tag_comb['descriptors']
+            associated_descriptors = selected_tag_comb.descriptors
 
             if "brand name" in associated_descriptors:
                 brand_examples = self.property_generator.select_named_property_example("brand~***example***")
                 entity_name = "brand: " + np.random.choice(brand_examples)
             else:
                 entity_name = np.random.choice(associated_descriptors)
+            is_area = selected_tag_comb.is_area
 
             # Randomise whether probabilities should be added to ensure high enough ratio of zero property cases
             add_properties = np.random.choice([True, False], p=[percentage_of_entities_with_props,
                                                                 1 - percentage_of_entities_with_props])
             if add_properties and max_number_of_props_in_entity >= 1:
-                candidate_properties = selected_tag_comb['tag_properties']
-                candidate_properties = list(map(lambda candidate_property: TagProperty(**candidate_property),
-                                                candidate_properties))
+                candidate_properties = selected_tag_comb.tag_properties
                 if len(candidate_properties) == 0:
                     continue
                 current_max_number_of_props = min(len(candidate_properties), max_number_of_props_in_entity)
@@ -126,9 +126,11 @@ class QueryCombinationGenerator(object):
                     selected_num_of_props = current_max_number_of_props
                 properties = self.generate_properties(candidate_properties=candidate_properties,
                                                       num_of_props=selected_num_of_props)
-                selected_entities.append(Entity(id=len(selected_entities), name=entity_name, properties=properties))
+                selected_entities.append(
+                    Entity(id=len(selected_entities), is_area=is_area, name=entity_name, properties=properties))
             else:
-                selected_entities.append(Entity(id=len(selected_entities), name=entity_name, properties=[]))
+                selected_entities.append(
+                    Entity(id=len(selected_entities), is_area=is_area, name=entity_name, properties=[]))
 
         return selected_entities
 
@@ -145,9 +147,47 @@ class QueryCombinationGenerator(object):
         return tag_properties
 
     # todo make it independent from entities
-    def generate_relations(self, num_entities: int) -> Relations:
-        relations = self.relation_generator.run(num_entities=num_entities)
+    def generate_relations(self, entities: List[Entity]) -> Relations:
+        relations = self.relation_generator.run(entities=entities)
         return relations
+
+    def sort_entities(self, entities: List[Entity], relations: Relations) -> (List[Entity], Relations):
+        """
+        In the process of selecting areas and points that are in a "contains" relations with another, the IDs in
+        the IMR can become fairly messy, as the random entity selection does not select based on area or point entities.
+        This sorting step is performed to generate a uniform output (contains relations before distance relations,
+        always first the area and then all the contained points). It puts the entities in the correct order and
+        adjusts the IDs.
+
+        :param entities: The entities of the query
+        :param relations: The relations of the query
+        :return: The sorted entities and relations
+        """
+        sorted_entities = []
+        sorted_relations = copy.deepcopy(relations)
+        lookup_table = dict()
+        id = 0
+        # Loop over all relations, which must be in the order that "contains" relations come first.
+        for relation in relations.relations:
+            # If the "source" (area) is not yet known, add that first
+            if entities[relation.source] not in sorted_entities:
+                sorted_entities.append(entities[relation.source])
+                sorted_entities[-1].id = id
+                lookup_table[relation.source] = id
+                id += 1
+            # After the "source" (area) was added, add all their "targets" (points contained within)
+            if entities[relation.target] not in sorted_entities:
+                sorted_entities.append(entities[relation.target])
+                sorted_entities[-1].id = id
+                lookup_table[relation.target] = id
+                id += 1
+
+        # Update the relations based on lookup table to match with the new entity IDs
+        for sorted_relation in sorted_relations.relations:
+            sorted_relation.source = lookup_table[sorted_relation.source]
+            sorted_relation.target = lookup_table[sorted_relation.target]
+
+        return sorted_entities, sorted_relations
 
     def run(self, num_queries: int, max_number_of_entities_in_prompt: int, max_number_of_props_in_entity: int,
             percentage_of_entities_with_props: float) -> List[LocPoint]:
@@ -168,17 +208,19 @@ class QueryCombinationGenerator(object):
         :param percentage_of_entities_with_props: (float) TODO
         :return: loc_points (List[LocPoint])
         '''
-        # ipek - node types are not used
-        node_types = ["nwr", "cluster", "group"]
         loc_points = []
         for _ in tqdm(range(num_queries), total=num_queries):
+            area = self.generate_area()
             entities = self.generate_entities(max_number_of_entities_in_prompt=max_number_of_entities_in_prompt,
                                               max_number_of_props_in_entity=max_number_of_props_in_entity,
                                               percentage_of_entities_with_props=percentage_of_entities_with_props)
-            area = self.generate_area()
-            relations = self.generate_relations(num_entities=len(entities))
+            relations = self.generate_relations(entities=entities)
 
-            loc_points.append(LocPoint(area=area, entities=entities, relations=relations))
+            if relations.type in ["individual_distances_with_contains", "contains_within_radius", "contains_relation"]:
+                sorted_entities, sorted_relations = self.sort_entities(entities, relations)
+                loc_points.append(LocPoint(area=area, entities=sorted_entities, relations=sorted_relations))
+            else:
+                loc_points.append(LocPoint(area=area, entities=entities, relations=relations))
 
         return loc_points
 
@@ -202,6 +244,8 @@ if __name__ == '__main__':
     parser.add_argument('--max_number_of_props_in_entity', type=int, default=4)
     parser.add_argument('--percentage_of_entities_with_props', type=float, default=0.3)
     parser.add_argument('--percentage_of_two_word_areas', type=float, default=0.5)
+    parser.add_argument('--prob_generating_contain_rel', type=float, default=0.3)
+    parser.add_argument('--ratio_within_radius_within', type=float, default=0.3)
 
     args = parser.parse_args()
 
@@ -215,15 +259,20 @@ if __name__ == '__main__':
     max_number_of_props_in_entity = args.max_number_of_props_in_entity
     percentage_of_entities_with_props = args.percentage_of_entities_with_props
     percentage_of_two_word_areas = args.percentage_of_two_word_areas
+    prob_generating_contain_rel = args.prob_generating_contain_rel
+    ratio_within_radius_within = args.ratio_within_radius_within
 
     tag_combinations = pd.read_json(tag_combination_path, lines=True).to_dict('records')
+    tag_combinations = [TagCombination(**tag_comb) for tag_comb in tag_combinations]
     property_examples = pd.read_json(tag_prop_examples_path, lines=True).to_dict('records')
 
     query_comb_generator = QueryCombinationGenerator(geolocation_file=geolocations_file_path,
                                                      tag_combinations=tag_combinations,
                                                      property_examples=property_examples,
                                                      max_distance_digits=args.max_distance_digits,
-                                                     percentage_of_two_word_areas=percentage_of_two_word_areas)
+                                                     percentage_of_two_word_areas=percentage_of_two_word_areas,
+                                                     prob_generating_contain_rel=prob_generating_contain_rel,
+                                                     ratio_within_radius_within=ratio_within_radius_within)
 
     generated_combs = query_comb_generator.run(num_queries=num_samples,
                                                max_number_of_entities_in_prompt=max_number_of_entities_in_prompt,

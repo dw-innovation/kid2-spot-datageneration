@@ -9,6 +9,35 @@ from typing import List
 SEPERATORS = ['=', '>', '~']
 
 
+# numerical value generator
+def get_random_decimal_with_metric(max_digits: int) -> str:
+    digits = randint(1, max_digits)
+    low = np.power(10, digits - 1)
+    high = np.power(10, digits) - 1
+    num = randint(low, high)
+    if np.random.choice([True, False], 1)[0]:
+        num = num / np.random.choice([10, 100], 1)[0]
+
+    dist = str(num) + " " + np.random.choice(["cm", "m", "km", "in", "ft", "yd", "mi"], 1)[0]
+
+    return dist
+
+
+def get_random_integer(max_digits: int) -> int:
+    digits = randint(1, max_digits)
+    low = np.power(10, digits - 1)
+    high = np.power(10, digits) - 1
+
+    return randint(low, high)
+
+
+def add_yaml_to_filename(output_file):
+    parent_dir = Path(output_file).parent
+    filename_without_extension = Path(output_file).stem
+    file_extension = Path(output_file).suffix
+    yaml_output_file = parent_dir / (filename_without_extension + "_yaml" + file_extension)
+    return yaml_output_file
+
 def write_output(generated_combs, output_file):
     with open(output_file, "w") as out_file:
         for generated_comb in generated_combs:
@@ -16,12 +45,9 @@ def write_output(generated_combs, output_file):
             out_file.write('\n')
 
 
-def write_dict_output(generated_combs, output_file, add_yaml_to_filename=True):
-    if add_yaml_to_filename:
-        parent_dir = Path(output_file).parent
-        filename_without_extension = Path(output_file).stem
-        file_extension = Path(output_file).suffix
-        output_file = parent_dir / (filename_without_extension + "_yaml" + file_extension)
+def write_dict_output(generated_combs, output_file, bool_add_yaml=True):
+    if bool_add_yaml:
+        output_file = add_yaml_to_filename(output_file)
 
     with open(output_file, "w") as out_file:
         for generated_comb in generated_combs:
@@ -29,7 +55,10 @@ def write_dict_output(generated_combs, output_file, add_yaml_to_filename=True):
             out_file.write('\n')
 
 
-def write_output_csv(generated_combs, output_file):
+def write_output_csv(generated_combs, output_file, bool_add_yaml=True):
+    if bool_add_yaml:
+        output_file = add_yaml_to_filename(output_file)
+
     parent_dir = Path(output_file).parent
     filename_without_extension = Path(output_file).stem
     new_output_file = parent_dir / (filename_without_extension + ".csv")
@@ -56,8 +85,13 @@ def translate_queries_to_yaml(combs):
                         property.pop('operator', None)
                         property.pop('value', None)
 
-        if query["relations"]["relations"] is None:
-            query["relations"].pop('relations', None)
+        query["relations"] = query["relations"]["relations"]
+        if query["relations"] is None:
+            query.pop('relations', None)
+        else:
+            for relation in query["relations"]:
+                if relation["value"] is None:
+                    relation.pop('value', None)
 
         yaml_string = yaml.dump(query)
 

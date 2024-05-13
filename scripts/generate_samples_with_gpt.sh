@@ -11,5 +11,4 @@ python -m datageneration.gpt_data_generator \
 --prob_usage_of_written_numbers 0.3 \
 --max_dist_digits 5 \
 --generate_prompts \
---translate_to_yaml \
 --save_yaml_csv
