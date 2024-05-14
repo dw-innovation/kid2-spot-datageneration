@@ -31,6 +31,9 @@ class Tag(BaseModel, frozen=True):
     operator: str = Field(description="Tag property operator")
     value: str = Field(description="Tag property value")
 
+    def to_dict(self):
+        return {'key': self.key, 'operator': self.operator, 'value': self.value}
+
 
 class TagProperty(BaseModel, frozen=True):
     descriptors: List[str] = Field(description="List of text names")

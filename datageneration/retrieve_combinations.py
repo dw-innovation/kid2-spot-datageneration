@@ -9,7 +9,7 @@ from typing import List
 
 from datageneration.data_model import Tag, TagProperty, TagCombination, TagPropertyExample, \
     remove_duplicate_tag_properties
-from datageneration.utils import CompoundTagPropertyProcessor, SEPERATORS, write_output
+from datageneration.utils import CompoundTagPropertyProcessor, SEPERATORS, write_output, split_descriptors
 
 cache = Cache("tmp")
 
@@ -65,18 +65,6 @@ def is_roman(s):
 
 
 comp_prop_processor = CompoundTagPropertyProcessor()
-
-
-def split_descriptors(descriptors: str) -> List[str]:
-    '''this function splits the descriptors as a list of single descriptor'''
-    processed_descriptors = set()
-
-    for descriptor in descriptors.split('|'):
-        descriptor = descriptor.lstrip().strip().lower()
-        processed_descriptors.add(descriptor)
-
-    return processed_descriptors
-
 
 def split_tags(tags: str) -> List[TagProperty]:
     '''this function splits the compound tags. it uses comp_prop_process for handling complex compounds such as highway'''

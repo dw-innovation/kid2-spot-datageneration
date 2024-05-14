@@ -38,6 +38,7 @@ def add_yaml_to_filename(output_file):
     yaml_output_file = parent_dir / (filename_without_extension + "_yaml" + file_extension)
     return yaml_output_file
 
+
 def write_output(generated_combs, output_file):
     with open(output_file, "w") as out_file:
         for generated_comb in generated_combs:
@@ -98,6 +99,17 @@ def translate_queries_to_yaml(combs):
         comb["query"] = yaml_string
 
     return new_combs
+
+
+def split_descriptors(descriptors: str) -> List[str]:
+    '''this function splits the descriptors as a list of single descriptor'''
+    processed_descriptors = set()
+
+    for descriptor in descriptors.split('|'):
+        descriptor = descriptor.lstrip().strip().lower()
+        processed_descriptors.add(descriptor)
+
+    return processed_descriptors
 
 
 class CompoundTagPropertyProcessor:
