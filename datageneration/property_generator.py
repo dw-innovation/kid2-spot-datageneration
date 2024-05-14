@@ -1,5 +1,4 @@
 import numpy as np
-from random import randint
 from typing import List
 
 from datageneration.data_model import TagPropertyExample, TagProperty, Property

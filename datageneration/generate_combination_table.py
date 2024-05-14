@@ -216,7 +216,7 @@ class QueryCombinationGenerator(object):
                                               percentage_of_entities_with_props=percentage_of_entities_with_props)
             relations = self.generate_relations(entities=entities)
 
-            if relations.type in ["individual_distances_with_contains", "contains_within_radius", "contains_relation"]:
+            if relations.type in ["individual_distances_with_contains", "contains_relation"]:
                 sorted_entities, sorted_relations = self.sort_entities(entities, relations)
                 loc_points.append(LocPoint(area=area, entities=sorted_entities, relations=sorted_relations))
             else:

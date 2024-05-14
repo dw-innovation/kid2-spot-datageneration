@@ -113,21 +113,14 @@ class RelationGenerator:
             relations.extend(self.generate_individual_distances(other_entity_ids))
             relation_type = "individual_distances_with_contains"
         else:
-            # Only assign "contains within radius" if there is only one contains group and more than one point entity
-            if np.random.choice([True, False], p=[self.ratio_within_radius_within,
-                       1 - self.ratio_within_radius_within]) and len(point_entities_connecting_to_area_entity[0]) > 1:
-                relations = self.generate_relation_with_contain_helper(drawn_area_entities,
-                                                   point_entities_connecting_to_area_entity, True)
-                relation_type = "contains_within_radius"
-            else:
-                relations = self.generate_relation_with_contain_helper(drawn_area_entities,
-                                                   point_entities_connecting_to_area_entity)
-                relation_type = "contains_relation"
+            relations = self.generate_relation_with_contain_helper(drawn_area_entities,
+                                               point_entities_connecting_to_area_entity)
+            relation_type = "contains_relation"
 
         return Relations(type=relation_type, relations=relations)
 
     def generate_relation_with_contain_helper(self, drawn_area_entities: List[Entity],
-             point_entities_connecting_to_area_entity: List[List[Entity]], add_dist: bool=False) -> List[Relation]:
+             point_entities_connecting_to_area_entity: List[List[Entity]]) -> List[Relation]:
         """
         Generate the relation format for contains relations. A distance value (replicating a "contains_within_radius"
         relation) is only assigned if the argument add_dist is True.
@@ -138,14 +131,10 @@ class RelationGenerator:
         :return: the list of relations
         """
         relations = []
-        if add_dist:
-            dist = get_random_decimal_with_metric(self.MAX_DISTANCE_DIGITS)
-        else:
-            dist = None
         for aid, area in enumerate(drawn_area_entities):
             for point in point_entities_connecting_to_area_entity[aid]:
                     relations.append(
-                        Relation(type='contains', source=area.id, target=point.id, value=dist))
+                        Relation(type='contains', source=area.id, target=point.id))
 
         return relations
 
