@@ -107,6 +107,8 @@ def split_descriptors(descriptors: str) -> List[str]:
 
     for descriptor in descriptors.split('|'):
         descriptor = descriptor.lstrip().strip().lower()
+        if len(descriptor) == 0:
+            continue
         processed_descriptors.add(descriptor)
 
     return processed_descriptors
