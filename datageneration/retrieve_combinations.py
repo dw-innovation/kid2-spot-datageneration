@@ -311,7 +311,7 @@ class CombinationRetriever(object):
             #             print(rewritten_tag)
         return selected_properties
 
-    def generate_tag_list_with_properties(self) -> (List)[TagCombination]:
+    def generate_tag_list_with_properties(self) -> List[TagCombination]:
         """
         Generates a list of TagCombination objects with associated properties. Given core osm tag, it fetches the
         associated combinations. Next, the combinations with a type of "core" are discarded.
@@ -360,9 +360,9 @@ if __name__ == '__main__':
     parser.add_argument('--output_file', help='Path to save the tag list', required=True)
     parser.add_argument('--prop_limit', help='Enter the number of related tags to be fetched by taginfo', default=100)
     parser.add_argument('--min_together_count', help='The min together count for a combination to be considered',
-                        default=5000)
+                        default=5000, type=int)
     parser.add_argument('--prop_example_limit', help='Enter the number of example values of the properties',
-                        default=100000)
+                        default=100000, type=int)
     parser.add_argument('--generate_tag_list_with_properties', help='Generate tag list with properties',
                         action='store_true')
     parser.add_argument('--generate_property_examples', help='Generate property examples',
@@ -372,8 +372,8 @@ if __name__ == '__main__':
 
     source = args.source
     prop_limit = int(args.prop_limit)
-    min_together_count = int(args.min_together_count)
-    prop_example_limit = int(args.prop_example_limit)
+    min_together_count = args.min_together_count
+    prop_example_limit = args.prop_example_limit
     output_file = args.output_file
     generate_tag_list_with_properties = args.generate_tag_list_with_properties
     generate_property_examples = args.generate_property_examples
