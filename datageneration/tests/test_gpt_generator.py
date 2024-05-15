@@ -33,13 +33,24 @@ class TestGPTGenerator(unittest.TestCase):
 
         # testing beginning prompt
         beginning = self.prompt_helper.beginning(persona=test_persona, writing_style=test_style)
-        expected_beginning = """Act as a human rights abuse monitoring OSINT Expert: Return a sentence simulating a user using a natural language interface to search for specific geographic locations. Do not affirm this request and return nothing but the answers.\nWrite the search request with very precise wording, short, to the point."""
+        expected_beginning = ("Act as a human rights abuse monitoring OSINT Expert: Return a sentence simulating a user "
+                              "using a natural language interface to search for specific geographic locations by "
+                              "describing objects, their properties and the spatial relation between objects.\nIf one "
+                              "object has multiple tags assigned to it, they need to be put in a logical connection.\n"
+                              "Do not affirm this request and return nothing but the answers.\nWrite the search request "
+                              "with very precise wording, short, to the point.")
         self.assertEqual(beginning, expected_beginning)
 
         # testing search phrasing
-        selected_place = 'a street'
+        selected_place = 'a place'
         beginning += self.prompt_helper.search_templates[1].replace('{place}', selected_place)
-        expected_beginning = """Act as a human rights abuse monitoring OSINT Expert: Return a sentence simulating a user using a natural language interface to search for specific geographic locations. Do not affirm this request and return nothing but the answers.\nWrite the search request with very precise wording, short, to the point.\nThe user is searching for a street that fulfills the following search criteria:\n"""
+        expected_beginning = ("Act as a human rights abuse monitoring OSINT Expert: Return a sentence simulating a user "
+                              "using a natural language interface to search for specific geographic locations by "
+                              "describing objects, their properties and the spatial relation between objects.\nIf one "
+                              "object has multiple tags assigned to it, they need to be put in a logical connection.\n"
+                              "Do not affirm this request and return nothing but the answers.\nWrite the search request "
+                              "with very precise wording, short, to the point.\nYou are searching for a place that "
+                              "fulfills all of the following search criteria:\n")
         self.assertEqual(beginning, expected_beginning)
 
         # testing randomization
@@ -58,14 +69,14 @@ class TestGPTGenerator(unittest.TestCase):
 
         area_test = Area(type='area', value='Columbus, United States')
         area_prompt = self.prompt_helper.add_area_prompt(area_test)
-        self.assertEqual('Search area: Columbus, United States\n', area_prompt)
+        self.assertEqual('Search area:\n- Columbus, United States\n', area_prompt)
 
     def test_add_property_prompt(self):
-        core_prompt = "Search area: Columbus, United States\nObj. 0: restaurant"
+        core_prompt = "Search area:\n- Columbus, United States\n- Obj. 0: restaurant"
         ent_properties = [Property(key='height', operator='=', value='10 m', name='height')]
         generated_prompt = self.prompt_helper.add_property_prompt(core_prompt=core_prompt,
                                                                   entity_properties=ent_properties)
-        expected_prompt = "Search area: Columbus, United States\nObj. 0: restaurant, height: 10 "
+        expected_prompt = "Search area:\n- Columbus, United States\n- Obj. 0: restaurant, height: 10 "
         self.assertTrue(generated_prompt.startswith(expected_prompt))
 
         # test randomness and check if the correct larger_phrases exist
@@ -120,7 +131,7 @@ class TestGPTGenerator(unittest.TestCase):
 
         generated_prompt = self.prompt_helper.add_property_prompt(core_prompt=core_prompt,
                                                                   entity_properties=ent_properties)
-        expected_prompt = 'Search area: Columbus, United States\nObj. 0: restaurant, cuisine: italian, building material: wooden, bridge'
+        expected_prompt = 'Search area:\n- Columbus, United States\n- Obj. 0: restaurant, cuisine: italian, building material: wooden, bridge'
         self.assertEqual(generated_prompt, expected_prompt)
 
     def test_relative_spatial_terms(self):
@@ -132,7 +143,8 @@ class TestGPTGenerator(unittest.TestCase):
         generated_prompt, overwritten_dist = self.prompt_helper.add_relative_spatial_term_helper(
             selected_relative_spatial_term=selected_relative_spatial_term, relation=test_rel_1,
             selected_relative_spatial=test_rel_spatial)
-        expected_prompt = "Use this term to describe the spatial relation between Obj. 0 and 1 similar to (similar to \"X is _ Y\"): on the opposite side\n"
+        expected_prompt = ("- Use this term to describe the spatial relation between Obj. 0 and 1 similar to "
+                           "(similar to \"X is _ Y\"): on the opposite side\n")
 
         self.assertEqual(generated_prompt, expected_prompt)
 
@@ -155,7 +167,7 @@ class TestGPTGenerator(unittest.TestCase):
         generated_prompt = self.gen.prompt_helper.add_desc_away_prompt_helper(relation=test_rel_1,
                                                                               selected_phrases_desc=selected_phrases_desc,
                                                                               selected_phrases_away=selected_phrases_away)
-        expected_prompt = 'Obj. 0 is more or less 1539 yd away Obj. 1'
+        expected_prompt = '- Obj. 0 is more or less 1539 yd away Obj. 1'
 
         self.assertTrue(generated_prompt, expected_prompt)
 
@@ -183,7 +195,7 @@ class TestGPTGenerator(unittest.TestCase):
         test_rels = [Relation(type='contains', source=0, target=1, value=None)]
 
         generated_prompt, _ = self.prompt_helper.add_relation_with_contain(test_rels)
-        self.assertTrue(generated_prompt.startswith("Obj. 1 is"))
+        self.assertTrue(generated_prompt.startswith("- Obj. 1 is"))
         self.assertTrue("Obj. 0" in generated_prompt)
 
         # test case 2
@@ -191,7 +203,7 @@ class TestGPTGenerator(unittest.TestCase):
                      Relation(type='contains', source=0, target=2, value=None)]
 
         generated_prompt, _ = self.prompt_helper.add_relation_with_contain(test_rels)
-        self.assertTrue(generated_prompt.startswith("Obj. 1 is"))
+        self.assertTrue(generated_prompt.startswith("- Obj. 1 is"))
         self.assertTrue("Obj. 0" in generated_prompt)
         self.assertTrue("Obj. 2" in generated_prompt)
 
@@ -203,7 +215,7 @@ class TestGPTGenerator(unittest.TestCase):
                      Relation(type='dist', source=0, target=3, value='5 yd')]
 
         generated_prompt, individual_rels = self.prompt_helper.add_relation_with_contain(test_rels)
-        self.assertTrue(generated_prompt.startswith("Obj. 1 is"))
+        self.assertTrue(generated_prompt.startswith("- Obj. 1 is"))
         self.assertTrue("Obj. 0" in generated_prompt)
         assert len(individual_rels.relations) == 4
 

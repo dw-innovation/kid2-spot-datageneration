@@ -61,17 +61,11 @@ class TestRelationGenerator(unittest.TestCase):
                                                            properties=[])]]
 
         relations = self.relation_generator.generate_relation_with_contain_helper(drawn_area_entities=area_entity,
-                    point_entities_connecting_to_area_entity=point_entities_connecting_to_area_entity, add_dist=False)
+                    point_entities_connecting_to_area_entity=point_entities_connecting_to_area_entity)
         expected_relations = [Relation(type='contains', source=0, target=1, value=None),
                               Relation(type='contains', source=0, target=2, value=None)]
 
         self.assertEqual(relations, expected_relations)
-
-        # Check if distance value was added
-        relations = self.relation_generator.generate_relation_with_contain_helper(drawn_area_entities=area_entity,
-                    point_entities_connecting_to_area_entity=point_entities_connecting_to_area_entity, add_dist=True)
-        self.assertTrue(relations[0].value != None)
-
 
         # Check the combination with "individual distances"
         area_entity = [Entity(id=0, is_area=True, name='astro station', type='nwr', properties=[])]

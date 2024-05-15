@@ -11,7 +11,8 @@ Execute it as follows: python -m unittest datageneration.tests.test_retrieve_com
 class TestCombinationRetriever(unittest.TestCase):
     def setUp(self):
         self.retriever = CombinationRetriever(source='datageneration/tests/data/Primary_Keys_test10.xlsx',
-                                              prop_limit=100)
+                                              prop_limit=100,
+                                              min_together_count=1000)
 
     def compare_tags(self, tested_tags, all_tags):
         exists = False
