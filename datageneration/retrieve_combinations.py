@@ -103,7 +103,7 @@ def split_tags(tags: str) -> List[TagProperty]:
 
 
 class CombinationRetriever(object):
-    def __init__(self, source, prop_limit):
+    def __init__(self, source: str, prop_limit: int, min_together_count: int):
         if source.endswith('xlsx'):
             tag_df = pd.read_excel(source, engine='openpyxl')
         else:
@@ -115,6 +115,7 @@ class CombinationRetriever(object):
 
         self.tag_properties = self.fetch_tag_properties(tag_df)
         self.prop_limit = prop_limit
+        self.min_together_count = min_together_count
         self.tag_df = tag_df
         self.all_osm_tags_and_properties = all_osm_tags_and_properties
 
@@ -283,11 +284,11 @@ class CombinationRetriever(object):
 
         return (exists, -1)
 
-    def request_related_tag_properties(self, tag_key: str, tag_value: str, limit: str = 100) -> List[TagProperty]:
+    def request_related_tag_properties(self, tag_key: str, tag_value: str, limit: int = 100) -> List[TagProperty]:
         combinations = request_tag_combinations(tag_key=tag_key, tag_value=tag_value)['data']
         selected_properties = []
         for combination in combinations:
-            if len(selected_properties) == limit:
+            if len(selected_properties) == limit or combination["together_count"] < self.min_together_count:
                 return list(selected_properties)
 
             for seperator in SEPERATORS:
@@ -358,8 +359,10 @@ if __name__ == '__main__':
     parser.add_argument('--source', help='domain-specific primary keys', required=True)
     parser.add_argument('--output_file', help='Path to save the tag list', required=True)
     parser.add_argument('--prop_limit', help='Enter the number of related tags to be fetched by taginfo', default=100)
+    parser.add_argument('--min_together_count', help='The min together count for a combination to be considered',
+                        default=5000, type=int)
     parser.add_argument('--prop_example_limit', help='Enter the number of example values of the properties',
-                        default=100000)
+                        default=100000, type=int)
     parser.add_argument('--generate_tag_list_with_properties', help='Generate tag list with properties',
                         action='store_true')
     parser.add_argument('--generate_property_examples', help='Generate property examples',
@@ -368,13 +371,14 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     source = args.source
-    prop_limit = args.prop_limit
-    prop_example_limit = int(args.prop_example_limit)
+    prop_limit = int(args.prop_limit)
+    min_together_count = args.min_together_count
+    prop_example_limit = args.prop_example_limit
     output_file = args.output_file
     generate_tag_list_with_properties = args.generate_tag_list_with_properties
     generate_property_examples = args.generate_property_examples
 
-    comb_retriever = CombinationRetriever(source=source, prop_limit=prop_limit)
+    comb_retriever = CombinationRetriever(source=source, prop_limit=prop_limit, min_together_count=min_together_count)
 
     if generate_tag_list_with_properties:
         tag_combinations = comb_retriever.generate_tag_list_with_properties()

@@ -9,19 +9,19 @@ from datageneration.property_generator import PropertyGenerator
 
 class TestPropertyGenerator(unittest.TestCase):
     def setUp(self):
-        property_examples_path = 'datageneration/tests/data/prop_examples_test.jsonl'
+        property_examples_path = 'datageneration/tests/data/prop_examples_testv12.jsonl'
         property_examples = pd.read_json(property_examples_path, lines=True).to_dict('records')
         self.property_generator = PropertyGenerator(named_property_examples=property_examples)
 
     def test_named_property(self):
         tag_property = TagProperty(**{"descriptors": ["cuisine"], "tags": [
-            Tag(**{"key": "cuisine", "operator": "=", "value": "***any***"})]})
-        named_property = self.property_generator.generate_named_property(tag_property)
+            Tag(**{"key": "cuisine", "operator": "=", "value": "***example***"})]})
+        named_property = self.property_generator.generate_non_numerical_property(tag_property)
         assert isinstance(named_property, Property)
 
     def test_proper_noun_property(self):
-        tag_property = TagProperty(descriptors=["name"], tags=[Tag(key="name", operator="~", value="***any***")])
-        named_property = self.property_generator.generate_proper_noun_property(tag_property)
+        tag_property = TagProperty(descriptors=["name"], tags=[Tag(key="name", operator="~", value="***example***")])
+        named_property = self.property_generator.generate_non_numerical_property(tag_property)
         assert isinstance(named_property, Property)
         assert named_property.value
 

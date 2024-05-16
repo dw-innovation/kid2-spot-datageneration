@@ -11,6 +11,6 @@ python -m datageneration.generate_combination_table \
 --max_number_of_props_in_entity 4 \
 --percentage_of_entities_with_props 0.3 \
 --percentage_of_two_word_areas 0.5 \
---prob_generating_contain_rel 0.7 \
+--prob_generating_contain_rel 0.5 \
 --ratio_within_radius_within 0.6 \
 --samples 500

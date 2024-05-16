@@ -14,7 +14,7 @@ class TestGenerateCombination(unittest.TestCase):
     def setUp(self):
         geolocations_path = 'datageneration/tests/data/countries+states+cities.json'
         tag_combinations_path = 'datageneration/tests/data/tag_combinations_v12.jsonl'
-        property_examples_path = 'datageneration/tests/data/prop_examples_v12.jsonl'
+        property_examples_path = 'datageneration/tests/data/prop_examples_testv12.jsonl'
 
         tag_combinations = pd.read_json(tag_combinations_path, lines=True).to_dict('records')
         tag_combinations = [TagCombination(**tag_comb) for tag_comb in tag_combinations]

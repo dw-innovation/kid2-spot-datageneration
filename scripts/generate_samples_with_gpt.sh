@@ -9,6 +9,8 @@ python -m datageneration.gpt_data_generator \
 --styles_path datageneration/prompts/styles.txt \
 --prob_usage_of_relative_spatial_terms 0.4 \
 --prob_usage_of_written_numbers 0.3 \
+--prob_of_typos 0.3 \
 --max_dist_digits 5 \
---generate_prompts \
---save_yaml_csv
+--save_yaml_csv \
+--generate_sentences
+# Options: --generate_prompts , --generate_sentences

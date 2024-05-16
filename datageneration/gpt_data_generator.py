@@ -84,7 +84,7 @@ def chatcompletions_with_backoff(**kwargs):
 
 
 # OpenAI parameters
-MODEL = os.getenv('MODEL', 'gpt-3.5-turbo')
+MODEL = os.getenv('MODEL', 'gpt-4o')
 TEMPERATURE = float(os.getenv('TEMPERATURE', 0.7))
 MAX_TOKENS = int(os.getenv('MAX_TOKENS', 4096))
 
@@ -160,12 +160,23 @@ class PromptHelper:
 
     def __init__(self, relative_spatial_terms):
         self.relative_spatial_terms = relative_spatial_terms
-        self.beginning_template = """Act as a {persona}: Return a sentence simulating a user using a natural language interface to search for specific geographic locations. Do not affirm this request and return nothing but the answers.\nWrite the search request {style}."""
+        self.beginning_template = ("Act as a {persona}: Return a sentence simulating a user using a natural language "
+                                   "interface to search for specific geographic locations by describing objects, their "
+                                   "properties and the spatial relation between objects.\nIf one object has multiple "
+                                   "tags assigned to it, they need to be put in a logical connection.\nDo not affirm "
+                                   "this request and return nothing but the answers.\nWrite the search request {style}.")
+        self.typo_templates = [
+            "\nThe text should contain a {amount} amount of typos.",
+            "\nThe text should contain a {amount} amount of typos and grammar mistakes."
+        ]
+        self.typo_amounts = ["small", "medium", "large"]
+        self.ending_template = ("Please take your time and make sure that all the provided information is contained in "
+                                "the sentence.")
         self.search_templates = [
             "\nThe sentence must use all of the following search criteria:\n",
-            "\nThe user is searching for {place} that fulfills the following search criteria:\n",
+            "\nYou are searching for {place} that fulfills all of the following search criteria:\n",
         ]
-        self.predefined_places = ["a street", "a place", "a crossing", "a corner", "an area", "a location"]
+        self.predefined_places = ["a place", "an area", "a location"] # "a crossing", "a corner", "a street",
         self.name_regex_templates = ["", "", "", "contains the letters", "begins with the letters",
                                      "ends with the letters"]
         self.phrases_for_numerical_comparison = {
@@ -178,21 +189,40 @@ class PromptHelper:
 
         # todo: the below line does not make sense
         self.phrases_away = ["away", "away from", "from"]
-        self.phrases_radius = ["within DIST", "in a radius of DIST", "no more than DIST from another", "DIST from each other"]
+        self.phrases_radius = ["within DIST", "in a radius of DIST", "no more than DIST from another",
+                               "DIST from each other"]
         self.phrases_contains = ["within", "in", "inside", "contained in"]
 
         self.dist_lookup = {"cm": "centimeters", "m": "meters", "km": "kilometers", "in": "inches", "ft": "feet",
                             "yd": "yards", "mi": "miles"}
 
-    def beginning(self, persona, writing_style):
+    def beginning(self, persona: str, writing_style: str) -> str:
         '''
-        Create a beginning of a prompt by using beginning template
+        Create the beginning of a prompt by using the beginning template
         '''
         return self.beginning_template.format(persona=persona, style=writing_style)
 
+    def typo(self, prob_of_typos: float) -> str:
+        '''
+        Add specifications for inclusion of typos if randomly selected
+        '''
+        if np.random.choice([True, False], p=[prob_of_typos, 1-prob_of_typos]):
+            typo_text = np.random.choice(self.typo_templates).replace('{amount}', np.random.choice(self.typo_amounts))
+        else:
+            typo_text = ""
+
+        return typo_text
+
+    def ending(self) -> str:
+        '''
+        Create the ending of a prompt by using the ending template
+        '''
+        return self.ending_template
+
     def search_query(self, beginning_prompt: str):
         '''
-        Append the beginning prompt with search phrase. The search phrase is randomly chosen among the search templates. If search templates contain {place}, it randomly selects a place from predefined_places
+        Append the beginning prompt with search phrase. The search phrase is randomly chosen among the search templates.
+        If search templates contain {place}, it randomly selects a place from predefined_places
         '''
         search_template = np.random.choice(self.search_templates)
 
@@ -211,7 +241,7 @@ class PromptHelper:
         '''
         area_prompt = ""
         if area.type not in ["bbox", "polygon"]:
-            area_prompt = "Search area: " + area.value + "\n"
+            area_prompt = "Search area:\n- " + area.value + "\n"
         return area_prompt
 
     def add_numerical_prompt(self, entity_property: Property) -> str:
@@ -281,7 +311,8 @@ class PromptHelper:
 
     def add_relative_spatial_term_helper(self, selected_relative_spatial_term: str, relation: Relation,
                                          selected_relative_spatial: RelSpatial):
-        generated_prompt = f"Use this term to describe the spatial relation between Obj. {relation.source} and {relation.target} similar to (similar to \"X is _ Y\"): {selected_relative_spatial_term}\n"
+        generated_prompt = (f"- Use this term to describe the spatial relation between Obj. {relation.source} and "
+                        f"{relation.target} similar to (similar to \"X is _ Y\"): {selected_relative_spatial_term}\n")
         overwritten_distance = selected_relative_spatial.distance
         return generated_prompt, overwritten_distance
 
@@ -300,6 +331,8 @@ class PromptHelper:
 
         numeric = randint(low, high) * 100
         written = num2words(numeric) + " " + metric
+        if np.random.choice([True, False]):
+            written = written.replace(",", "")
         numeric = str(numeric) + " " + metric
 
         return numeric, written
@@ -312,7 +345,8 @@ class PromptHelper:
         else:
             distance = relation.value
 
-        generated_prompt = f"Obj. {relation.source} is{selected_phrases_desc} {distance} {selected_phrases_away} Obj. {relation.target}\n"
+        generated_prompt = (f"- Obj. {relation.source} is{selected_phrases_desc} {distance} {selected_phrases_away} "
+                            f"Obj. {relation.target}\n")
         return generated_prompt
 
     def add_desc_away_prompt(self, relation: Relation) -> str:
@@ -329,12 +363,13 @@ class PromptHelper:
 
         selected_phrase = np.random.choice(self.phrases_radius)
         selected_phrase = selected_phrase.replace('DIST', distance)
-        generated_prompt = f"All objects are {selected_phrase}"
+        generated_prompt = f"- All objects are {selected_phrase}.\n"
         return generated_prompt
 
     def add_relation_with_contain(self, relations: List[Relation]) -> Tuple[str, Relations]:
         '''
-        This function identifies the objects having containing relationship, collect the remaining ones which have individual rels with the other ones.
+        This function identifies the objects having containing relationship, collect the remaining ones which have
+        individual rels with the other ones.
         :param relations:
         :return: generated_prompt, List[Relation]: list of individual relations
         '''
@@ -344,7 +379,7 @@ class PromptHelper:
         individual_rels = []
         for relation in relations:
             if relation.type == "contains":
-                generated_prompt += f"Obj. {relation.target} is {selected_phrase} Obj. {relation.source}\n"
+                generated_prompt += f"- Obj. {relation.target} is {selected_phrase} Obj. {relation.source}\n"
             else:
                 individual_rels.append(relation)
 
@@ -354,11 +389,13 @@ class PromptHelper:
 class GPTDataGenerator:
     def __init__(self, relative_spatial_terms: List[RelSpatial], personas: List[str],
                  styles: List[str], prob_usage_of_relative_spatial_terms: float = 0.4,
-                 prob_usage_of_written_numbers: float = 0.3, max_dist_digits: int = 5):
+                 prob_usage_of_written_numbers: float = 0.3, prob_of_typos:float = 0.3,
+                 max_dist_digits: int = 5):
 
         self.relative_spatial_terms = relative_spatial_terms
         self.prob_usage_of_relative_spatial_terms = prob_usage_of_relative_spatial_terms
         self.prob_usage_of_written_numbers = prob_usage_of_written_numbers
+        self.prob_of_typos = prob_of_typos
         self.max_dist_digits = max_dist_digits
 
         self.personas = personas
@@ -389,12 +426,14 @@ class GPTDataGenerator:
         relations = loc_point.relations
 
         beginning = self.prompt_helper.beginning(persona=persona, writing_style=style)
+        beginning = beginning + self.prompt_helper.typo(self.prob_of_typos)
         search_prompt = self.prompt_helper.search_query(beginning)
 
         core_prompt = self.prompt_helper.add_area_prompt(area)
+        core_prompt += "Objects:\n"
 
         for entity_id, entity in enumerate(entities):
-            core_prompt = core_prompt + "Obj. " + str(entity_id) + ": " + entity.name
+            core_prompt = core_prompt + "- Obj. " + str(entity_id) + ": " + entity.name
             if len(entity.properties) > 0:
                 core_prompt = self.prompt_helper.add_property_prompt(core_prompt=core_prompt,
                                                                      entity_properties=entity.properties)
@@ -402,11 +441,9 @@ class GPTDataGenerator:
 
         core_relation = ''
 
-        if relations.type in ["individual_distances_with_contains", "contains_within_radius", "contains_relation"]:
+        if relations.type in ["individual_distances_with_contains", "contains_relation"]:
             generated_prompt, individual_rels = self.prompt_helper.add_relation_with_contain(relations.relations)
             core_relation += generated_prompt
-            if relations.type == "contains_within_radius":
-                core_relation += self.radius_prompt_generation(relations)
         else:
             individual_rels = relations
 
@@ -419,7 +456,7 @@ class GPTDataGenerator:
             core_relation = "Distances:\n" + core_relation
 
         core_prompt = core_prompt + core_relation
-        core_prompt = search_prompt + core_prompt
+        core_prompt = search_prompt + core_prompt + self.prompt_helper.ending()
         return loc_point, core_prompt
 
     def assign_persona_styles_to_queries(self, num_of_all_persona_style, num_tag_queries):
@@ -461,7 +498,6 @@ class GPTDataGenerator:
                                               distance=numeric_distance)
             else:
                 indiv_prompt += self.prompt_helper.add_desc_away_prompt(relation)
-        indiv_prompt = indiv_prompt[:-1]  # remove trailing linebreak
         return indiv_prompt
 
     def radius_prompt_generation(self, relations):
@@ -539,6 +575,7 @@ if __name__ == '__main__':
     parser.add_argument('--styles_path', required=True)
     parser.add_argument('--prob_usage_of_relative_spatial_terms', type=float, default=0.4)
     parser.add_argument('--prob_usage_of_written_numbers', type=float, default=0.3)
+    parser.add_argument('--prob_of_typos', type=float, default=0.3)
     parser.add_argument('--max_dist_digits', type=int, default=5)
     parser.add_argument('--generate_prompts', action='store_true',
                         help='Activate it if you want to generate prompts that will be sent to LLM')
@@ -559,6 +596,7 @@ if __name__ == '__main__':
     tag_query_file = args.tag_query_file
     prob_usage_of_relative_spatial_terms = args.prob_usage_of_relative_spatial_terms
     prob_usage_of_written_numbers = args.prob_usage_of_written_numbers
+    prob_of_typos = args.prob_of_typos
     max_dist_digits = args.max_dist_digits
     generate_sentences = args.generate_sentences
     generate_prompts = args.generate_prompts
@@ -574,6 +612,7 @@ if __name__ == '__main__':
                            styles=styles,
                            prob_usage_of_relative_spatial_terms=prob_usage_of_relative_spatial_terms,
                            prob_usage_of_written_numbers=prob_usage_of_written_numbers,
+                           prob_of_typos=prob_of_typos,
                            max_dist_digits=max_dist_digits)
 
     generated_queries = None
