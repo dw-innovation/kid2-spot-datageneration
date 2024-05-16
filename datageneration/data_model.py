@@ -94,6 +94,9 @@ class LocPoint(BaseModel):
     entities: List[Entity]
     relations: Optional[Relations] = None
 
+    def update_relations(self, new_relations_data):
+        self.relations = new_relations_data
+
 
 # Relative Spatial Terms
 class RelSpatial(BaseModel):
