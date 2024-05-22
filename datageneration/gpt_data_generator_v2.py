@@ -168,15 +168,15 @@ class PromptHelper:
             "\nThe user is searching for {place} that fulfills the following search criteria:\n",
         ]
         self.predefined_places = ["a place", "an area", "a location"]
-        self.name_regex_templates = ["", "", "", "contains the letters ", "begins with the letters ",
-                                     "ends with the letters "]
+        self.name_regex_templates = ["=", "=", "=", "contains the letters", "begins with the letters",
+                                     "ends with the letters"]
         self.phrases_for_numerical_comparison = {
-            "<": ["", "", "", "", "less than ", "smaller than ", "lower than ", "beneath ", "under "],
-            ">": ["", "", "", "", "greater than ", "more than ", "larger than ", "above ", "over ", "at least "]
+            "<": ["<", "<", "<", "<", "less than", "smaller than", "lower than", "beneath", "under"],
+            ">": [">", ">", ">", ">", "greater than", "more than", "larger than", "above", "over", "at least"]
         }
 
-        self.phrases_desc = ["", "", "", "", "", "", "", " more or less", " approximately", " less than",
-                             " no more than", " no less than", " around", " at max", " about", " at least"]
+        self.phrases_desc = ["", "", "", "", "", "", "", "more or less", "approximately", "less than",
+                             "no more than", "no less than", "around", "at max", "about", "at least"]
 
         self.phrases_away = ["away", "away from", "from"]
         self.phrases_radius = ["within DIST", "in a radius of DIST", "no more than DIST from another",
@@ -347,19 +347,19 @@ class PromptHelper:
 
     def add_optional_prases(self, data):
         updated_data = copy.deepcopy(data)
-
         for entity in updated_data["entities"]:
-
             for property in entity["properties"]:
                 if property["operator"] == ">":
-                    property["operator"] = (np.random.choice(self.phrases_for_numerical_comparison[">"]) +
-                                            property["operator"])
+                    property["operator"] = np.random.choice(self.phrases_for_numerical_comparison[">"]) + ""
                 elif property["operator"] == "<":
-                    property["operator"] = (np.random.choice(self.phrases_for_numerical_comparison["<"]) +
-                                            property["operator"])
+                    property["operator"] = np.random.choice(self.phrases_for_numerical_comparison["<"]) + ""
                 elif property["operator"] == "~":
-                    property["operator"] = np.random.choice(self.name_regex_templates) + property["operator"]
+                    property["operator"] = np.random.choice(self.name_regex_templates) + ""
 
+        if updated_data["relations"]["relations"]:
+            for relation in updated_data["relations"]["relations"]:
+                if relation["value"]:
+                    relation["value"] = np.random.choice(self.phrases_desc) + " " + relation["value"]
 
         return updated_data
 
@@ -470,11 +470,9 @@ class GPTDataGenerator:
                 metric = relation.value.split()[-1]
                 numeric_distance, written_distance = self.prompt_helper.generate_written_word_distance(
                     metric, self.max_dist_digits)
-                written_distance_relation = Relation(type=relation.type, source=relation.source,
-                                                     target=relation.target, value=written_distance)
                 self.update_relation_distance(relations=relations,
                                               relation_to_be_updated=relation,
-                                              distance=written_distance_relation)
+                                              distance=written_distance)
 
         return updated_relations, relations
 
