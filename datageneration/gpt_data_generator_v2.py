@@ -167,18 +167,17 @@ class PromptHelper:
             "\nThe sentence must use all of the following search criteria:\n",
             "\nThe user is searching for {place} that fulfills the following search criteria:\n",
         ]
-        self.predefined_places = ["a street", "a place", "a crossing", "a corner", "an area", "a location"]
-        self.name_regex_templates = ["", "", "", "contains the letters", "begins with the letters",
-                                     "ends with the letters"]
+        self.predefined_places = ["a place", "an area", "a location"]
+        self.name_regex_templates = ["", "", "", "contains the letters ", "begins with the letters ",
+                                     "ends with the letters "]
         self.phrases_for_numerical_comparison = {
-            "<": ["less than", "smaller than", "lower than", "beneath", "under"],
-            ">": ["greater than", "more than", "larger than", "above", "over", "at least"]
+            "<": ["", "", "", "", "less than ", "smaller than ", "lower than ", "beneath ", "under "],
+            ">": ["", "", "", "", "greater than ", "more than ", "larger than ", "above ", "over ", "at least "]
         }
 
         self.phrases_desc = ["", "", "", "", "", "", "", " more or less", " approximately", " less than",
                              " no more than", " no less than", " around", " at max", " about", " at least"]
 
-        # todo: the below line does not make sense
         self.phrases_away = ["away", "away from", "from"]
         self.phrases_radius = ["within DIST", "in a radius of DIST", "no more than DIST from another",
                                "DIST from each other"]
@@ -346,6 +345,24 @@ class PromptHelper:
         # todo: question here we change it to individual distances but we don't compare it with individual distance
         return Relations(type='individual_distance', relations=individual_rels)
 
+    def add_optional_prases(self, data):
+        updated_data = copy.deepcopy(data)
+
+        for entity in updated_data["entities"]:
+
+            for property in entity["properties"]:
+                if property["operator"] == ">":
+                    property["operator"] = (np.random.choice(self.phrases_for_numerical_comparison[">"]) +
+                                            property["operator"])
+                elif property["operator"] == "<":
+                    property["operator"] = (np.random.choice(self.phrases_for_numerical_comparison["<"]) +
+                                            property["operator"])
+                elif property["operator"] == "~":
+                    property["operator"] = np.random.choice(self.name_regex_templates) + property["operator"]
+
+
+        return updated_data
+
 
 class GPTDataGenerator:
     def __init__(self, system_prompt: str, relative_spatial_terms: List[RelSpatial], personas: List[str],
@@ -405,6 +422,8 @@ class GPTDataGenerator:
                 data = loc_point_for_yaml.dict()
         else:
             data = loc_point.dict()
+
+        data = self.prompt_helper.add_optional_prases(data)
 
         data = clean_up_query(data)
 

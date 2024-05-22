@@ -160,11 +160,16 @@ class PromptHelper:
 
     def __init__(self, relative_spatial_terms):
         self.relative_spatial_terms = relative_spatial_terms
-        self.beginning_template = ("Act as a {persona}: Return a sentence simulating a user using a natural language "
-                                   "interface to search for specific geographic locations by describing objects, their "
-                                   "properties and the spatial relation between objects.\nIf one object has multiple "
-                                   "tags assigned to it, they need to be put in a logical connection.\nDo not affirm "
-                                   "this request and return nothing but the answers.\nWrite the search request {style}.")
+        self.beginning_template = ("Use the input to generate input sentences for a geospatial search. Imagine "
+                                   "your output will be used as a prompt for a geospatial search tool that uses AI. "
+                                   "Mention the area, cover all entities and their respective properties, and describe "
+                                   "the respective relations. Stick to the descriptions of entities and relations in "
+                                   "provided and don’t add anything. Ensure to reference entities consistently if they "
+                                   "are involved in multiple relations and reference the mentioned entity explicitly. "
+                                   "If there is no relation to be found in the details, your output must consider the "
+                                   "entities to be unrelated. Stick to the values of each relation. Distances always "
+                                   "refer to a maximum distance. Vary your phrasing.\n\n ==Persona==\n{persona} "
+                                   "\n\n ==Style==\n{style}\n\n==Other specifiations==")
         self.typo_templates = [
             "\nThe text should contain a {amount} amount of typos.",
             "\nThe text should contain a {amount} amount of typos and grammar mistakes."
@@ -172,11 +177,9 @@ class PromptHelper:
         self.typo_amounts = ["small", "medium", "large"]
         self.ending_template = ("Please take your time and make sure that all the provided information is contained in "
                                 "the sentence.")
-        self.search_templates = [
-            "\nThe sentence must use all of the following search criteria:\n",
-            "\nYou are searching for {place} that fulfills all of the following search criteria:\n",
-        ]
-        self.predefined_places = ["a place", "an area", "a location"] # "a crossing", "a corner", "a street",
+        self.search_template = "\n\n==Input==\n"
+
+        self.predefined_places = ["a place", "an area", "a location"]
         self.name_regex_templates = ["", "", "", "contains the letters", "begins with the letters",
                                      "ends with the letters"]
         self.phrases_for_numerical_comparison = {
@@ -224,16 +227,7 @@ class PromptHelper:
         Append the beginning prompt with search phrase. The search phrase is randomly chosen among the search templates.
         If search templates contain {place}, it randomly selects a place from predefined_places
         '''
-        search_template = np.random.choice(self.search_templates)
-
-        if '{place}' in search_template:
-            np.random.shuffle(self.predefined_places)
-            selected_place = self.predefined_places[0]
-            beginning_prompt += search_template.replace('{place}', selected_place)
-        else:
-            beginning_prompt += search_template
-
-        return beginning_prompt
+        return beginning_prompt + self.search_template
 
     def add_area_prompt(self, area: Area) -> str:
         '''
