@@ -12,5 +12,5 @@ python -m datageneration.gpt_data_generator \
 --prob_of_typos 0.3 \
 --max_dist_digits 5 \
 --save_yaml_csv \
---generate_prompts
+--generate_sentences
 # Options: --generate_prompts , --generate_sentences
