@@ -11,7 +11,7 @@ Execute it as follows: python -m unittest datageneration.tests.test_tag_to_imr
 
 class TestTag2ImrConverter(unittest.TestCase):
     def setUp(self):
-        self.primary_key_table = pd.read_excel('datageneration/tests/data/Primary_Keys_test.xlsx', engine='openpyxl')
+        self.primary_key_table = pd.read_excel('datageneration/tests/data/Primary_Keys_test10.xlsx', engine='openpyxl')
 
     def test_tag_to_imr(self):
         tags_str = 'route=bus, route= train, route= ferry, route=tram, route=trolleybus, route=subway'
