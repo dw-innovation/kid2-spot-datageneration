@@ -40,6 +40,7 @@ def add_yaml_to_filename(output_file):
     yaml_output_file = parent_dir / (filename_without_extension + "_yaml" + file_extension)
     return yaml_output_file
 
+
 def write_output(generated_combs, output_file):
     with open(output_file, "w") as out_file:
         for generated_comb in generated_combs:
@@ -87,6 +88,7 @@ def translate_queries_to_yaml(combs):
     return new_combs
 
 
+<<<<<<< gpt_gen_with_yaml
 def clean_up_query(query):
     for entity in query["entities"]:
         if len(entity["properties"]) == 0:
@@ -104,6 +106,20 @@ def clean_up_query(query):
             if relation["value"] is None:
                 relation.pop('value', None)
     return query
+=======
+def split_descriptors(descriptors: str) -> List[str]:
+    '''this function splits the descriptors as a list of single descriptor'''
+    processed_descriptors = set()
+
+    for descriptor in descriptors.split('|'):
+        descriptor = descriptor.lstrip().strip().lower()
+        if len(descriptor) == 0:
+            continue
+        processed_descriptors.add(descriptor)
+
+    return processed_descriptors
+
+>>>>>>> main
 
 class CompoundTagPropertyProcessor:
     def expand_list(self, tag_compounds: str) -> List[str]:

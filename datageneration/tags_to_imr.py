@@ -1,81 +1,88 @@
-from argparse import ArgumentParser
-from itertools import product
-
 import pandas as pd
-from datageneration.utils import write_output
+import json
+from argparse import ArgumentParser
+from itertools import chain, product
 from tqdm import tqdm
+from typing import List, Dict, Union
+
+from datageneration.data_model import Tag
+from datageneration.utils import write_output, SEPERATORS, split_descriptors, write_dict_output
 
 
-def generate_condition(key, operator, value):
-    return {
-        "key": key.strip(" \"[]"),
-        "operator": operator,
-        "value": value.strip(" \"[]")
-    }
+def generate_and_condition(conditions: List) -> Dict[str, List[Tag]]:
+    """
+    Generate an 'AND' condition from a list of conditions.
+
+    This function takes a list of conditions, where each condition is a list of Tag objects,
+    and combines them into a single 'AND' condition.
+
+    :param conditions: A list of conditions, where each condition is represented as a list of Tag objects.
+    :return: A dictionary containing the 'AND' condition, with the key 'and' mapped to a list of Tag objects.
+    """
+    return {"and": list(chain.from_iterable(conditions))}
 
 
-def generate_and_condition(*conditions):
-    # cdt_list = []
-    # for cdt in conditions:
-    #     cdt_list.append([list(c_) for c_ in cdt])
-    # return {"and": cdt_list}
-    if len(conditions) > 1:
-        print("Error: length of contitions > 0, please check!")
-    and_list = [list(c_) for c_ in conditions[0]]
-    return {"and": [l_[0] for l_ in and_list]}
+def generate_or_condition(conditions: List) -> Union[List[Tag], Dict[str, List[Tag]]]:
+    """
+    Generate an 'OR' condition from a list of conditions.
 
+    This function takes a list of conditions, where each condition is a list of Tag objects,
+    and combines them into a single 'OR' condition.
 
-def generate_or_condition(*conditions):
-    if len(conditions[0]) > 1:
-        d = {"or": conditions[0]}
-        return d
+    :param conditions: A list of conditions, where each condition is represented as a list of Tag objects.
+    :return: A dictionary containing the 'AND' condition, with the key 'and' mapped to a list of Tag objects.
+    """
+    if isinstance(conditions[0], Tag):
+        return {"or": conditions}
     else:
         return conditions[0]
 
 
-def yield_tag_flts(tags, yield_final=True):
+def transform_tags_to_imr(tags_str: str) -> List[Dict[str, List[Tag]]]:
+    '''
+    Transform tag lists in a string format into IMR which contains tag filters
+    :param tags_str:
+    :return: list of dictionary
+    '''
+    if "," in tags_str:
+        tags = [t_.strip() for t_ in tags_str.split(',')]
+    else:
+        tags = [tags_str]
+
+    result = []
+    if tags:
+        result.append(generate_or_condition(list(yield_tag_filters_for_imr(tags))))
+    return result if isinstance(result[0], list) else result
+
+
+def yield_tag_filters_for_imr(tags: Union[str, List[str]]) -> List[Tag]:
+    """
+    Yield tag filters for constructing IMR. Filters are connected each other AND or OR operators
+
+    :param tags (str or list of str): The tag string or list of tag strings to be processed.
+
+    :return: list of tags: a list of tags
+    """
     if isinstance(tags, str):
         tags = [tags]
     for tag in tags:
-        if len(tag) == 0:
+        if not tag:
             continue
-
         if "AND" in tag:
             and_list = [t_.strip() for t_ in tag.split('AND')]
-            flt_list = [yield_tag_flts(al) for al in and_list]
+            flt_list = [yield_tag_filters_for_imr(al) for al in and_list]
             yield generate_and_condition(flt_list)
         else:
-            op = "="
-            if "~" in tag:
-                op = "~"
-            elif ">" in tag:
-                op = ">"
-            elif "<" in tag:
-                op = "<"
-            elif "!=" in tag:
-                op = "!="
+            op = next((o for o in SEPERATORS if o in tag), "=")
+            tag_key, tag_value = tag.split(op)
+            tag_key = [k.strip(" \"[]") for k in tag_key.split("|")]
+            tag_value = [v.strip(" \"[]") for v in tag_value.split("|")]
 
-            key = tag.split(op)[0]
-            val = tag.split(op)[1]
+            for comb in product(tag_key, tag_value):
+                yield Tag(key=comb[0], operator=op, value=comb[1])
 
-            def split_and_list(input):
-                if "|" in input:
-                    item = input.strip(" \"[]")
-                    item_list = item.split("|")
-                    item = []
-                    for i_ in item_list:
-                        item.append(i_)
-                    return item
-                else:
-                    return [input]
-
-            key = split_and_list(key)
-            val = split_and_list(val)
-
-            for comb in list(product(key, val)):
-                if yield_final:
-                    yield generate_condition(comb[0], op, comb[1])
-
+def tag_serializer(tag):
+    return tag.to_dict()
 
 if __name__ == '__main__':
     '''
@@ -84,40 +91,23 @@ if __name__ == '__main__':
     '''
 
     parser = ArgumentParser()
-    parser.add_argument('--tag_list_path', required=True)
+    parser.add_argument('--primary_key_table', required=True)
     parser.add_argument('--output_file', required=True)
     args = parser.parse_args()
 
     output_file = args.output_file
-    tag_list_path = args.tag_list_path
+    tag_list_path = args.primary_key_table
 
-    tag_df = pd.read_csv(tag_list_path)
-    tag_df = tag_df[tag_df.select_dtypes(float).notna().any(axis=1)]
+    primary_key_table = pd.read_excel(args.primary_key_table, engine='openpyxl')
 
-    result_dict = {}
-    for row in tqdm(tag_df.to_dict(orient='records'), total=len(tag_df)):
+    results = []
+    for row in tqdm(primary_key_table.to_dict(orient='records'), total=len(primary_key_table)):
+        descriptors_str = row['descriptors']
+        tags_str = row['tags']
 
-        descriptor = row['descriptors']
-        tags = row['tags']
+        desriptors = split_descriptors(descriptors_str)
+        tags = json.loads(json.dumps(transform_tags_to_imr(tags_str), default=tag_serializer))
 
-        if "," in tags:
-            tags = [t_.strip() for t_ in tags.split(',')]
-        else:
-            tags = [tags]
-
-        result = []
-        if len(tags) > 0:
-            result += [generate_or_condition(list(yield_tag_flts(tags)))]
-        else:
-            # result = [og_tag]
-            print("ERROR! No tag found!")
-        # data_dict[descriptor] = result
-
-        for d_ in descriptor.split("|"):
-            if d_ in result_dict:
-                print("Error! Duplicate descriptor: ", d_)
-            else:
-                result_dict[d_] = result
-                # result_list.append({"imr": result, "applies_to": descriptor})
-
-    write_output([{"keyword": keyword, "imr": imr} for keyword, imr in result_dict.items()], output_file)
+        for descriptor in desriptors:
+            results.append(dict(key=descriptor, imr=tags))
+    write_dict_output(results, output_file, bool_add_yaml=False)
