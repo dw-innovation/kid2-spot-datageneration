@@ -1,23 +1,24 @@
+import copy
 import itertools
 import json
 import numpy as np
 import openai
 import os
 import pandas as pd
+import yaml
 from argparse import ArgumentParser
 from dotenv import load_dotenv
+from num2words import num2words
 from openai import OpenAI
 from pathlib import Path
+from random import randint
 from tqdm import tqdm
 from typing import List, Tuple
-from random import randint
 
-from num2words import num2words
-
-from datageneration.data_model import (RelSpatial, LocPoint, Area, Entity, Property, Relation, Relations,
-                                       GeneratedPrompt, GeneratedIMRSentence)
+from datageneration.data_model import RelSpatial, LocPoint, Area, Property, Relation, Relations, GeneratedPrompt, \
+    GeneratedIMRSentence
 from datageneration.utils import (add_yaml_to_filename, write_output, write_dict_output, write_output_csv,
-                                  translate_queries_to_yaml)
+                                  translate_queries_to_yaml, clean_up_query)
 
 load_dotenv()
 
@@ -93,13 +94,14 @@ CLIENT = OpenAI(
 )
 
 
-def request_openai(prompt):
+def request_openai(system_prompt: str, user_prompt: str):
     response = chatcompletions_with_backoff(
         model=MODEL,  # "gpt-4",
         temperature=TEMPERATURE,
         max_tokens=MAX_TOKENS,
         messages=[
-            {"role": "user", "content": prompt}
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt}
         ]
     )
 
@@ -160,38 +162,23 @@ class PromptHelper:
 
     def __init__(self, relative_spatial_terms):
         self.relative_spatial_terms = relative_spatial_terms
-        self.beginning_template = ("Generate one or more sentences simulating a user using a natural language interface "
-                                   "for an AI geolocation search tool that finds locations based on descriptions of "
-                                   "objects and their spatial relations. Each object has one main descriptor and "
-                                   "optionally additional properties. All properties must be put in a logical connection "
-                                   "to the object.\n"
-                                   "Mention the area, cover all entities and their respective properties, and describe "
-                                   "the respective relations. Stick to the descriptions of entities and relations "
-                                   "provided and don’t add anything. Stick to the values of each relation. Distances "
-                                   "always refer to a maximum distance. Vary your phrasing. Do not affirm this request "
-                                   "and return nothing but the answer.\n\n ==Persona==\n{persona} "
-                                   "\n\n ==Style==\n{style}")
-        self.typo_templates = [
-            "\n\n==Other specifications==\nThe text should contain a {amount} amount of typos.",
-            "\n\n==Other specifications==\nThe text should contain a {amount} amount of typos and grammar mistakes."
+        self.beginning_template = """Act as a {persona}: Return a sentence simulating a user using a natural language interface to search for specific geographic locations. Do not affirm this request and return nothing but the answers.\nWrite the search request {style}."""
+        self.search_templates = [
+            "\nThe sentence must use all of the following search criteria:\n",
+            "\nThe user is searching for {place} that fulfills the following search criteria:\n",
         ]
-        self.typo_amounts = ["small", "medium", "large"]
-        self.ending_template = ("\nPlease take your time and make sure that all the provided information is contained in "
-                                "the sentence.")
-        self.search_template = "\n\n==Input==\n"
-
         self.predefined_places = ["a place", "an area", "a location"]
-        self.name_regex_templates = ["", "", "", "contains the letters", "begins with the letters",
+        self.name_regex_templates = ["=", "=", "=", "contains the letters", "begins with the letters",
                                      "ends with the letters"]
         self.phrases_for_numerical_comparison = {
-            "<": ["less than", "smaller than", "lower than", "beneath", "under"],
-            ">": ["greater than", "more than", "larger than", "above", "over", "at least"]
+            "<": ["<", "<", "<", "<", "less than", "smaller than", "lower than", "beneath", "under"],
+            ">": [">", ">", ">", ">", "greater than", "more than", "larger than", "above", "over", "at least"]
         }
 
-        self.phrases_desc = ["", "", "", "", "", "", "", " more or less", " approximately", " less than",
-                    " no more than", " no less than", " around", " at max", " about", " at least"]
+        self.phrases_desc = ["", "", "", "", "", "", "", "more or less", "approximately", "less than",
+                             "no more than", "no less than", "around", "at max", "about", "at least"]
 
-        self.phrases_away = ["away from", "from"]
+        self.phrases_away = ["away", "away from", "from"]
         self.phrases_radius = ["within DIST", "in a radius of DIST", "no more than DIST from another",
                                "DIST from each other"]
         self.phrases_contains = ["within", "in", "inside", "contained in"]
@@ -199,35 +186,26 @@ class PromptHelper:
         self.dist_lookup = {"cm": "centimeters", "m": "meters", "km": "kilometers", "in": "inches", "ft": "feet",
                             "yd": "yards", "mi": "miles"}
 
-    def beginning(self, persona: str, writing_style: str) -> str:
+    def beginning(self, persona, writing_style):
         '''
-        Create the beginning of a prompt by using the beginning template
+        Create a beginning of a prompt by using beginning template
         '''
         return self.beginning_template.format(persona=persona, style=writing_style)
 
-    def typo(self, prob_of_typos: float) -> str:
-        '''
-        Add specifications for inclusion of typos if randomly selected
-        '''
-        if np.random.choice([True, False], p=[prob_of_typos, 1-prob_of_typos]):
-            typo_text = np.random.choice(self.typo_templates).replace('{amount}', np.random.choice(self.typo_amounts))
-        else:
-            typo_text = ""
-
-        return typo_text
-
-    def ending(self) -> str:
-        '''
-        Create the ending of a prompt by using the ending template
-        '''
-        return self.ending_template
-
     def search_query(self, beginning_prompt: str):
         '''
-        Append the beginning prompt with search phrase. The search phrase is randomly chosen among the search templates.
-        If search templates contain {place}, it randomly selects a place from predefined_places
+        Append the beginning prompt with search phrase. The search phrase is randomly chosen among the search templates. If search templates contain {place}, it randomly selects a place from predefined_places
         '''
-        return beginning_prompt + self.search_template
+        search_template = np.random.choice(self.search_templates)
+
+        if '{place}' in search_template:
+            np.random.shuffle(self.predefined_places)
+            selected_place = self.predefined_places[0]
+            beginning_prompt += search_template.replace('{place}', selected_place)
+        else:
+            beginning_prompt += search_template
+
+        return beginning_prompt
 
     def add_area_prompt(self, area: Area) -> str:
         '''
@@ -235,7 +213,7 @@ class PromptHelper:
         '''
         area_prompt = ""
         if area.type not in ["bbox", "polygon"]:
-            area_prompt = "Search area:\n- " + area.value + "\n"
+            area_prompt = "Search area: " + area.value + "\n"
         return area_prompt
 
     def add_numerical_prompt(self, entity_property: Property) -> str:
@@ -277,6 +255,7 @@ class PromptHelper:
 
     def add_property_prompt(self, core_prompt: str, entity_properties: List[Property]) -> str:
         for entity_property in entity_properties:
+            core_prompt = core_prompt + ", "
             core_prompt = core_prompt + entity_property.name
 
             if entity_property.name == 'height' or is_number(entity_property.value):
@@ -285,11 +264,9 @@ class PromptHelper:
                 core_prompt = core_prompt + self.add_name_regex_prompt(entity_property=entity_property)
             else:
                 core_prompt = core_prompt + self.add_other_non_numerical_prompt(entity_property=entity_property)
-            core_prompt = core_prompt + ", "
+        return core_prompt
 
-        return core_prompt[:-2]
-
-    def add_relative_spatial_terms(self, relation: Relation, entities: List[Entity]) -> tuple:
+    def add_relative_spatial_terms(self, relation: Relation) -> tuple:
         '''
         Randomly selects relative spatial term
         '''
@@ -299,22 +276,13 @@ class PromptHelper:
         descriptors_of_relative_spatial_terms = selected_relative_spatial.values
         np.random.shuffle(descriptors_of_relative_spatial_terms)
         selected_relative_spatial_term = descriptors_of_relative_spatial_terms[0]
-        generated_prompt, overwritten_distance = self.add_relative_spatial_term_helper(
-            selected_relative_spatial_term, relation, selected_relative_spatial, entities)
+        return (selected_relative_spatial_term, selected_relative_spatial.distance)
 
-        return (generated_prompt, overwritten_distance)
-
-    def add_relative_spatial_term_helper(self, selected_relative_spatial_term: str, relation: Relation,
-                                         selected_relative_spatial: RelSpatial, entities: List[Entity]):
-        for entity in entities:
-            if entity.id == relation.target:
-                target_ent = entity.name
-            if entity.id == relation.source:
-                source_ent = entity.name
-        generated_prompt = (f"- Use this term to describe the spatial relation between the {source_ent} and the "
-                        f"{target_ent} (similar to \"X is _ Y\"): {selected_relative_spatial_term}\n")
-        overwritten_distance = selected_relative_spatial.distance
-        return generated_prompt, overwritten_distance
+    # def add_relative_spatial_term_helper(self, selected_relative_spatial_term: str, relation: Relation,
+    #                                      selected_relative_spatial: RelSpatial):
+    #     generated_prompt = f"Use this term to describe the spatial relation between Obj. {relation.source} and {relation.target} similar to (similar to \"X is _ Y\"): {selected_relative_spatial_term}\n"
+    #     overwritten_distance = selected_relative_spatial.distance
+    #     return generated_prompt, overwritten_distance
 
     def generate_written_word_distance(self, metric: str, max_digits: int) -> tuple:
         """
@@ -325,20 +293,17 @@ class PromptHelper:
         :param max_digits: maximum number of digits allowed
         :return: numeric - new numeric value, written - corresponding number in written words
         """
-        digits = randint(1, max_digits-2)
+        digits = randint(1, max_digits - 2)
         low = np.power(10, digits - 1)
         high = np.power(10, digits) - 1
 
         numeric = randint(low, high) * 100
         written = num2words(numeric) + " " + metric
-        if np.random.choice([True, False]):
-            written = written.replace(",", "")
         numeric = str(numeric) + " " + metric
 
         return numeric, written
 
-    def add_desc_away_prompt_helper(self, relation: Relation, selected_phrases_desc: str, selected_phrases_away: str,
-                                    entities: List[Entity]):
+    def add_desc_away_prompt_helper(self, relation: Relation, selected_phrases_desc: str, selected_phrases_away: str):
         '''Helper function for generating desc away prompts'''
         if np.random.choice([True, False]):
             metric = self.dist_lookup[relation.value.rsplit(" ", 1)[-1]]
@@ -346,21 +311,14 @@ class PromptHelper:
         else:
             distance = relation.value
 
-        for entity in entities:
-            if entity.id == relation.target:
-                target_ent = entity.name
-            if entity.id == relation.source:
-                source_ent = entity.name
-
-        generated_prompt = (f"- The {source_ent} is{selected_phrases_desc} {distance} {selected_phrases_away} "
-                            f"the {target_ent}\n")
+        generated_prompt = f"Obj. {relation.source} is{selected_phrases_desc} {distance} {selected_phrases_away} Obj. {relation.target}\n"
         return generated_prompt
 
-    def add_desc_away_prompt(self, relation: Relation, entities: List[Entity]) -> str:
+    def add_desc_away_prompt(self, relation: Relation) -> str:
         selected_phrases_desc = np.random.choice(self.phrases_desc)
         selected_phrases_away = np.random.choice(self.phrases_away)
 
-        generated_prompt = self.add_desc_away_prompt_helper(relation, selected_phrases_desc, selected_phrases_away, entities)
+        generated_prompt = self.add_desc_away_prompt_helper(relation, selected_phrases_desc, selected_phrases_away)
         return generated_prompt
 
     def add_prompt_for_within_radius_relation(self, distance: str) -> str:
@@ -370,46 +328,53 @@ class PromptHelper:
 
         selected_phrase = np.random.choice(self.phrases_radius)
         selected_phrase = selected_phrase.replace('DIST', distance)
-        generated_prompt = f"- All objects are {selected_phrase}.\n"
+        generated_prompt = f"All objects are {selected_phrase}"
         return generated_prompt
 
-    def add_relation_with_contain(self, relations: List[Relation], entities: List[Entity]) -> Tuple[str, Relations]:
+    def add_relation_with_contain(self, relations: List[Relation]) -> [Relations]:
         '''
-        This function identifies the objects having containing relationship, collect the remaining ones which have
-        individual rels with the other ones.
+        This function identifies the objects having containing relationship, collect the remaining ones which have individual rels with the other ones.
         :param relations:
         :return: generated_prompt, List[Relation]: list of individual relations
         '''
-        selected_phrase = np.random.choice(self.phrases_contains)
-        generated_prompt = ""
-
         individual_rels = []
         for relation in relations:
-            if relation.type == "contains":
-                for entity in entities:
-                    if entity.id == relation.target:
-                        target_ent = entity.name
-                    if entity.id == relation.source:
-                        source_ent = entity.name
-                generated_prompt += f"- The {target_ent} is {selected_phrase} the {source_ent}\n"
-            else:
+            if relation.type != "contains":
                 individual_rels.append(relation)
 
-        return (generated_prompt, Relations(type='individual_distance', relations=individual_rels))
+        # todo: question here we change it to individual distances but we don't compare it with individual distance
+        return Relations(type='individual_distance', relations=individual_rels)
+
+    def add_optional_prases(self, data):
+        updated_data = copy.deepcopy(data)
+        for entity in updated_data["entities"]:
+            for property in entity["properties"]:
+                if property["operator"] == ">":
+                    property["operator"] = np.random.choice(self.phrases_for_numerical_comparison[">"]) + ""
+                elif property["operator"] == "<":
+                    property["operator"] = np.random.choice(self.phrases_for_numerical_comparison["<"]) + ""
+                elif property["operator"] == "~":
+                    property["operator"] = np.random.choice(self.name_regex_templates) + ""
+
+        if updated_data["relations"]["relations"]:
+            for relation in updated_data["relations"]["relations"]:
+                if relation["value"]:
+                    relation["value"] = np.random.choice(self.phrases_desc) + " " + relation["value"]
+
+        return updated_data
 
 
 class GPTDataGenerator:
-    def __init__(self, relative_spatial_terms: List[RelSpatial], personas: List[str],
+    def __init__(self, system_prompt: str, relative_spatial_terms: List[RelSpatial], personas: List[str],
                  styles: List[str], prob_usage_of_relative_spatial_terms: float = 0.4,
-                 prob_usage_of_written_numbers: float = 0.3, prob_of_typos:float = 0.3,
-                 max_dist_digits: int = 5):
+                 prob_usage_of_written_numbers: float = 0.3, prob_of_typos: float=0.3, max_dist_digits: int = 5):
 
         self.relative_spatial_terms = relative_spatial_terms
         self.prob_usage_of_relative_spatial_terms = prob_usage_of_relative_spatial_terms
         self.prob_usage_of_written_numbers = prob_usage_of_written_numbers
         self.prob_of_typos = prob_of_typos
         self.max_dist_digits = max_dist_digits
-
+        self.system_prompt = system_prompt
         self.personas = personas
         self.styles = styles
         self.prompt_helper = PromptHelper(relative_spatial_terms=relative_spatial_terms)
@@ -432,44 +397,43 @@ class GPTDataGenerator:
 
         :param dict loc_point: The dictionary containing all relevant information for the query
         '''
-
-        area = loc_point.area
-        entities = loc_point.entities
         relations = loc_point.relations
 
-        beginning = self.prompt_helper.beginning(persona=persona, writing_style=style)
-        beginning = beginning + self.prompt_helper.typo(self.prob_of_typos)
-        search_prompt = self.prompt_helper.search_query(beginning)
-
-        core_prompt = self.prompt_helper.add_area_prompt(area)
-        core_prompt += "Objects:\n"
-
-        for entity_id, entity in enumerate(entities):
-            core_prompt = core_prompt + "- Obj. " + str(entity_id) + ": " + entity.name
-            if len(entity.properties) > 0:
-                core_prompt += " | Properties -> "
-                core_prompt = self.prompt_helper.add_property_prompt(core_prompt=core_prompt,
-                                                                     entity_properties=entity.properties)
-            core_prompt += '\n'
-
-        core_relation = ''
-
+        overwritten_relations = None
+        overwritten_relations_for_prompt = None
         if relations.type in ["individual_distances_with_contains", "contains_relation"]:
-            generated_prompt, individual_rels = self.prompt_helper.add_relation_with_contain(relations.relations, entities)
-            core_relation += generated_prompt
+            individual_rels = self.prompt_helper.add_relation_with_contain(relations.relations)
         else:
             individual_rels = relations
 
+        # todo: we don't compare it with individual_rels but relations, why?
         if relations.type in ["individual_distances", "individual_distances_with_contains"]:
-                core_relation += self.individual_prompt_generation(individual_rels, entities)
+            overwritten_relations, overwritten_relations_for_prompt = self.individual_prompt_generation(individual_rels)
         elif relations.type == "within_radius":
-                core_relation += self.radius_prompt_generation(individual_rels)
+            overwritten_relations, overwritten_relations_for_prompt = self.radius_prompt_generation(individual_rels)
 
-        if len(core_relation) > 0:
-            core_relation = "Distances:\n" + core_relation
+        if overwritten_relations_for_prompt:
+            if overwritten_relations:
+                # update the relations
+                loc_point_for_yaml = copy.deepcopy(loc_point)
+                loc_point_for_yaml.update_relations(overwritten_relations_for_prompt)
+                loc_point.update_relations(overwritten_relations)
 
-        core_prompt = core_prompt + core_relation
-        core_prompt = search_prompt + core_prompt + self.prompt_helper.ending()
+                data = loc_point_for_yaml.dict()
+        else:
+            data = loc_point.dict()
+
+        data = self.prompt_helper.add_optional_prases(data)
+
+        data = clean_up_query(data)
+
+        prompt_yaml_part = f"===Input===\n```yaml\n{yaml.dump(data)}```"
+        persona_prompt = f"===Persona===\n{persona}"
+        style_prompt = f"===Style===\n{style}"
+        sentence_prompt = f"===Sentence===\n"
+
+        core_prompt = f"{prompt_yaml_part}\n\n{persona_prompt}\n\n{style_prompt}\n\n{sentence_prompt}"
+
         return loc_point, core_prompt
 
     def assign_persona_styles_to_queries(self, num_of_all_persona_style, num_tag_queries):
@@ -480,8 +444,8 @@ class GPTDataGenerator:
         persona_style_tag_pairs = [(x, next(cycled_persona_style_ids)) for x in num_tag_queries_ids]
         return persona_style_tag_pairs
 
-    def individual_prompt_generation(self, relations, entities):
-        indiv_prompt = ""
+    def individual_prompt_generation(self, relations: Relations) -> Relations:
+        updated_relations = copy.deepcopy(relations)
         for relation in relations.relations:
             use_relative_spatial_terms = np.random.choice([False, True], p=[
                 1.0 - self.prob_usage_of_relative_spatial_terms, self.prob_usage_of_relative_spatial_terms])
@@ -494,27 +458,26 @@ class GPTDataGenerator:
                 else:
                     use_written_distance = False
             if use_relative_spatial_terms:
-                generated_prompt, overwritten_distance = self.prompt_helper.add_relative_spatial_terms(relation, entities)
-                indiv_prompt += generated_prompt
-                self.update_relation_distance(relations=relations,
+                spatial_term, overwritten_distance = self.prompt_helper.add_relative_spatial_terms(relation)
+                self.update_relation_distance(relations=updated_relations,
                                               relation_to_be_updated=relation,
                                               distance=overwritten_distance)
+
+                self.update_relation_distance(relations=relations,
+                                              relation_to_be_updated=relation,
+                                              distance=spatial_term)
             elif use_written_distance:
                 metric = relation.value.split()[-1]
                 numeric_distance, written_distance = self.prompt_helper.generate_written_word_distance(
                     metric, self.max_dist_digits)
-                written_distance_relation = Relation(type=relation.type, source=relation.source,
-                                                     target=relation.target, value=written_distance)
-                indiv_prompt += self.prompt_helper.add_desc_away_prompt(written_distance_relation, entities)
                 self.update_relation_distance(relations=relations,
                                               relation_to_be_updated=relation,
-                                              distance=numeric_distance)
-            else:
-                indiv_prompt += self.prompt_helper.add_desc_away_prompt(relation, entities)
-        return indiv_prompt
+                                              distance=written_distance)
 
-    def radius_prompt_generation(self, relations):
-        radius_prompt = ""
+        return updated_relations, relations
+
+    def radius_prompt_generation(self, relations: Relations) -> Relations:
+        updated_relations = copy.deepcopy(relations)
         metric = relations.relations[0].value.split()[-1]
         use_written_distance = np.random.choice([False, True], p=[
             1.0 - self.prob_usage_of_written_numbers, self.prob_usage_of_written_numbers])
@@ -525,10 +488,7 @@ class GPTDataGenerator:
                 self.update_relation_distance(relations=relations,
                                               relation_to_be_updated=relation,
                                               distance=numeric_distance)
-            radius_prompt += self.prompt_helper.add_prompt_for_within_radius_relation(written_distance)
-        else:
-            radius_prompt += self.prompt_helper.add_prompt_for_within_radius_relation(relations.relations[0].value)
-        return radius_prompt
+        return updated_relations, relations
 
     def generate_prompts(self, tag_queries: List[LocPoint]) -> List[GeneratedPrompt]:
         '''
@@ -571,7 +531,7 @@ class GPTDataGenerator:
         return generated_sentences
 
     def generate_sentence(self, generated_prompt: GeneratedPrompt) -> str:
-        generated_sentence = request_openai(prompt=generated_prompt["prompt"])
+        generated_sentence = request_openai(system_prompt=self.system_prompt, user_prompt=generated_prompt["prompt"])
         return generated_sentence
 
 
@@ -581,6 +541,7 @@ if __name__ == '__main__':
     '''
     parser = ArgumentParser()
     parser.add_argument('--relative_spatial_terms_path', help='Path for the relative spats', required=True)
+    parser.add_argument('--system_prompt', help='Path for the system prompt', required=True)
     parser.add_argument('--tag_query_file', required=True)
     parser.add_argument('--output_gpt_generations', required=True)
     parser.add_argument('--output_prompt_generations', required=True)
@@ -604,29 +565,31 @@ if __name__ == '__main__':
     output_prompt_generations = args.output_prompt_generations
     output_gpt_generations = args.output_gpt_generations
     relative_spatial_terms_path = args.relative_spatial_terms_path
+    system_prompt = args.system_prompt
     persona_path = args.persona_path
     styles_path = args.styles_path
     tag_query_file = args.tag_query_file
     prob_usage_of_relative_spatial_terms = args.prob_usage_of_relative_spatial_terms
     prob_usage_of_written_numbers = args.prob_usage_of_written_numbers
-    prob_of_typos = args.prob_of_typos
     max_dist_digits = args.max_dist_digits
     generate_sentences = args.generate_sentences
     generate_prompts = args.generate_prompts
     translate_to_yaml = args.translate_to_yaml
     save_yaml_csv = args.save_yaml_csv
 
+    system_prompt = load_list_of_strings(list_of_strings_path=system_prompt)
     rel_spatial_terms = load_rel_spatial_terms(relative_spatial_terms_path=relative_spatial_terms_path)
     personas = load_list_of_strings(list_of_strings_path=persona_path)
     styles = load_list_of_strings(list_of_strings_path=styles_path)
 
-    gen = GPTDataGenerator(relative_spatial_terms=rel_spatial_terms,
-                           personas=personas,
-                           styles=styles,
-                           prob_usage_of_relative_spatial_terms=prob_usage_of_relative_spatial_terms,
-                           prob_usage_of_written_numbers=prob_usage_of_written_numbers,
-                           prob_of_typos=prob_of_typos,
-                           max_dist_digits=max_dist_digits)
+    gen = GPTDataGenerator(
+        system_prompt=system_prompt,
+        relative_spatial_terms=rel_spatial_terms,
+        personas=personas,
+        styles=styles,
+        prob_usage_of_relative_spatial_terms=prob_usage_of_relative_spatial_terms,
+        prob_usage_of_written_numbers=prob_usage_of_written_numbers,
+        max_dist_digits=max_dist_digits)
 
     generated_queries = None
     generated_queries_yaml = None

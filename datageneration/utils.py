@@ -79,22 +79,7 @@ def translate_queries_to_yaml(combs):
     for comb in new_combs:
         query = comb["query"]
 
-        for entity in query["entities"]:
-            if len(entity["properties"]) == 0:
-                entity.pop('properties', None)
-            else:
-                for property in entity["properties"]:
-                    if property["operator"] is None and property["value"] is None:
-                        property.pop('operator', None)
-                        property.pop('value', None)
-
-        query["relations"] = query["relations"]["relations"]
-        if query["relations"] is None:
-            query.pop('relations', None)
-        else:
-            for relation in query["relations"]:
-                if relation["value"] is None:
-                    relation.pop('value', None)
+        query = clean_up_query(query)
 
         yaml_string = yaml.dump(query)
 
@@ -103,6 +88,25 @@ def translate_queries_to_yaml(combs):
     return new_combs
 
 
+<<<<<<< gpt_gen_with_yaml
+def clean_up_query(query):
+    for entity in query["entities"]:
+        if len(entity["properties"]) == 0:
+            entity.pop('properties', None)
+        else:
+            for property in entity["properties"]:
+                if property["operator"] is None and property["value"] is None:
+                    property.pop('operator', None)
+                    property.pop('value', None)
+    query["relations"] = query["relations"]["relations"]
+    if query["relations"] is None:
+        query.pop('relations', None)
+    else:
+        for relation in query["relations"]:
+            if relation["value"] is None:
+                relation.pop('value', None)
+    return query
+=======
 def split_descriptors(descriptors: str) -> List[str]:
     '''this function splits the descriptors as a list of single descriptor'''
     processed_descriptors = set()
@@ -115,6 +119,7 @@ def split_descriptors(descriptors: str) -> List[str]:
 
     return processed_descriptors
 
+>>>>>>> main
 
 class CompoundTagPropertyProcessor:
     def expand_list(self, tag_compounds: str) -> List[str]:

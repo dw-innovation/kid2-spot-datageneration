@@ -97,6 +97,14 @@ class LocPoint(BaseModel):
     entities: List[Entity]
     relations: Optional[Relations] = None
 
+    def update_relations(self, new_relations_data):
+        contain_relations = []
+        if self.relations:
+            contain_relations = [relation for relation in self.relations.relations if relation.type == "contains"]
+
+        contain_relations.extend(new_relations_data.relations)
+        self.relations.relations = contain_relations
+
 
 # Relative Spatial Terms
 class RelSpatial(BaseModel):
