@@ -93,7 +93,7 @@ if __name__ == '__main__':
     samples_as_df = []
     for fname in Path(input_folder).rglob('*.jsonl'):
         sample_df = pd.read_json(fname, orient='records', lines=True)
-        sample_df["query"] = sample_df["query"].apply(lambda x: convert_yaml_output(x))
+        # sample_df["query"] = sample_df["query"].apply(lambda x: convert_yaml_output(x))
         sample_df.rename(columns={"text": "sentence"}, inplace=True)
 
         sample_df["sentence"] = sample_df["sentence"].apply(lambda x: x.replace("\"", "").replace("\n", " "))

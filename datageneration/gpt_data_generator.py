@@ -14,8 +14,8 @@ from random import randint
 
 from num2words import num2words
 
-from datageneration.data_model import RelSpatial, LocPoint, Area, Property, Relation, Relations, GeneratedPrompt, \
-    GeneratedIMRSentence
+from datageneration.data_model import (RelSpatial, LocPoint, Area, Entity, Property, Relation, Relations,
+                                       GeneratedPrompt, GeneratedIMRSentence)
 from datageneration.utils import (add_yaml_to_filename, write_output, write_dict_output, write_output_csv,
                                   translate_queries_to_yaml)
 
@@ -160,23 +160,28 @@ class PromptHelper:
 
     def __init__(self, relative_spatial_terms):
         self.relative_spatial_terms = relative_spatial_terms
-        self.beginning_template = ("Act as a {persona}: Return a sentence simulating a user using a natural language "
-                                   "interface to search for specific geographic locations by describing objects, their "
-                                   "properties and the spatial relation between objects.\nIf one object has multiple "
-                                   "tags assigned to it, they need to be put in a logical connection.\nDo not affirm "
-                                   "this request and return nothing but the answers.\nWrite the search request {style}.")
+        self.beginning_template = ("Generate one or more sentences simulating a user using a natural language interface "
+                                   "for an AI geolocation search tool that can find locations based on descriptions of "
+                                   "objects and their spatial relations. Each object has one main descriptor and "
+                                   "optionally additional properties. All properties must be put in a logical connection "
+                                   "to the object.\n"
+                                   "Mention the area, cover all entities and their respective properties, and describe "
+                                   "the respective relations. Stick to the descriptions of entities and relations "
+                                   "provided and don’t add anything. Stick to the values of each relation. If no "
+                                   "relations or distances are provided, your output must consider the entities to be "
+                                   "unrelated. Distances always refer to a maximum distance. Vary your phrasing. Do not "
+                                   "affirm this request and return nothing but the answer.\n\n ==Persona==\n{persona} "
+                                   "\n\n ==Style==\n{style}")
         self.typo_templates = [
-            "\nThe text should contain a {amount} amount of typos.",
-            "\nThe text should contain a {amount} amount of typos and grammar mistakes."
+            "\n\n==Other specifications==\nThe text should contain a {amount} amount of typos.",
+            "\n\n==Other specifications==\nThe text should contain a {amount} amount of typos and grammar mistakes."
         ]
         self.typo_amounts = ["small", "medium", "large"]
-        self.ending_template = ("Please take your time and make sure that all the provided information is contained in "
+        self.ending_template = ("\nPlease take your time and make sure that all the provided information is contained in "
                                 "the sentence.")
-        self.search_templates = [
-            "\nThe sentence must use all of the following search criteria:\n",
-            "\nYou are searching for {place} that fulfills all of the following search criteria:\n",
-        ]
-        self.predefined_places = ["a place", "an area", "a location"] # "a crossing", "a corner", "a street",
+        self.search_template = "\n\n==Input==\n"
+
+        self.predefined_places = ["a place", "an area", "a location"]
         self.name_regex_templates = ["", "", "", "contains the letters", "begins with the letters",
                                      "ends with the letters"]
         self.phrases_for_numerical_comparison = {
@@ -187,8 +192,7 @@ class PromptHelper:
         self.phrases_desc = ["", "", "", "", "", "", "", " more or less", " approximately", " less than",
                     " no more than", " no less than", " around", " at max", " about", " at least"]
 
-        # todo: the below line does not make sense
-        self.phrases_away = ["away", "away from", "from"]
+        self.phrases_away = ["away from", "from"]
         self.phrases_radius = ["within DIST", "in a radius of DIST", "no more than DIST from another",
                                "DIST from each other"]
         self.phrases_contains = ["within", "in", "inside", "contained in"]
@@ -224,16 +228,7 @@ class PromptHelper:
         Append the beginning prompt with search phrase. The search phrase is randomly chosen among the search templates.
         If search templates contain {place}, it randomly selects a place from predefined_places
         '''
-        search_template = np.random.choice(self.search_templates)
-
-        if '{place}' in search_template:
-            np.random.shuffle(self.predefined_places)
-            selected_place = self.predefined_places[0]
-            beginning_prompt += search_template.replace('{place}', selected_place)
-        else:
-            beginning_prompt += search_template
-
-        return beginning_prompt
+        return beginning_prompt + self.search_template
 
     def add_area_prompt(self, area: Area) -> str:
         '''
@@ -241,7 +236,7 @@ class PromptHelper:
         '''
         area_prompt = ""
         if area.type not in ["bbox", "polygon"]:
-            area_prompt = "Search area:\n- " + area.value + "\n"
+            area_prompt = "Search Area:\n- " + area.value + "\n"
         return area_prompt
 
     def add_numerical_prompt(self, entity_property: Property) -> str:
@@ -283,7 +278,6 @@ class PromptHelper:
 
     def add_property_prompt(self, core_prompt: str, entity_properties: List[Property]) -> str:
         for entity_property in entity_properties:
-            core_prompt = core_prompt + ", "
             core_prompt = core_prompt + entity_property.name
 
             if entity_property.name == 'height' or is_number(entity_property.value):
@@ -292,9 +286,11 @@ class PromptHelper:
                 core_prompt = core_prompt + self.add_name_regex_prompt(entity_property=entity_property)
             else:
                 core_prompt = core_prompt + self.add_other_non_numerical_prompt(entity_property=entity_property)
-        return core_prompt
+            core_prompt = core_prompt + ", "
 
-    def add_relative_spatial_terms(self, relation: Relation) -> tuple:
+        return core_prompt[:-2]
+
+    def add_relative_spatial_terms(self, relation: Relation, entities: List[Entity]) -> tuple:
         '''
         Randomly selects relative spatial term
         '''
@@ -305,14 +301,19 @@ class PromptHelper:
         np.random.shuffle(descriptors_of_relative_spatial_terms)
         selected_relative_spatial_term = descriptors_of_relative_spatial_terms[0]
         generated_prompt, overwritten_distance = self.add_relative_spatial_term_helper(
-            selected_relative_spatial_term, relation, selected_relative_spatial)
+            selected_relative_spatial_term, relation, selected_relative_spatial, entities)
 
         return (generated_prompt, overwritten_distance)
 
     def add_relative_spatial_term_helper(self, selected_relative_spatial_term: str, relation: Relation,
-                                         selected_relative_spatial: RelSpatial):
-        generated_prompt = (f"- Use this term to describe the spatial relation between Obj. {relation.source} and "
-                        f"{relation.target} similar to (similar to \"X is _ Y\"): {selected_relative_spatial_term}\n")
+                                         selected_relative_spatial: RelSpatial, entities: List[Entity]):
+        for entity in entities:
+            if entity.id == relation.target:
+                target_ent = entity.name
+            if entity.id == relation.source:
+                source_ent = entity.name
+        generated_prompt = (f"- Use this term to describe the spatial relation between the {source_ent} and the "
+                        f"{target_ent} (similar to \"X is _ Y\"): {selected_relative_spatial_term}\n")
         overwritten_distance = selected_relative_spatial.distance
         return generated_prompt, overwritten_distance
 
@@ -337,7 +338,8 @@ class PromptHelper:
 
         return numeric, written
 
-    def add_desc_away_prompt_helper(self, relation: Relation, selected_phrases_desc: str, selected_phrases_away: str):
+    def add_desc_away_prompt_helper(self, relation: Relation, selected_phrases_desc: str, selected_phrases_away: str,
+                                    entities: List[Entity]):
         '''Helper function for generating desc away prompts'''
         if np.random.choice([True, False]):
             metric = self.dist_lookup[relation.value.rsplit(" ", 1)[-1]]
@@ -345,15 +347,21 @@ class PromptHelper:
         else:
             distance = relation.value
 
-        generated_prompt = (f"- Obj. {relation.source} is{selected_phrases_desc} {distance} {selected_phrases_away} "
-                            f"Obj. {relation.target}\n")
+        for entity in entities:
+            if entity.id == relation.target:
+                target_ent = entity.name
+            if entity.id == relation.source:
+                source_ent = entity.name
+
+        generated_prompt = (f"- The {source_ent} is{selected_phrases_desc} {distance} {selected_phrases_away} "
+                            f"the {target_ent}\n")
         return generated_prompt
 
-    def add_desc_away_prompt(self, relation: Relation) -> str:
+    def add_desc_away_prompt(self, relation: Relation, entities: List[Entity]) -> str:
         selected_phrases_desc = np.random.choice(self.phrases_desc)
         selected_phrases_away = np.random.choice(self.phrases_away)
 
-        generated_prompt = self.add_desc_away_prompt_helper(relation, selected_phrases_desc, selected_phrases_away)
+        generated_prompt = self.add_desc_away_prompt_helper(relation, selected_phrases_desc, selected_phrases_away, entities)
         return generated_prompt
 
     def add_prompt_for_within_radius_relation(self, distance: str) -> str:
@@ -366,7 +374,7 @@ class PromptHelper:
         generated_prompt = f"- All objects are {selected_phrase}.\n"
         return generated_prompt
 
-    def add_relation_with_contain(self, relations: List[Relation]) -> Tuple[str, Relations]:
+    def add_relation_with_contain(self, relations: List[Relation], entities: List[Entity]) -> Tuple[str, Relations]:
         '''
         This function identifies the objects having containing relationship, collect the remaining ones which have
         individual rels with the other ones.
@@ -379,7 +387,12 @@ class PromptHelper:
         individual_rels = []
         for relation in relations:
             if relation.type == "contains":
-                generated_prompt += f"- Obj. {relation.target} is {selected_phrase} Obj. {relation.source}\n"
+                for entity in entities:
+                    if entity.id == relation.target:
+                        target_ent = entity.name
+                    if entity.id == relation.source:
+                        source_ent = entity.name
+                generated_prompt += f"- The {target_ent} is {selected_phrase} the {source_ent}\n"
             else:
                 individual_rels.append(relation)
 
@@ -435,6 +448,7 @@ class GPTDataGenerator:
         for entity_id, entity in enumerate(entities):
             core_prompt = core_prompt + "- Obj. " + str(entity_id) + ": " + entity.name
             if len(entity.properties) > 0:
+                core_prompt += " | Properties -> "
                 core_prompt = self.prompt_helper.add_property_prompt(core_prompt=core_prompt,
                                                                      entity_properties=entity.properties)
             core_prompt += '\n'
@@ -442,18 +456,18 @@ class GPTDataGenerator:
         core_relation = ''
 
         if relations.type in ["individual_distances_with_contains", "contains_relation"]:
-            generated_prompt, individual_rels = self.prompt_helper.add_relation_with_contain(relations.relations)
+            generated_prompt, individual_rels = self.prompt_helper.add_relation_with_contain(relations.relations, entities)
             core_relation += generated_prompt
         else:
             individual_rels = relations
 
         if relations.type in ["individual_distances", "individual_distances_with_contains"]:
-                core_relation += self.individual_prompt_generation(individual_rels)
+            core_relation += self.individual_prompt_generation(individual_rels, entities)
         elif relations.type == "within_radius":
-                core_relation += self.radius_prompt_generation(individual_rels)
+            core_relation += self.radius_prompt_generation(individual_rels)
 
         if len(core_relation) > 0:
-            core_relation = "Distances:\n" + core_relation
+            core_relation = "Relations:\n" + core_relation
 
         core_prompt = core_prompt + core_relation
         core_prompt = search_prompt + core_prompt + self.prompt_helper.ending()
@@ -467,7 +481,7 @@ class GPTDataGenerator:
         persona_style_tag_pairs = [(x, next(cycled_persona_style_ids)) for x in num_tag_queries_ids]
         return persona_style_tag_pairs
 
-    def individual_prompt_generation(self, relations):
+    def individual_prompt_generation(self, relations, entities):
         indiv_prompt = ""
         for relation in relations.relations:
             use_relative_spatial_terms = np.random.choice([False, True], p=[
@@ -481,7 +495,7 @@ class GPTDataGenerator:
                 else:
                     use_written_distance = False
             if use_relative_spatial_terms:
-                generated_prompt, overwritten_distance = self.prompt_helper.add_relative_spatial_terms(relation)
+                generated_prompt, overwritten_distance = self.prompt_helper.add_relative_spatial_terms(relation, entities)
                 indiv_prompt += generated_prompt
                 self.update_relation_distance(relations=relations,
                                               relation_to_be_updated=relation,
@@ -492,12 +506,12 @@ class GPTDataGenerator:
                     metric, self.max_dist_digits)
                 written_distance_relation = Relation(type=relation.type, source=relation.source,
                                                      target=relation.target, value=written_distance)
-                indiv_prompt += self.prompt_helper.add_desc_away_prompt(written_distance_relation)
+                indiv_prompt += self.prompt_helper.add_desc_away_prompt(written_distance_relation, entities)
                 self.update_relation_distance(relations=relations,
                                               relation_to_be_updated=relation,
                                               distance=numeric_distance)
             else:
-                indiv_prompt += self.prompt_helper.add_desc_away_prompt(relation)
+                indiv_prompt += self.prompt_helper.add_desc_away_prompt(relation, entities)
         return indiv_prompt
 
     def radius_prompt_generation(self, relations):

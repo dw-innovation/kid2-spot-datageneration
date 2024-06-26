@@ -1,3 +1,4 @@
+import os
 import copy
 import csv
 import itertools
@@ -41,6 +42,8 @@ def add_yaml_to_filename(output_file):
     return yaml_output_file
 
 def write_output(generated_combs, output_file):
+    os.makedirs(os.path.dirname(output_file), exist_ok=True)
+
     with open(output_file, "w") as out_file:
         for generated_comb in generated_combs:
             json.dump(generated_comb.model_dump(mode="json"), out_file)
