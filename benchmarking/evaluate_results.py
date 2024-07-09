@@ -1,7 +1,3 @@
-import numpy as np
-import pandas as pd
-import random
-import json
 import copy
 from argparse import ArgumentParser
 from ruamel.yaml import YAML
@@ -10,6 +6,8 @@ from ruamel.yaml import YAML
 def is_parsable_yaml(yaml_string):
     """
     Checks whether the input batch of YAML strings is parsable.
+
+    :return: is_parsable, parsed_yaml - Boolean whether YAML is parsable plus parsed YAML (or None if not possible).
     """
     yaml = YAML(typ='safe')
     try:
@@ -19,13 +17,28 @@ def is_parsable_yaml(yaml_string):
         parsed_yaml = None
         is_parsable = False
     return is_parsable, parsed_yaml
-1
+
 
 def compare_areas(area1, area2):
+    """
+    Checks if two areas are identical.
+
+    :param area1: The first area to compare.
+    :param area2: The second area to compare.
+    :return: Boolean whether the two areas are the same.
+    """
     return area1 == area2
 
 
 def compare_properties(props1, props2):
+    """
+    Check if two lists of properties are identical. The lists are first sorted via their names, to make sure the order
+    does not affect the results.
+
+    :param props1: The first property list to compare.
+    :param props2: The second property list to compare.
+    :return: Boolean whether the two property lists are the same.
+    """
     if len(props1) != len(props2):
         return False
     props1_sorted = sorted(props1, key=lambda x: x['name'])
@@ -34,6 +47,14 @@ def compare_properties(props1, props2):
 
 
 def compare_entities(entities1, entities2):
+    """
+    Check if two lists of entities are identical. The lists are first sorted via their names, to make sure the order
+    does not affect the results.
+
+    :param entities1: The first entity list to compare.
+    :param entities2: The second entity list to compare.
+    :return: Boolean whether the two entity lists are the same.
+    """
     if len(entities1) != len(entities2):
         return False
     entities1_sorted = sorted(entities1, key=lambda x: x['name'])
@@ -47,6 +68,14 @@ def compare_entities(entities1, entities2):
 
 
 def prepare_relation(data):
+    """
+    In order to compare relations independent of the order of entities, it is not sufficient to have numeric
+    references for target and source. This method therefore replaces the numeric pointers with the descriptors (names)
+    of the references entities, as this makes comparisons possible.
+
+    :param data: The entire query, including area, entities and relations.
+    :return: prepped_relation - The updated relation with descriptors instead of numeric pointers.
+    """
     relations = copy.deepcopy(data["relations"])
     prepped_relation = copy.deepcopy(data["relations"])
     for id in range(len(data["relations"])):
@@ -54,8 +83,17 @@ def prepare_relation(data):
         prepped_relation[id]["target"] = [ent["name"] for ent in data["entities"] if ent["id"] == relations[id]["target"]][0]
     return prepped_relation
 
-
 def compare_relations(relations1, relations2):
+    """
+    Check if two lists of relations are identical. There are two different ways how the comparison is done, based on
+    whether the order of source and target is relevant or not (only the case in "contains" relations).
+    Contains relations (where the order matters) are compared as lists. Other relations (where the order of source
+    and target does not matter) is compared as a list of frozensets.
+
+    :param relations1: The first relations list to compare.
+    :param relations2: The second relations list to compare.
+    :return: Boolean whether the two relations lists are the same.
+    """
     if len(relations1) != len(relations2):
         return False
     r1 = set()
@@ -80,8 +118,15 @@ def compare_relations(relations1, relations2):
 
     return True
 
-
 def compare_yaml(yaml_true_string, yaml_pred_string):
+    """
+    Compare two YAML structures represented as strings. This is done by comparing areas, entities and relations
+    separately.
+
+    :param yaml_true_string: The first YAML to compare.
+    :param yaml_pred_string: The first YAML to compare.
+    :return: Boolean whether the two YAMLs are the same.
+    """
     _, data1 = is_parsable_yaml(yaml_true_string)
     is_parsable, data2 = is_parsable_yaml(yaml_pred_string)
 
@@ -94,7 +139,7 @@ def compare_yaml(yaml_true_string, yaml_pred_string):
             is_same =  False
         else:
             print(">> Area is True!")
-            
+
         if not compare_entities(data1['entities'], data2['entities']):
             print("XX Entities are False!")
             is_same =  False
@@ -108,7 +153,6 @@ def compare_yaml(yaml_true_string, yaml_pred_string):
             print(">> Relations are True!")
 
         return is_same
-
 
 if __name__ == '__main__':
     parser = ArgumentParser()

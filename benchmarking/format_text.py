@@ -1,6 +1,14 @@
 import numpy as np
 
 def format_text(instructions_with_values):
+    """
+    A function that takes the instructions plus the added values and turns them into written instructions. It basically
+    simply checks which requirements and values are present in the instructions_with_values list and adds the
+    corresponding sentences to the instruction text.
+
+    :param instructions_with_values: The required and optional instructions plus the additional drawn information.
+    :return: instructions_with_formatted_text - The required and optional instructions plus the instruction text.
+    """
 
     instructions_with_formatted_text = []
 
@@ -8,25 +16,9 @@ def format_text(instructions_with_values):
         text = ("Please stick to the following instructions and choose the relevant items from the respective lists "
                 "to write a sound and logical prompt for finding a location with SPOT.<br /><br />")
 
-        object_count = 0
-        with_property_count = 0
-        raw_property_count = 0
-        for object in instruction[10].split("\n"):
-            if len(object) == 0:
-                continue
-            # object_row = " - " + object.split(": ", 1)[1].split(" | Properties")[0]
-            object_count += 1
-
-            if "Properties -> " in object:
-                # object_row = object_row + ", with "
-                properties = object.split("Properties -> ")[1].split(", ")
-                # for p in properties:
-                #     object_row = object_row + p + " and "
-                # object_row = object_row[:-5]
-                with_property_count += 1
-                raw_property_count += len(properties)
-
-            # text = text + object_row + "<br />"
+        object_count = instruction[10]
+        with_property_count = instruction[11]
+        raw_property_count = instruction[12]
 
         list_one = "<a target=”_blank” href=\"https://deutschewelle.sharepoint.com/:x:/t/GR-GR-ReCo-KID2/EYEtCb8IvOZEuSSA55rABBUB3_4in40EKMY6BdThah8juw?e=q3tyR0\">list of objects</a>"
         list_two = "<a target=”_blank” href=\"https://deutschewelle.sharepoint.com/:x:/t/GR-GR-ReCo-KID2/Ecsu5jWfk5FJiVEJ29kE4XYBUIdNyBbkp9yy2ZxU5OJ9jw?e=II0pDC\">list of attributes</a>"
@@ -44,13 +36,12 @@ def format_text(instructions_with_values):
 
         text = text + "<br />The area you are searching in is:<br />"
         if instruction[9]:
-            text = text + " - " + instruction[9] + "<br />"
+            text = text + " - " + instruction[9].value + "<br />"
         else:
             text = text + " - " + "Please don't specify a search area.<br />"
 
         text = text + ("<br />Please put the selected objects in meaningful relations to each other, using *only* and "
                        "*all* of the following types:<br />")
-
 
         metric = ["metric system (meters (m), kilometers (km))", "imperial system (feet (ft), yards (yd), miles (mi))"][np.random.choice([0,1])]
         if instruction[2] == "in_area":
@@ -66,12 +57,6 @@ def format_text(instructions_with_values):
         if "spatial_yes" in instruction:
             text = text + (" - Pick a relative relation of objects to each other from this " + list_three + "<br />")
 
-        # if instruction[11]:
-        #     # for relation in instruction[10].split("<br />"):
-        #     text = text + instruction[11].replace("- ", " - ")
-        # else:
-        #     text = text + " - The objects are in no specific relation to another, search for them like they're unrelated."
-
         text = text + "<br />The overall style of your prompt should be:<br /> - " + instruction[3] + "<br />"
         if "grammar_few" in instruction:
             text = text + " - Containing a few grammar mistakes.<br />"
@@ -86,8 +71,6 @@ def format_text(instructions_with_values):
 
         add_inst_text = ""
         if "multiple_of_one" in instruction:
-            num_objects = len(instruction[10].split("\n"))
-            drawn_object = np.random.choice(np.arange(num_objects))
             count = np.random.choice(np.arange(2,10))
             add_inst_text = (add_inst_text + " - " + "Please treat one of the objects as a cluster of "
                              + str(count) + " of this Object when writing the prompt (similar to \"three houses\" "
@@ -111,12 +94,12 @@ def format_text(instructions_with_values):
         else:
             text = text + add_inst_text
 
-        print(instruction)
-        print("+++")
-        print(text)
-        print("\n=====================\n")
+        # print(instruction)
+        # print("+++")
+        # print(text)
+        # print("\n=====================\n")
 
-        instructions_with_formatted_text.append(instruction[:9] + [text]) #+ [instruction[-1]]
+        instructions_with_formatted_text.append(instruction[:9] + [text])
 
     return instructions_with_formatted_text
 
