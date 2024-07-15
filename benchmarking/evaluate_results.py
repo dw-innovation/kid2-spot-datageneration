@@ -1,7 +1,6 @@
 import copy
+import yaml
 from argparse import ArgumentParser
-from ruamel.yaml import YAML
-
 
 def is_parsable_yaml(yaml_string):
     """
@@ -9,9 +8,8 @@ def is_parsable_yaml(yaml_string):
 
     :return: is_parsable, parsed_yaml - Boolean whether YAML is parsable plus parsed YAML (or None if not possible).
     """
-    yaml = YAML(typ='safe')
     try:
-        parsed_yaml = yaml.load(yaml_string)
+        parsed_yaml = yaml.safe_load(yaml_string)
         is_parsable = True
     except:
         parsed_yaml = None
