@@ -1,6 +1,20 @@
 import copy
+import pandas as pd
 import yaml
 from argparse import ArgumentParser
+from pydantic import BaseModel, Field
+from tqdm import tqdm
+
+from benchmarking.yaml_parser import validate_and_fix_yaml
+from benchmarking.utils import write_output
+
+class Result(BaseModel, frozen=True):
+    yaml_true_string: str = Field(...)
+    yaml_pred_string: str = Field(...)
+    is_parsable_yaml: bool = Field(description="True if yaml can be parsed, otherwise False", default=False)
+    is_area_same: bool = Field(description="True if areas are equal, otherwise False", default=False)
+    are_entities_same: bool = Field(description="True if entity are equal, otherwise False", default=False)
+    are_relations_same: bool = Field(description="True if entity are equal, otherwise False", default=False)
 
 def is_parsable_yaml(yaml_string):
     """
@@ -8,12 +22,17 @@ def is_parsable_yaml(yaml_string):
 
     :return: is_parsable, parsed_yaml - Boolean whether YAML is parsable plus parsed YAML (or None if not possible).
     """
+    parsed_yaml = None
     try:
         parsed_yaml = yaml.safe_load(yaml_string)
         is_parsable = True
-    except:
-        parsed_yaml = None
+    except Exception as e:
         is_parsable = False
+        # try to parse it by using the custom parser from the backend
+        try:
+            parsed_yaml = validate_and_fix_yaml(yaml_string)
+        except Exception as e:
+            pass
     return is_parsable, parsed_yaml
 
 
@@ -58,6 +77,8 @@ def compare_entities(entities1, entities2):
     entities1_sorted = sorted(entities1, key=lambda x: x['name'])
     entities2_sorted = sorted(entities2, key=lambda x: x['name'])
     for ent1, ent2 in zip(entities1_sorted, entities2_sorted):
+        if 'type' not in ent1:
+            return False
         if ent1['name'] != ent2['name'] or ent1['type'] != ent2['type']:
             return False
         if not compare_properties(ent1.get('properties', []), ent2.get('properties', [])):
@@ -77,9 +98,12 @@ def prepare_relation(data):
     relations = copy.deepcopy(data["relations"])
     prepped_relation = copy.deepcopy(data["relations"])
     for id in range(len(data["relations"])):
-        prepped_relation[id]["source"] = [ent["name"] for ent in data["entities"] if ent["id"] == relations[id]["source"]][0]
-        prepped_relation[id]["target"] = [ent["name"] for ent in data["entities"] if ent["id"] == relations[id]["target"]][0]
+        prepped_relation[id]["source"] = \
+            [ent["name"] for ent in data["entities"] if ent["id"] == relations[id]["source"]][0]
+        prepped_relation[id]["target"] = \
+            [ent["name"] for ent in data["entities"] if ent["id"] == relations[id]["target"]][0]
     return prepped_relation
+
 
 def compare_relations(relations1, relations2):
     """
@@ -116,7 +140,8 @@ def compare_relations(relations1, relations2):
 
     return True
 
-def compare_yaml(yaml_true_string, yaml_pred_string):
+
+def compare_yaml(yaml_true_string, yaml_pred_string) -> Result:
     """
     Compare two YAML structures represented as strings. This is done by comparing areas, entities and relations
     separately.
@@ -126,147 +151,69 @@ def compare_yaml(yaml_true_string, yaml_pred_string):
     :return: Boolean whether the two YAMLs are the same.
     """
     _, data1 = is_parsable_yaml(yaml_true_string)
-    is_parsable, data2 = is_parsable_yaml(yaml_pred_string)
+    _is_parsable_yaml, data2 = is_parsable_yaml(yaml_pred_string)
+    _is_area_same = False
+    are_entities_same = False
+    are_relations_same = False
 
-    if not is_parsable:
-        return False
-    else:
-        is_same = True
-        if not compare_areas(data1['area'], data2['area']):
-            print("XX Area is False!")
-            is_same =  False
+    if data2:
+        if compare_areas(data1['area'], data2['area']):
+            _is_area_same = True
+
+        if compare_entities(data1['entities'], data2['entities']):
+            are_entities_same = True
+
+        # todo: recheck this!!
+        if 'relations' not in data2:
+            are_relations_same = False
+
         else:
-            print(">> Area is True!")
+            if 'relations' not in data1:
+                are_relations_same = False
+            else:
+                if compare_relations(data1['relations'], data2['relations']):
+                    are_relations_same = True
 
-        if not compare_entities(data1['entities'], data2['entities']):
-            print("XX Entities are False!")
-            is_same =  False
-        else:
-            print(">> Entities are True!")
+    return Result(yaml_pred_string=yaml_pred_string,
+                  yaml_true_string=yaml_true_string,
+                  is_parsable_yaml=_is_parsable_yaml,
+                  is_area_same=_is_area_same,
+                  are_entities_same=are_entities_same,
+                  are_relations_same=are_relations_same)
 
-        if not compare_relations(prepare_relation(data1), prepare_relation(data2)): #['relations']
-            print("XX Relations are False!")
-            is_same =  False
-        else:
-            print(">> Relations are True!")
-
-        return is_same
 
 if __name__ == '__main__':
     parser = ArgumentParser()
-    parser.add_argument('--geolocations_file_path', help='Path to a file containing cities, countries, etc.')
+    parser.add_argument('--gold_file_path', type=str, required=True)
+    parser.add_argument('--gold_sheet_name', type=str, required=True)
+    parser.add_argument('--pred_file_path', type=str, required=True)
+    parser.add_argument('--out_file_path', type=str, required=True)
+    # parser.add_argument('--geolocations_file_path', help='Path to a file containing cities, countries, etc.')
     args = parser.parse_args()
+    # geolocations_file_path = args.geolocations_file_path
+    out_file_path = args.out_file_path
+    pred_file_path = args.pred_file_path
+    predictions = pd.read_json(path_or_buf=pred_file_path, lines=True).to_dict(orient='records')
 
-    geolocations_file_path = args.geolocations_file_path
+    gold_file_path = args.gold_file_path
+    gold_sheet_name = args.gold_sheet_name
+    gold_labels = pd.read_excel(gold_file_path, sheet_name=gold_sheet_name).to_dict(orient='records')
 
-#     yaml_true_string = """area:
-#   - type: area
-#     value: Dâmbovița County, Romania
-# entities:
-#   - id: 0
-#     name: social facility
-#     type: nwr
-#     properties:
-#       - name: building levels
-#         operator: <
-#         value: 3
-#       - name: name
-#         operator: ~
-#         value: ole
-#   - id: 1
-#     name: fabric shop
-#     type: nwr
-#   - id: 2
-#     name: petrol station
-#     type: nwr
-# relations:
-#   - type: distance
-#     source: 1
-#     target: 0
-#     value: 400 m
-#   - type: distance
-#     source: 2
-#     target: 1
-#     value: 300 m"""
-#
-#     yaml_pred_string = """area:
-#   - type: area
-#     value: Dâmbovița County, Romania
-# entities:
-#   - id: 0
-#     name: social facility
-#     type: nwr
-#     properties:
-#       - name: building levels
-#         operator: <
-#         value: 3
-#       - name: name
-#         operator: ~
-#         value: ole
-#   - id: 1
-#     name: petrol station
-#     type: nwr
-#   - id: 2
-#     name: fabric shop
-#     type: nwr
-# relations:
-#   - type: distance
-#     source: 2
-#     target: 0
-#     value: 400 m
-#   - type: distance
-#     source: 1
-#     target: 2
-#     value: 300 m"""
-    yaml_true_string = """area:
-  - type: bbox
-entities:
-  - id: 0
-    type: nwr
-    name: vacant shop
-    properties:
-      - name: floors
-        operator: <
-        value: 10
-  - id: 1
-    type: nwr
-    name: office building
-  - id: 2
-    type: nwr
-    name: gambling den
-relations:
-  - type: contains
-    source: 1
-    target: 0 
-  - type: distance
-    source: 0
-    target: 2
-    value: 0.5 miles"""
 
-    yaml_pred_string = """area:
-  - type: bbox
-entities:
-  - id: 0
-    type: nwr
-    name: gambling den
-  - id: 1
-    type: nwr
-    name: office building
-  - id: 2
-    type: nwr
-    name: vacant shop
-    properties:
-      - name: floors
-        operator: <
-        value: 10
-relations:
-  - type: distance
-    source: 0
-    target: 2
-    value: 0.5 miles
-  - type: contains
-    source: 1
-    target: 2"""
+    results = []
+    for prediction, gold_label in tqdm(zip(predictions, gold_labels), total=len(gold_labels)):
+        assert prediction['sentence'] == gold_label['sentence']
+        yaml_pred_string = prediction['model_result']
+        yaml_true_string = gold_label['YAML']
+        result = compare_yaml(yaml_true_string=yaml_true_string, yaml_pred_string=yaml_pred_string)
+        results.append(result.dict())
 
-    result = compare_yaml(yaml_true_string, yaml_pred_string)
-    print("The YAML structures are the same:", result)
+    results = pd.DataFrame(results)
+    for result_type in ['is_parsable_yaml','is_area_same', 'are_entities_same', 'are_relations_same']:
+        true_preds = results[results[result_type]]
+        acc = len(true_preds) / len(results)
+        print(f'Accuracy of {result_type}')
+        print(acc)
+
+    with pd.ExcelWriter(out_file_path) as writer:
+        results.to_excel(writer)
