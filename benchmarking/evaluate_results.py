@@ -23,6 +23,9 @@ class Result(BaseModel, frozen=True):
                                              default=ResultDataType.FALSE)
     is_area_exact_match: ResultDataType = Field(description="True if areas are equal, otherwise False",
                                                 default=ResultDataType.FALSE)
+
+    is_area_light_match: ResultDataType = Field(description="True if areas are equal, otherwise False",
+                                                default=ResultDataType.FALSE)
     num_entities_on_ref_data: int = 0
     num_entities_on_gen_data: int = 0
     num_relations_on_ref_data: int = 0
@@ -34,6 +37,38 @@ class Result(BaseModel, frozen=True):
                                                        default=ResultDataType.NOT_APPLICABLE)
     are_properties_exactly_same: ResultDataType = Field(description="True if entity are equal, otherwise False",
                                                         default=ResultDataType.NOT_APPLICABLE)
+
+
+class AreaAnalyzer:
+    def __init__(self):
+        pass
+
+    def compare_areas_strict(self, area1, area2) -> ResultDataType:
+        """
+        Checks if two areas are identical.
+
+        :param area1: The first area to compare.
+        :param area2: The second area to compare.
+        :return: Boolean whether the two areas are the same.
+        """
+        return ResultDataType.TRUE if (area1 == area2) else ResultDataType.FALSE
+
+    def compare_areas_light(self, area1, area2) -> ResultDataType:
+        """
+        Checks if two areas are identical.
+
+        :param area1: The first area to compare.
+        :param area2: The second area to compare.
+        :return: Boolean whether the two areas are the same.
+        """
+        if area1["type"] != "bbox":
+            area1['value'] = area1['value'].lower()
+            area2['value'] = area2['value'].lower()
+
+
+        # todo: relaxing encoding issue
+
+        return self.compare_areas_strict(area1=area1, area2=area2)
 
 
 def is_parsable_yaml(yaml_string) -> ResultDataType:
@@ -54,17 +89,6 @@ def is_parsable_yaml(yaml_string) -> ResultDataType:
         except Exception as e:
             pass
     return is_parsable, parsed_yaml
-
-
-def compare_areas(area1, area2) -> ResultDataType:
-    """
-    Checks if two areas are identical.
-
-    :param area1: The first area to compare.
-    :param area2: The second area to compare.
-    :return: Boolean whether the two areas are the same.
-    """
-    return ResultDataType.TRUE if (area1 == area2) else ResultDataType.FALSE
 
 
 def compare_properties(props1, props2) -> ResultDataType:
@@ -161,7 +185,7 @@ def compare_relations(relations1, relations2) -> ResultDataType:
     return ResultDataType.TRUE
 
 
-def compare_yaml(yaml_true_string, yaml_pred_string) -> Result:
+def compare_yaml(area_analyzer: AreaAnalyzer, yaml_true_string, yaml_pred_string) -> Result:
     """
     Compare two YAML structures represented as strings. This is done by comparing areas, entities and relations
     separately.
@@ -178,7 +202,8 @@ def compare_yaml(yaml_true_string, yaml_pred_string) -> Result:
     are_properties_exactly_same = ResultDataType.NOT_APPLICABLE
 
     if generated_data:
-        is_area_exact_match = compare_areas(ref_data['area'], generated_data['area'])
+        is_area_exact_match = area_analyzer.compare_areas_strict(ref_data['area'], generated_data['area'])
+        is_area_light_match = area_analyzer.compare_areas_light(ref_data['area'], generated_data['area'])
         are_entities_exactly_same = compare_entities(ref_data['entities'], generated_data['entities'])
 
         # todo: property check
@@ -212,6 +237,7 @@ def compare_yaml(yaml_true_string, yaml_pred_string) -> Result:
                   yaml_true_string=yaml_true_string,
                   is_parsable_yaml=_is_parsable_yaml,
                   is_area_exact_match=is_area_exact_match,
+                  is_area_light_match=is_area_light_match,
                   num_entities_on_ref_data=num_entities_on_ref_data,
                   num_entities_on_gen_data=num_entities_on_gen_data,
                   are_entities_exactly_same=are_entities_exactly_same,
@@ -236,16 +262,19 @@ if __name__ == '__main__':
     gold_sheet_name = args.gold_sheet_name
     gold_labels = pd.read_excel(gold_file_path, sheet_name=gold_sheet_name).to_dict(orient='records')
 
+    area_analyzer = AreaAnalyzer()
+
     results = []
     for prediction, gold_label in tqdm(zip(predictions, gold_labels), total=len(gold_labels)):
         assert prediction['sentence'] == gold_label['sentence']
         yaml_pred_string = prediction['model_result']
         yaml_true_string = gold_label['YAML']
-        result = compare_yaml(yaml_true_string=yaml_true_string, yaml_pred_string=yaml_pred_string)
+        result = compare_yaml(area_analyzer=area_analyzer, yaml_true_string=yaml_true_string,
+                              yaml_pred_string=yaml_pred_string)
         results.append(result.dict())
 
     results = pd.DataFrame(results)
-    for result_type in ['is_parsable_yaml', 'is_area_exact_match', 'are_entities_exactly_same',
+    for result_type in ['is_parsable_yaml', 'is_area_exact_match', 'is_area_light_match', 'are_entities_exactly_same',
                         'are_relations_exactly_same',
                         'are_properties_exactly_same']:
         print(f"===Results for {result_type}===")
