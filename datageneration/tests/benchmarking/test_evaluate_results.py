@@ -1,7 +1,7 @@
 import unittest
 import pandas as pd
 from typing import List
-from benchmarking.evaluate_results import compare_yaml, is_parsable_yaml, AreaAnalyzer
+from benchmarking.evaluate_results import compare_yaml, is_parsable_yaml, AreaAnalyzer, EntityAnalyzer
 
 '''Run python -m unittest datageneration.tests.benchmarking.test_evaluate_results'''
 
@@ -152,5 +152,6 @@ relations:
     target: 2
 """
         area_analyzer = AreaAnalyzer()
-        result = compare_yaml(area_analyzer, yaml_true_string, yaml_pred_string)
+        entity_analyzer = EntityAnalyzer()
+        result = compare_yaml(area_analyzer, entity_analyzer, yaml_true_string, yaml_pred_string)
         print("The YAML structures are the same:", result)

@@ -1,5 +1,6 @@
 import copy
 import enum
+import numpy as np
 import pandas as pd
 import yaml
 from argparse import ArgumentParser
@@ -29,10 +30,18 @@ class Result(BaseModel, frozen=True):
     num_entities_on_ref_data: int = 0
     num_entities_on_gen_data: int = 0
     num_relations_on_ref_data: int = 0
-    num_relations_on_ref_data: int = 0
+    num_relations_on_gen_data: int = 0
 
     are_entities_exactly_same: ResultDataType = Field(description="True if entity are equal, otherwise False",
                                                       default=ResultDataType.FALSE)
+
+    are_entities_same_exclude_props: ResultDataType = Field(description="True if entity are equal, otherwise False",
+                                                            default=ResultDataType.FALSE)
+
+    percentage_entities_partial_match_exclude_props: float = Field(
+        description="Percentage of corectly identified entities over the total ents",
+        default=0.0)
+
     are_relations_exactly_same: ResultDataType = Field(description="True if entity are equal, otherwise False",
                                                        default=ResultDataType.NOT_APPLICABLE)
     are_properties_exactly_same: ResultDataType = Field(description="True if entity are equal, otherwise False",
@@ -65,10 +74,75 @@ class AreaAnalyzer:
             area1['value'] = area1['value'].lower()
             area2['value'] = area2['value'].lower()
 
+        else:
+            # generations sometimes omit the value
+            if area1['type'] == area2['type']:
+                return ResultDataType.TRUE
 
         # todo: relaxing encoding issue
 
         return self.compare_areas_strict(area1=area1, area2=area2)
+
+
+class EntityAnalyzer:
+    def __init__(self):
+        pass
+
+    def compare_entities_strict(self, entities1, entities2) -> ResultDataType:
+        """
+        Check if two lists of entities are identical. The lists are first sorted via their names, to make sure the order
+        does not affect the results.
+
+        :param entities1: The first entity list to compare.
+        :param entities2: The second entity list to compare.
+        :return: Boolean whether the two entity lists are the same.
+        """
+        if len(entities1) != len(entities2):
+            return ResultDataType.FALSE
+        entities1_sorted, entities2_sorted = self.sort_entities(entities1, entities2)
+        for ent1, ent2 in zip(entities1_sorted, entities2_sorted):
+            if 'type' not in ent1:
+                return ResultDataType.FALSE
+            if ent1['name'] != ent2['name'] or ent1['type'] != ent2['type']:
+                return ResultDataType.FALSE
+            if not compare_properties(ent1.get('properties', []), ent2.get('properties', [])):
+                return ResultDataType.FALSE
+        return ResultDataType.TRUE
+
+    def sort_entities(self, entities1, entities2):
+        entities1_sorted = sorted(entities1, key=lambda x: x['name'])
+        entities2_sorted = sorted(entities2, key=lambda x: x['name'])
+        return entities1_sorted, entities2_sorted
+
+    def compare_entities_exclude_props(self, entities1, entities2) -> ResultDataType:
+        if len(entities1) != len(entities2):
+            return ResultDataType.FALSE
+        entities1_sorted, entities2_sorted = self.sort_entities(entities1, entities2)
+        for ent1, ent2 in zip(entities1_sorted, entities2_sorted):
+            if 'type' not in ent1:
+                return ResultDataType.FALSE
+            if ent1['name'] != ent2['name'] or ent1['type'] != ent2['type']:
+                return ResultDataType.FALSE
+
+        return ResultDataType.TRUE
+
+    def compare_entities_partial_match_exclude_props(self, entities1, entities2) -> ResultDataType:
+        """
+        Check if two lists of entities are identical. The lists are first sorted via their names, to make sure the order
+        does not affect the results.
+
+        :param entities1: The first entity list to compare.
+        :param entities2: The second entity list to compare.
+        :return: Boolean whether the two entity lists are the same.
+        """
+        entities1_sorted, entities2_sorted = self.sort_entities(entities1, entities2)
+
+        total_ents = len(entities1_sorted)
+        matched_ents = 0
+        for ent1, ent2 in zip(entities1_sorted, entities2_sorted):
+            if ent1['name'] == ent2['name'] or ent1['type'] == ent2['type']:
+                matched_ents += 1
+        return matched_ents / total_ents
 
 
 def is_parsable_yaml(yaml_string) -> ResultDataType:
@@ -105,29 +179,6 @@ def compare_properties(props1, props2) -> ResultDataType:
     props1_sorted = sorted(props1, key=lambda x: x['name'])
     props2_sorted = sorted(props2, key=lambda x: x['name'])
     return ResultDataType.TRUE if (props1_sorted == props2_sorted) else ResultDataType.FALSE
-
-
-def compare_entities(entities1, entities2) -> ResultDataType:
-    """
-    Check if two lists of entities are identical. The lists are first sorted via their names, to make sure the order
-    does not affect the results.
-
-    :param entities1: The first entity list to compare.
-    :param entities2: The second entity list to compare.
-    :return: Boolean whether the two entity lists are the same.
-    """
-    if len(entities1) != len(entities2):
-        return ResultDataType.FALSE
-    entities1_sorted = sorted(entities1, key=lambda x: x['name'])
-    entities2_sorted = sorted(entities2, key=lambda x: x['name'])
-    for ent1, ent2 in zip(entities1_sorted, entities2_sorted):
-        if 'type' not in ent1:
-            return ResultDataType.FALSE
-        if ent1['name'] != ent2['name'] or ent1['type'] != ent2['type']:
-            return ResultDataType.FALSE
-        if not compare_properties(ent1.get('properties', []), ent2.get('properties', [])):
-            return ResultDataType.FALSE
-    return ResultDataType.TRUE
 
 
 def prepare_relation(data) -> ResultDataType:
@@ -185,7 +236,8 @@ def compare_relations(relations1, relations2) -> ResultDataType:
     return ResultDataType.TRUE
 
 
-def compare_yaml(area_analyzer: AreaAnalyzer, yaml_true_string, yaml_pred_string) -> Result:
+def compare_yaml(area_analyzer: AreaAnalyzer, entity_analyzer: EntityAnalyzer, yaml_true_string,
+                 yaml_pred_string) -> Result:
     """
     Compare two YAML structures represented as strings. This is done by comparing areas, entities and relations
     separately.
@@ -198,13 +250,23 @@ def compare_yaml(area_analyzer: AreaAnalyzer, yaml_true_string, yaml_pred_string
     _is_parsable_yaml, generated_data = is_parsable_yaml(yaml_pred_string)
     is_area_exact_match = ResultDataType.FALSE
     are_entities_exactly_same = ResultDataType.FALSE
+    are_entities_partial_match_exclude_props = ResultDataType.FALSE
+    are_entities_same_exclude_props = ResultDataType.FALSE
     are_relations_exactly_same = ResultDataType.NOT_APPLICABLE
     are_properties_exactly_same = ResultDataType.NOT_APPLICABLE
 
     if generated_data:
         is_area_exact_match = area_analyzer.compare_areas_strict(ref_data['area'], generated_data['area'])
         is_area_light_match = area_analyzer.compare_areas_light(ref_data['area'], generated_data['area'])
-        are_entities_exactly_same = compare_entities(ref_data['entities'], generated_data['entities'])
+        are_entities_exactly_same = entity_analyzer.compare_entities_strict(ref_data['entities'],
+                                                                            generated_data['entities'])
+
+        are_entities_same_exclude_props = entity_analyzer.compare_entities_exclude_props(ref_data['entities'],
+                                                                                         generated_data['entities'])
+
+        percentage_entities_partial_match_exclude_props = entity_analyzer.compare_entities_partial_match_exclude_props(
+            ref_data['entities'],
+            generated_data['entities'])
 
         # todo: property check
         predicted_entities = {gen_entity['name']: gen_entity for gen_entity in generated_data['entities']}
@@ -241,6 +303,8 @@ def compare_yaml(area_analyzer: AreaAnalyzer, yaml_true_string, yaml_pred_string
                   num_entities_on_ref_data=num_entities_on_ref_data,
                   num_entities_on_gen_data=num_entities_on_gen_data,
                   are_entities_exactly_same=are_entities_exactly_same,
+                  are_entities_same_exclude_props=are_entities_same_exclude_props,
+                  percentage_entities_partial_match_exclude_props=percentage_entities_partial_match_exclude_props,
                   are_relations_exactly_same=are_relations_exactly_same,
                   are_properties_exactly_same=are_properties_exactly_same)
 
@@ -263,18 +327,25 @@ if __name__ == '__main__':
     gold_labels = pd.read_excel(gold_file_path, sheet_name=gold_sheet_name).to_dict(orient='records')
 
     area_analyzer = AreaAnalyzer()
+    entity_analyzer = EntityAnalyzer()
 
     results = []
     for prediction, gold_label in tqdm(zip(predictions, gold_labels), total=len(gold_labels)):
         assert prediction['sentence'] == gold_label['sentence']
         yaml_pred_string = prediction['model_result']
         yaml_true_string = gold_label['YAML']
-        result = compare_yaml(area_analyzer=area_analyzer, yaml_true_string=yaml_true_string,
+        result = compare_yaml(area_analyzer=area_analyzer, entity_analyzer=entity_analyzer,
+                              yaml_true_string=yaml_true_string,
                               yaml_pred_string=yaml_pred_string)
         results.append(result.dict())
 
     results = pd.DataFrame(results)
-    for result_type in ['is_parsable_yaml', 'is_area_exact_match', 'is_area_light_match', 'are_entities_exactly_same',
+
+    # Results with binary type
+    for result_type in ['is_parsable_yaml', 'is_area_exact_match',
+                        'is_area_light_match',
+                        'are_entities_exactly_same',
+                        'are_entities_same_exclude_props',
                         'are_relations_exactly_same',
                         'are_properties_exactly_same']:
         print(f"===Results for {result_type}===")
@@ -282,6 +353,13 @@ if __name__ == '__main__':
         print(f"Number of NA samples: {len(na_samples)}")
         true_preds = results[results[result_type] == ResultDataType.TRUE]
         acc = len(true_preds) / (len(results) - len(na_samples))
+        print(f'Accuracy of {result_type}')
+        print(acc)
+
+    # Results with float type
+    for result_type in ['percentage_entities_partial_match_exclude_props']:
+        print(f"===Results for {result_type}===")
+        acc = np.mean(results[result_type].to_numpy())
         print(f'Accuracy of {result_type}')
         print(acc)
 

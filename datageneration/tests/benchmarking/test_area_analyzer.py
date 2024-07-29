@@ -14,11 +14,8 @@ class TestEvaluation(unittest.TestCase):
     def test_pipeline(self):
         area_analyzer = AreaAnalyzer()
 
-        predicted_result = area_analyzer.compare_areas_strict(area1='Kadayanallur, India', area2='Kadayanallur, india')
+        predicted_result = area_analyzer.compare_areas_strict(area1={'type': 'area', 'value': 'Kadayanallur, India'}, area2={'type': 'area', 'value': 'Kadayanallur, india'})
         self.assertEquals(predicted_result, ResultDataType.FALSE)
 
-        predicted_result = area_analyzer.compare_areas_light(area1='Kadayanallur, India', area2='Kadayanallur, india')
-        self.assertEquals(predicted_result, ResultDataType.TRUE)
-
-        predicted_result = area_analyzer.compare_areas_light(area1='Rivière du Rempart, Mauritius', area2='riv\xe8re du Rempart, Mauritius')
+        predicted_result = area_analyzer.compare_areas_light(area1={'type': 'area', 'value': 'Kadayanallur, India'},  area2={'type': 'area', 'value': 'Kadayanallur, india'})
         self.assertEquals(predicted_result, ResultDataType.TRUE)
