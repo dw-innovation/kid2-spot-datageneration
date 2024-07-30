@@ -88,7 +88,6 @@ def translate_queries_to_yaml(combs):
     return new_combs
 
 
-<<<<<<< gpt_gen_with_yaml
 def clean_up_query(query):
     for entity in query["entities"]:
         if len(entity["properties"]) == 0:
@@ -106,7 +105,7 @@ def clean_up_query(query):
             if relation["value"] is None:
                 relation.pop('value', None)
     return query
-=======
+
 def split_descriptors(descriptors: str) -> List[str]:
     '''this function splits the descriptors as a list of single descriptor'''
     processed_descriptors = set()
@@ -118,8 +117,6 @@ def split_descriptors(descriptors: str) -> List[str]:
         processed_descriptors.add(descriptor)
 
     return processed_descriptors
-
->>>>>>> main
 
 class CompoundTagPropertyProcessor:
     def expand_list(self, tag_compounds: str) -> List[str]:
