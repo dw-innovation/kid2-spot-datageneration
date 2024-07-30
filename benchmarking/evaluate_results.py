@@ -101,6 +101,8 @@ class EntityAnalyzer:
             return ResultDataType.FALSE
         entities1_sorted, entities2_sorted = self.sort_entities(entities1, entities2)
         for ent1, ent2 in zip(entities1_sorted, entities2_sorted):
+            print(ent1)
+            print(ent2)
             if 'type' not in ent1:
                 return ResultDataType.FALSE
             if ent1['name'] != ent2['name'] or ent1['type'] != ent2['type']:
@@ -175,7 +177,7 @@ def compare_properties(props1, props2) -> ResultDataType:
     :return: Boolean whether the two property lists are the same.
     """
     if len(props1) != len(props2):
-        return False
+        return ResultDataType.FALSE
     props1_sorted = sorted(props1, key=lambda x: x['name'])
     props2_sorted = sorted(props2, key=lambda x: x['name'])
     return ResultDataType.TRUE if (props1_sorted == props2_sorted) else ResultDataType.FALSE
@@ -222,10 +224,6 @@ def compare_relations(relations1, relations2) -> ResultDataType:
             c1.append([relations1[id]["source"], relations1[id]["target"]])
         elif relations1[id]["type"] == "distance":
             r1.add(frozenset({relations1[id]["source"], relations1[id]["target"], relations1[id]["value"]}))
-        if relations2[id]["type"] == "contains":
-            c2.append([relations2[id]["source"], relations2[id]["target"]])
-        elif relations2[id]["type"] == "distance":
-            r2.add(frozenset({relations2[id]["source"], relations2[id]["target"], relations2[id]["value"]}))
     c1s = sorted(c1, key=lambda x: (x[0], x[1]))
     c2s = sorted(c2, key=lambda x: (x[0], x[1]))
     if c1s != c2s:
@@ -250,7 +248,6 @@ def compare_yaml(area_analyzer: AreaAnalyzer, entity_analyzer: EntityAnalyzer, y
     _is_parsable_yaml, generated_data = is_parsable_yaml(yaml_pred_string)
     is_area_exact_match = ResultDataType.FALSE
     are_entities_exactly_same = ResultDataType.FALSE
-    are_entities_partial_match_exclude_props = ResultDataType.FALSE
     are_entities_same_exclude_props = ResultDataType.FALSE
     are_relations_exactly_same = ResultDataType.NOT_APPLICABLE
     are_properties_exactly_same = ResultDataType.NOT_APPLICABLE
@@ -275,7 +272,8 @@ def compare_yaml(area_analyzer: AreaAnalyzer, entity_analyzer: EntityAnalyzer, y
 
         for ref_entity in ref_data['entities']:
             if ref_entity['name'] not in predicted_entities:
-                are_properties_exactly_same = ResultDataType.FALSE
+                if 'properties' in ref_entity:
+                    are_properties_exactly_same = ResultDataType.FALSE
             else:
                 if 'properties' in ref_entity:
                     corresponding_entity_from_gen_ents = predicted_entities[ref_entity['name']]
@@ -360,7 +358,7 @@ if __name__ == '__main__':
     for result_type in ['percentage_entities_partial_match_exclude_props']:
         print(f"===Results for {result_type}===")
         acc = np.mean(results[result_type].to_numpy())
-        print(f'Accuracy of {result_type}')
+        print(f'Average {result_type}')
         print(acc)
 
     with pd.ExcelWriter(out_file_path) as writer:
