@@ -281,6 +281,10 @@ def compare_yaml(area_analyzer: AreaAnalyzer, entity_analyzer: EntityAnalyzer, y
                         are_properties_exactly_same = compare_properties(props1=ref_entity['properties'],
                                                                          props2=corresponding_entity_from_gen_ents[
                                                                              'properties'])
+                else:
+                    corresponding_entity_from_gen_ents = predicted_entities[ref_entity['name']]
+                    if 'properties' in corresponding_entity_from_gen_ents:
+                        are_properties_exactly_same = ResultDataType.FALSE
 
         # todo: recheck this!!
         if 'relations' not in ref_data:
