@@ -1,0 +1,1880 @@
+id;displayed_text;sentence;YAML;;;;;;;;;;;;;;;;;;
+doc_0;"Please stick to the following instructions and choose the relevant items from the respective lists to write a sound and logical prompt for finding a location with SPOT.<br /><br />For your search, please choose 3 object(s) from this <a target=”_blank” href=""https://deutschewelle.sharepoint.com/:x:/t/GR-GR-ReCo-KID2/EYEtCb8IvOZEuSSA55rABBUB3_4in40EKMY6BdThah8juw?e=q3tyR0"">list of objects</a>.<br /><br />The area you are searching in is:<br /> - Olt County<br /><br />Please put the selected objects in meaningful relations to each other, using *only* and *all* of the following types:<br /> - Set at least two objects at a distinct distance from each other. Please use up to 5 digits and up to 2 decimals with the imperial system (feet (ft), yards (yd), miles (mi)).<br /><br />The overall style of your prompt should be:<br /> - Simple language, multiple sentences.<br /><br />Additional instructions:<br /> - None<br />";Find a Biergarten in Olt County. It is 33 feet from a parking space. There is a chash machine 51,34 yards away. ;"area:
+  type: area
+  value: Olt County
+entities:
+  - id: 0
+    type: nwr
+    name: Biergarten
+  - id: 1
+    type: nwr
+    name: parking space
+  - id: 1
+    type: nwr
+    name: chash machine
+relations:
+  - type: dist
+    source: 0
+    target: 1
+    value: 33 feet
+  - type: dist
+    source: 0
+    target: 2
+    value: 51,34 yards";;;;;;;;;;;;;;;;;;
+doc_252;"Please stick to the following instructions and choose the relevant items from the respective lists to write a sound and logical prompt for finding a location with SPOT.<br /><br />For your search, please choose 3 object(s) from this <a target=”_blank” href=""https://deutschewelle.sharepoint.com/:x:/t/GR-GR-ReCo-KID2/EYEtCb8IvOZEuSSA55rABBUB3_4in40EKMY6BdThah8juw?e=q3tyR0"">list of objects</a>.<br /><br />The area you are searching in is:<br /> - Shatoy, Chechen Republic, Russia<br /><br />Please put the selected objects in meaningful relations to each other, using *only* and *all* of the following types:<br /> - Set at least two objects at a distinct distance from each other. Please use up to 5 digits and up to 2 decimals with the imperial system (feet (ft), yards (yd), miles (mi)).<br /> - Pick a relative relation of objects to each other from this <a target=”_blank” href=""https://deutschewelle.sharepoint.com/:x:/t/GR-GR-ReCo-KID2/EaPukmnqYUFLssJ5nKvuPLQBjBFaIqB_URY6M5wzaKBlsA?e=r4ftNa"">list of relative distance terms</a><br /><br />The overall style of your prompt should be:<br /> - Elaborate wording, multiple sentences.<br /> - Containing a few typos.<br /><br />Additional instructions:<br /> - None<br />";Show me all caffes within 400 yyards of a police station in Shatoy, Chechen Republic, Russia. There should be a public trash can in front of the police station.;"area:
+    type: area
+    value: Shatoy, Chechen Republic, Russia
+entities:
+  - id: 0
+    type: nwr
+    name: caffes
+  - id: 1
+    type: nwr
+    name: police station
+  - id: 2
+    type: nwr
+    name: public trash can
+relations:
+  - type: dist
+    source: 0
+    target: 1
+    value: 400 yards
+  - type: dist
+    source: 0
+    target: 2
+    value: 150 m";;;;;;;;;;;;;;;;;;
+doc_254;"Please stick to the following instructions and choose the relevant items from the respective lists to write a sound and logical prompt for finding a location with SPOT.<br /><br />For your search, please choose 3 object(s) from this <a target=”_blank” href=""https://deutschewelle.sharepoint.com/:x:/t/GR-GR-ReCo-KID2/EYEtCb8IvOZEuSSA55rABBUB3_4in40EKMY6BdThah8juw?e=q3tyR0"">list of objects</a>.<br /><br />The area you are searching in is:<br /> - Petro-Slavyanka, Saint Petersburg, Russia<br /><br />Please put the selected objects in meaningful relations to each other, using *only* and *all* of the following types:<br /> - Set at least two objects at a distinct distance from each other. Please use up to 5 digits and up to 2 decimals with the metric system (meters (m), kilometers (km)).<br /><br />The overall style of your prompt should be:<br /> - Simple language, multiple sentences.<br /><br />Additional instructions:<br /> - Please treat one of the objects as a cluster of 8 of this Object when writing the prompt (similar to ""three houses"" instead of ""house"").<br />";Find 8 street lamps 125,20m from a police station. The lamps are at max 1,5m apart from each other. The location is Petro-Slavyanka, Saint Petersburg, Russia. There is a fire hydrant 3 m away from the station.;"area:
+  type: area
+  value: Petro-Slavyanka, Saint Petersburg
+entities:
+  - id: 0
+    type: cluster
+    name: street lamps
+    minPoints: 8
+    maxDistance: 1,5m
+  - id: 1
+    type: nwr
+    name: police station
+  - id: 2
+    type: nwr
+    name: fire hydrant
+relations:
+  - type: dist
+    source: 0
+    target: 1
+    value: 125,20m
+  - type: dist
+    source: 1
+    target: 2
+    value: 3 m";;;;;;;;;;;;;;;;;;
+doc_259;"Please stick to the following instructions and choose the relevant items from the respective lists to write a sound and logical prompt for finding a location with SPOT.<br /><br />For your search, please choose 3 object(s) from this <a target=”_blank” href=""https://deutschewelle.sharepoint.com/:x:/t/GR-GR-ReCo-KID2/EYEtCb8IvOZEuSSA55rABBUB3_4in40EKMY6BdThah8juw?e=q3tyR0"">list of objects</a>.<br /><br />The area you are searching in is:<br /> - Praderas del Potrero<br /><br />Please put the selected objects in meaningful relations to each other, using *only* and *all* of the following types:<br /> - At least one object contains one or more of the other objects.<br /><br />The overall style of your prompt should be:<br /> - Elaborate wording, multiple sentences.<br /><br />Additional instructions:<br /> - None<br />";I have a specific request regarding Praderas del Potrero. I want to find all music venues, community centers, and bars where the community center contains both the music venue and the bar. Please mark the results on the map.;"area:
+  type: area
+  value: Praderas del Potrero
+entities:
+  - id: 0
+    type: nwr
+    name: music venue
+  - id: 1
+    type: nwr
+    name: community centers
+  - id: 2
+    type: nwr
+    name: bar
+relations:
+  - type: contains
+    source: 1
+    target: 0
+  - type: contains
+    source: 1
+    target: 2  ";;;;;;;;;;;;;;;;;;
+doc_257;"Please stick to the following instructions and choose the relevant items from the respective lists to write a sound and logical prompt for finding a location with SPOT.<br /><br />For your search, please choose 3 object(s) from this <a target=”_blank” href=""https://deutschewelle.sharepoint.com/:x:/t/GR-GR-ReCo-KID2/EYEtCb8IvOZEuSSA55rABBUB3_4in40EKMY6BdThah8juw?e=q3tyR0"">list of objects</a>.<br /> - At least one of the objects must be a brand name.<br /><br />The area you are searching in is:<br /> - Arch, Switzerland<br /><br />Please put the selected objects in meaningful relations to each other, using *only* and *all* of the following types:<br /> - Set at least two objects at a distinct distance from each other. Please use up to 5 digits and up to 2 decimals with the metric system (meters (m), kilometers (km)).<br /> - At least one object contains one or more of the other objects.<br /><br />The overall style of your prompt should be:<br /> - Short and precise, multiple sentences.<br /> - Containing a few grammar mistakes.<br /> - Containing a few typos.<br /><br />Additional instructions:<br /> - None<br />";Focus on Arch, Swizerland. Find a restaurant within 1.5km of a buss station. Restaurant have should a public toilet inside.;"area:
+  type: area
+  value: Arch, Swizerland
+entities:
+  - id: 0
+    type: nwr
+    name: restaurant
+  - id: 1
+    type: nwr
+    name: buss station
+  - id: 2
+    type: nwr
+    name: public toilet
+relations:
+  - type: dist
+    source: 0
+    target: 1
+    value: 1.5km
+  - type: contains
+    source: 0
+    target: 2  ";;;;;;;;;;;;;;;;;;
+doc_255;"Please stick to the following instructions and choose the relevant items from the respective lists to write a sound and logical prompt for finding a location with SPOT.<br /><br />For your search, please choose 3 object(s) from this <a target=”_blank” href=""https://deutschewelle.sharepoint.com/:x:/t/GR-GR-ReCo-KID2/EYEtCb8IvOZEuSSA55rABBUB3_4in40EKMY6BdThah8juw?e=q3tyR0"">list of objects</a>.<br /><br />The area you are searching in is:<br /> - Abruzzo, Italy<br /><br />Please put the selected objects in meaningful relations to each other, using *only* and *all* of the following types:<br /> - Set at least two objects at a distinct distance from each other. Please use up to 5 digits and up to 2 decimals with the metric system (meters (m), kilometers (km)).<br /> - At least one object contains one or more of the other objects.<br /> - Pick a relative relation of objects to each other from this <a target=”_blank” href=""https://deutschewelle.sharepoint.com/:x:/t/GR-GR-ReCo-KID2/EaPukmnqYUFLssJ5nKvuPLQBjBFaIqB_URY6M5wzaKBlsA?e=r4ftNa"">list of relative distance terms</a><br /><br />The overall style of your prompt should be:<br /> - Simple language, all in one sentence.<br /><br />Additional instructions:<br /> - Please treat one of the objects as a cluster of 4 of this Object when writing the prompt (similar to ""three houses"" instead of ""house"").<br />";Find all parks within 2.5km of a beach in Abruzzo, Italy, with a focus on parks that have at least 4 benches not more than 15m apart.;"area:
+  type: area
+  value: Abruzzo, Italy
+entities:
+  - id: 0
+    type: nwr
+    name: parks
+  - id: 1
+    type: nwr
+    name: beach
+  - id: 2
+    type: cluster
+    name: benches
+    minPoints: 4
+    maxDistance: 15m
+relations:
+  - type: dist
+    source: 0
+    target: 1
+    value: 2.5km
+  - type: contains
+    source: 0
+    target: 2 ";;;;;;;;;;;;;;;;;;
+doc_325;"Please stick to the following instructions and choose the relevant items from the respective lists to write a sound and logical prompt for finding a location with SPOT.<br /><br />For your search, please choose 3 object(s) from this <a target=”_blank” href=""https://deutschewelle.sharepoint.com/:x:/t/GR-GR-ReCo-KID2/EYEtCb8IvOZEuSSA55rABBUB3_4in40EKMY6BdThah8juw?e=q3tyR0"">list of objects</a>.<br /><br />The area you are searching in is:<br /> - Please don't specify a search area.<br /><br />Please put the selected objects in meaningful relations to each other, using *only* and *all* of the following types:<br /> - At least one object contains one or more of the other objects.<br /><br />The overall style of your prompt should be:<br /> - Simple language, all in one sentence.<br /> - Containing a few grammar mistakes.<br /><br />Additional instructions:<br /> - None<br />";I looking for place where having a elementary schools containing a library and driving school next door.;"area:
+  type: bbox
+entities:
+  - id: 0
+    type: nwr
+    name: elementary schools
+  - id: 1
+    type: nwr
+    name: library
+  - id: 2
+    type: nwr
+    name: driving school
+relations:  
+  - type: contains
+    source: 0
+    target: 1
+  - type: dist
+    source: 0
+    target: 2
+    value: 50 m";;;;;;;;;;;;;;;;;;
+doc_327;"Please stick to the following instructions and choose the relevant items from the respective lists to write a sound and logical prompt for finding a location with SPOT.<br /><br />For your search, please choose 1 object(s) from this <a target=”_blank” href=""https://deutschewelle.sharepoint.com/:x:/t/GR-GR-ReCo-KID2/EYEtCb8IvOZEuSSA55rABBUB3_4in40EKMY6BdThah8juw?e=q3tyR0"">list of objects</a>.<br /> - At least one of the objects must be a brand name.<br /><br />The area you are searching in is:<br /> - Smørumnedre, Capital Region of Denmark, Denmark<br /><br />Please put the selected objects in meaningful relations to each other, using *only* and *all* of the following types:<br /> - The objects are in no specific relation to another, search for them like they're unrelated.<br /><br />The overall style of your prompt should be:<br /> - Simple language, multiple sentences.<br /> - Containing many typos.<br /><br />Additional instructions:<br /> - When writing the prompt, please make sure you use Khmer letters for the the area name. We suggest using an (AI) translation tool to transform the area name into the respective writing.<br />";I ma lookign for a clothing store in ????????????? ???????????????????????????? ??????????????? The cloting store should be a H&M.;"area:
+ type: area
+ value: ????????????? ???????????????????????????? ??????????????
+entities:
+  - id: 0
+    type: nwr
+    name: clothing store
+    properties:
+      - name: brand
+        operator: ~
+        value: ""H&M""";;K;;;;;;;;;;;;;;;;
+doc_46;Please use the following data to write a prompt for finding a location with SPOT.<br /><br /><br />The objects you are looking for are:<br /> - dune<br /> - lighthouse<br /> - beach hut<br /><br /><br />The area you are searching in is:<br /> - Hesse<br /><br /><br />In your search the objects have the following relations to each other:<br /> - The lighthouse is contained in the dune<br /> - The tailor is more or less 160 m away from the lighthouse<br /><br /><br />The overall style of your prompt should be:<br /> - Elaborate wording, all in one sentence.<br /><br /><br />Additional instructions:<br /> - None<br />;Go and locate a lighthouse in the dunes in Hesse, with a beach not more than 160m away from the lighthouse.;"area:
+    type: area
+    value: Hesse
+entities:
+  - id: 0
+    type: nwr
+    name: dune
+  - id: 1
+    type: nwr
+    name: lighthouse
+  - id: 2
+    type: nwr
+    name: beach
+relations:
+  - type: contains
+    source: 0
+    target: 1
+  - type: dist
+    source: 1
+    target: 2
+    value: 160m";;;;;;;;;;;;;;;;;;
+doc_45;Please use the following data to write a prompt for finding a location with SPOT.<br /><br />The objects you are looking for are:<br /> - dune<br /> - lighthouse<br /> - beach hut<br /><br />The area you are searching in is:<br /> - Hesse<br /><br />In your search the objects have the following relations to each other:<br /> - The lighthouse is contained in the dune<br /> - The tailor is more or less 160 m away from the lighthouse<br /><br />The overall style of your prompt should be:<br /> - Elaborate wording, all in one sentence.<br /><br />Additional instructions:<br /> - None<br />;Show me aparks that contain a football field with a fountaine not more than 12.4 yards away from it in Munich, Bavaria.;"area:
+    type: area
+    value: Munich, Bavaria
+entities:
+  - id: 0
+    type: nwr
+    name: park
+  - id: 1
+    type: nwr
+    name: football field
+  - id: 2
+    type: nwr
+    name: fountain
+relations:
+  - type: contains
+    source: 0
+    target: 1
+  - type: dist
+    source: 1
+    target: 2
+    value: 12.4 yards";;;;;;;;;;;;;;;;;;
+doc_27;Please use the following data to write a prompt for finding a location with SPOT.<br /><br /><br />The objects you are looking for are:<br /> - office building, with floors: lower than 10<br /> - vacant shop<br /> - gambling den<br /><br /><br />The area you are searching in is:<br /> - Please don't specify a search area.<br /><br /><br />In your search the objects have the following relations to each other:<br /> - The vacant shop is within the office building<br /> - The gambling den is 0.5 miles from the vacant shop<br /><br /><br />The overall style of your prompt should be:<br /> - Elaborate wording, multiple sentences.<br /><br /><br />Additional instructions:<br /> - None<br />;Please find me all gambling dens that can be found in less than 0.5 miles from a vacant shop. The vacant shop is contained in a office building that has not more than 10 floors.;"area:
+    type: area
+    value: Vilnius, Vilnius City Municipality, Lithuania
+entities:
+  - id: 0
+    type: nwr
+    name: gambling dens
+  - id: 1
+    type: nwr
+    name: vacant shop
+  - id: 2
+    type: nwr
+    name: office building
+    properties:
+      - name: levels
+        operator: <
+        value: 11
+relations:  
+  - type: dist
+    source: 0
+    target: 1
+    value: 0.5 miles
+  - type: contains
+    source: 2
+    target: 1";;;;;;;;;;;;;;;;;;
+doc_42;"Please use the following data to write a prompt for finding a location with SPOT.<br /><br /><br />The objects you are looking for are:<br /> - side chapel<br /><br /><br />The area you are searching in is:<br /> - Vilnius, Vilnius City Municipality, Lithuania<br /><br /><br />In your search the objects have the following relations to each other:<br /> - None<br /> <br /><br />The overall style of your prompt should be:<br /> - Elaborate wording.<br /> - Containing a few grammar mistakes.<br /><br /><br />Additional instructions:<br /> - Please treat Object 1 as a cluster of 3 of this Object when writing the prompt (similar to ""three houses"" instead of ""house"").<br />";Could you help please me find three side chapels in Vilnius, Vilnius City Municipality, Lithuania that are 1m apart from each other.;"area:
+    type: area
+    value: Vilnius, Vilnius City Municipality, Lithuania
+entities:
+  - id: 0
+    type: cluster
+    name: side chapels
+    minPoints: 3
+    maxDistance: 1m";;;;;;;;;;;;;;;;;;
+doc_437;"Please stick to the following instructions and choose the relevant items from the respective lists to write a sound and logical prompt for finding a location with SPOT.<br /><br />For your search, please choose 3 object(s) from this <a target=”_blank” href=""https://deutschewelle.sharepoint.com/:x:/t/GR-GR-ReCo-KID2/EYEtCb8IvOZEuSSA55rABBUB3_4in40EKMY6BdThah8juw?e=q3tyR0"">list of objects</a>.<br /><br />The area you are searching in is:<br /> - Pays-de-la-Loire, France<br /><br />Please put the selected objects in meaningful relations to each other, using *only* and *all* of the following types:<br /> - Set at least two objects at a distinct distance from each other. Please use up to 5 digits and up to 2 decimals with the metric system (meters (m), kilometers (km)).<br /><br />The overall style of your prompt should be:<br /> - Simple language, all in one sentence.<br /><br />Additional instructions:<br /> - Please treat one of the objects as a cluster of 7 of this Object when writing the prompt (similar to ""three houses"" instead of ""house"").<br />";Search for seven butchers at 23,5 meters distance from each other in Pays-de-la-Loire, France within 550 meters of a Wifi Hotspot which in turn is no more than 330 meters away from a bus stop.;"area:
+    type: area
+    value: Pays-de-la-Loire, France
+entities:
+  - id: 0
+    type: cluster
+    name: butcher
+    minPoints: 7
+    maxDistance: 23,5 meters
+  - id: 1
+    type: nwr
+    name: Wifi Hotspot
+  - id: 2
+    type: nwr
+    name: bus stop
+relations:
+  - type: dist
+    source: 0
+    target: 1
+    value: 550 meters
+  - type: dist
+    source: 1
+    target: 2
+    value: 330 meters";;;;;;;;;;;;;;;;;;
+doc_7;"Please stick to the following instructions and choose the relevant items from the respective lists to write a sound and logical prompt for finding a location with SPOT.<br /><br />For your search, please choose 1 object(s) from this <a target=”_blank” href=""https://deutschewelle.sharepoint.com/:x:/t/GR-GR-ReCo-KID2/EYEtCb8IvOZEuSSA55rABBUB3_4in40EKMY6BdThah8juw?e=q3tyR0"">list of objects</a>.<br /> - At least one of the objects must be a brand name.<br /><br />The area you are searching in is:<br /> - Pennsylvania, United States<br /><br />Please put the selected objects in meaningful relations to each other, using *only* and *all* of the following types:<br /> - The objects are in no specific relation to another, search for them like they're unrelated.<br /><br />The overall style of your prompt should be:<br /> - Elaborate wording, all in one sentence.<br /><br />Additional instructions:<br /> - Please treat one of the objects as a cluster of 5 of this Object when writing the prompt (similar to ""three houses"" instead of ""house"").<br /> - When writing the prompt, please make sure you use Greek letters for the brand name. We suggest using an (AI) translation tool to transform the brand name into the respective writing.<br />";Is there an Esso gas station in Pennsylvania, US;"area:
+    type: area
+    value: Pennsylvania, US
+entities:
+  - id: 0
+    type: nwr
+    name: gas station
+    properties:
+      - name: brand
+        operator: ~
+        value: Esso";;;;;;;;;;;;;;;;;;
+doc_4;"Please stick to the following instructions and choose the relevant items from the respective lists to write a sound and logical prompt for finding a location with SPOT.<br /><br />For your search, please choose 1 object(s) from this <a target=”_blank” href=""https://deutschewelle.sharepoint.com/:x:/t/GR-GR-ReCo-KID2/EYEtCb8IvOZEuSSA55rABBUB3_4in40EKMY6BdThah8juw?e=q3tyR0"">list of objects</a>.<br /><br />The area you are searching in is:<br /> - Stevens County, United States<br /><br />Please put the selected objects in meaningful relations to each other, using *only* and *all* of the following types:<br /> - The objects are in no specific relation to another, search for them like they're unrelated.<br /><br />The overall style of your prompt should be:<br /> - Short and precise, all in one sentence.<br /><br />Additional instructions:<br /> - None<br />";Is there a post office in Stevens County, United States;"area:
+    type: area
+    value: Stevens County, United States
+entities:
+  - id: 0
+    name: post office";;;;;;;;;;;;;;;;;;
+doc_6;"Please stick to the following instructions and choose the relevant items from the respective lists to write a sound and logical prompt for finding a location with SPOT.<br /><br />For your search, please choose 3 object(s) from this <a target=”_blank” href=""https://deutschewelle.sharepoint.com/:x:/t/GR-GR-ReCo-KID2/EYEtCb8IvOZEuSSA55rABBUB3_4in40EKMY6BdThah8juw?e=q3tyR0"">list of objects</a>.<br /> - Please choose 1 object(s) and specify it/them in more detail with 1 attribute(s) from this <a target=”_blank” href=""https://deutschewelle.sharepoint.com/:x:/t/GR-GR-ReCo-KID2/Ecsu5jWfk5FJiVEJ29kE4XYBUIdNyBbkp9yy2ZxU5OJ9jw?e=II0pDC"">list of attributes</a>. Please combine objects and attributes in a meaningful way.<br /><br />The area you are searching in is:<br /> - Kadayanallur, India<br /><br />Please put the selected objects in meaningful relations to each other, using *only* and *all* of the following types:<br /> - Set at least two objects at a distinct distance from each other. Please use up to 5 digits and up to 2 decimals with the metric system (meters (m), kilometers (km)).<br /><br />The overall style of your prompt should be:<br /> - Simple language, all in one sentence.<br /> - Containing a few typos.<br /><br />Additional instructions:<br /> - None<br />";Is there a chess game 10 metres away from a bistro outdoor seating in a park in Kadayanallur, India?;"area:
+  type: area
+  value: Kadayanallur, India
+entities:
+  - id: 0
+    type: nwr
+    name: chess game
+  - id: 1
+    type: nwr
+    name: bistro
+    properties:
+      - name: outdoor seating
+        operator: '='
+        value: yes
+  - id: 2
+    type: nwr
+    name: park
+relations:
+  - type: dist
+    source: 0
+    target: 1
+    value: 10 m
+  - type: contains
+    source: 1
+    target: 2";;;;;;;;;;;;;;;;;;
+doc_399;"Please stick to the following instructions and choose the relevant items from the respective lists to write a sound and logical prompt for finding a location with SPOT.<br /><br />For your search, please choose 3 object(s) from this <a target=”_blank” href=""https://deutschewelle.sharepoint.com/:x:/t/GR-GR-ReCo-KID2/EYEtCb8IvOZEuSSA55rABBUB3_4in40EKMY6BdThah8juw?e=q3tyR0"">list of objects</a>.<br /><br />The area you are searching in is:<br /> - Las Calaveras, Mexico<br /><br />Please put the selected objects in meaningful relations to each other, using *only* and *all* of the following types:<br /> - At least one object contains one or more of the other objects.<br /><br />The overall style of your prompt should be:<br /> - Short and precise, all in one sentence.<br /> - Containing a few typos.<br /><br />Additional instructions:<br /> - None<br />";Show me a cycl stand an a fire hydrant on a colllege campus in Las Calavveras, Mexiko;"area:
+  type: area
+  value: Las Calavveras, Mexiko
+entities:
+  - id: 0
+    type: nwr
+    name: cycl stand
+  - id: 1
+    type: nwr
+    name: fire hydrant
+  - id: 2
+    type: nwr
+    name: colllege campus
+relations:
+  - type: contains
+    source: 2
+    target: 0
+  - type: contains
+    source: 2
+    target: 1";;;;;;;;;;;;;;;;;;
+doc_400;"Please stick to the following instructions and choose the relevant items from the respective lists to write a sound and logical prompt for finding a location with SPOT.<br /><br />For your search, please choose 3 object(s) from this <a target=”_blank” href=""https://deutschewelle.sharepoint.com/:x:/t/GR-GR-ReCo-KID2/EYEtCb8IvOZEuSSA55rABBUB3_4in40EKMY6BdThah8juw?e=q3tyR0"">list of objects</a>.<br /><br />The area you are searching in is:<br /> - Monte das Gameleiras, Brazil<br /><br />Please put the selected objects in meaningful relations to each other, using *only* and *all* of the following types:<br /> - Set at least two objects at a distinct distance from each other. Please use up to 5 digits and up to 2 decimals with the metric system (meters (m), kilometers (km)).<br /> - At least one object contains one or more of the other objects.<br /> - Pick a relative relation of objects to each other from this <a target=”_blank” href=""https://deutschewelle.sharepoint.com/:x:/t/GR-GR-ReCo-KID2/EaPukmnqYUFLssJ5nKvuPLQBjBFaIqB_URY6M5wzaKBlsA?e=r4ftNa"">list of relative distance terms</a><br /><br />The overall style of your prompt should be:<br /> - Short and precise, multiple sentences.<br /><br />Additional instructions:<br /> - None<br />";Find me parking spaces nearby a gas station less than 500 meters away from a taxi stand in Monte das Gameleiras, Brazil;"area:
+    type: area
+    value: Monte das Gameleiras, Brazil
+entities:
+  - id: 0
+    type: nwr
+    name: parking space
+  - id: 1
+    type: nwr
+    name: gas station
+  - id: 2
+    type: nwr
+    name: taxi stand
+relations:
+  - type: dist
+    source: 0
+    target: 2
+    value: 500 meters
+  - type: dist
+    source: 1
+    target: 2
+    value: 500 meters";;;;;;;;;;;;;;;;;;
+doc_397;"Please stick to the following instructions and choose the relevant items from the respective lists to write a sound and logical prompt for finding a location with SPOT.<br /><br />For your search, please choose 3 object(s) from this <a target=”_blank” href=""https://deutschewelle.sharepoint.com/:x:/t/GR-GR-ReCo-KID2/EYEtCb8IvOZEuSSA55rABBUB3_4in40EKMY6BdThah8juw?e=q3tyR0"">list of objects</a>.<br /><br />The area you are searching in is:<br /> - Cundinamarca, Colombia<br /><br />Please put the selected objects in meaningful relations to each other, using *only* and *all* of the following types:<br /> - Set at least two objects at a distinct distance from each other. Please use up to 5 digits and up to 2 decimals with the metric system (meters (m), kilometers (km)).<br /> - At least one object contains one or more of the other objects.<br /><br />The overall style of your prompt should be:<br /> - Short and precise, all in one sentence.<br /><br />Additional instructions:<br /> - None<br />";Find me parking spaces at a gas station less than 100.50 meters away from a taxi stand in Cundinamarca, Colombia.;"area:
+    type: area
+    value: Cundinamarca, Colombia
+entities:
+  - id: 0
+    type: nwr
+    name: parking space
+  - id: 1
+    type: nwr
+    name: gas station
+  - id: 2
+    type: nwr
+    name: taxi stand
+relations:
+  - type: dist
+    source: 0
+    target: 2
+    value: 100.50 meters
+  - type: dist
+    source: 1
+    target: 2
+    value: 100.50 meters";;;;;;;;;;;;;;;;;;
+doc_402;"Please stick to the following instructions and choose the relevant items from the respective lists to write a sound and logical prompt for finding a location with SPOT.<br /><br />For your search, please choose 3 object(s) from this <a target=”_blank” href=""https://deutschewelle.sharepoint.com/:x:/t/GR-GR-ReCo-KID2/EYEtCb8IvOZEuSSA55rABBUB3_4in40EKMY6BdThah8juw?e=q3tyR0"">list of objects</a>.<br /><br />The area you are searching in is:<br /> - Jalisco, Mexico<br /><br />Please put the selected objects in meaningful relations to each other, using *only* and *all* of the following types:<br /> - Set at least two objects at a distinct distance from each other. Please use up to 5 digits and up to 2 decimals with the imperial system (feet (ft), yards (yd), miles (mi)).<br /> - At least one object contains one or more of the other objects.<br /> - Pick a relative relation of objects to each other from this <a target=”_blank” href=""https://deutschewelle.sharepoint.com/:x:/t/GR-GR-ReCo-KID2/EaPukmnqYUFLssJ5nKvuPLQBjBFaIqB_URY6M5wzaKBlsA?e=r4ftNa"">list of relative distance terms</a><br /><br />The overall style of your prompt should be:<br /> - Short and precise, multiple sentences.<br /><br />Additional instructions:<br /> - None<br />";I am looking for a medical centre in Jalisco, Mexico with several options. On the grounds of this centre there is a public phone about 50 feet from a pharmacy and in front of the pharmacy there is a tapping point.;"area:
+    type: area
+    value: Jalisco, Mexico
+entities:
+  - id: 0
+    type: nwr
+    name: medical centre
+  - id: 1
+    type: nwr
+    name: public phone
+  - id: 2
+    type: nwr
+    name: pharmacy
+  - id: 3
+    type: nwr
+    name: tapping point
+relations:
+  - type: contains
+    source: 0
+    target: 1
+  - type: dist
+    source: 1
+    target: 2
+    value: 50 feet
+  - type: dist
+    source: 2
+    target: 3
+    value: 150 m";;;;;;;;;;;;;;;;;;
+doc_404;"Please stick to the following instructions and choose the relevant items from the respective lists to write a sound and logical prompt for finding a location with SPOT.<br /><br />For your search, please choose 3 object(s) from this <a target=”_blank” href=""https://deutschewelle.sharepoint.com/:x:/t/GR-GR-ReCo-KID2/EYEtCb8IvOZEuSSA55rABBUB3_4in40EKMY6BdThah8juw?e=q3tyR0"">list of objects</a>.<br /><br />The area you are searching in is:<br /> - Parfinskiy Rayon, Russia<br /><br />Please put the selected objects in meaningful relations to each other, using *only* and *all* of the following types:<br /> - At least one object contains one or more of the other objects.<br /><br />The overall style of your prompt should be:<br /> - Short and precise, multiple sentences.<br /><br />Additional instructions:<br /> - None<br />";Find a trading centre in Parfinskiy Rayon, Russia with a post office and a public bathroom;"area:
+    type: area
+    value: Parfinskiy Rayon, Russia
+entities:
+  - id: 0
+    type: nwr
+    name: trading centre
+  - id: 1
+    type: nwr
+    name: post office
+  - id: 2
+    type: nwr
+    name: public bathroom
+relations:
+  - type: contains
+    source: 0
+    target: 1
+  - type: contains
+    source: 0
+    target: 2";;;;;;;;;;;;;;;;;;
+doc_405;"Please stick to the following instructions and choose the relevant items from the respective lists to write a sound and logical prompt for finding a location with SPOT.<br /><br />For your search, please choose 2 object(s) from this <a target=”_blank” href=""https://deutschewelle.sharepoint.com/:x:/t/GR-GR-ReCo-KID2/EYEtCb8IvOZEuSSA55rABBUB3_4in40EKMY6BdThah8juw?e=q3tyR0"">list of objects</a>.<br /><br />The area you are searching in is:<br /> - Please don't specify a search area.<br /><br />Please put the selected objects in meaningful relations to each other, using *only* and *all* of the following types:<br /> - All objects are within a distinct radius from each other. Please use up to 5 digits and up to 2 decimals with the imperial system (feet (ft), yards (yd), miles (mi)) for your radius.<br /><br />The overall style of your prompt should be:<br /> - Short and precise, multiple sentences.<br /><br />Additional instructions:<br /> - None<br />";Find me an elementary school that is within four miles from a charging station.;"area:
+  type: bbox
+entities:
+  - id: 0
+    type: nwr
+    name: elementary school
+  - id: 1
+    type: nwr
+    name: charging station
+relations:
+  - type: dist
+    source: 0
+    target: 1
+    value: 4 miles";;;;;;;;;;;;;;;;;;
+doc_398;"Please stick to the following instructions and choose the relevant items from the respective lists to write a sound and logical prompt for finding a location with SPOT.<br /><br />For your search, please choose 3 object(s) from this <a target=”_blank” href=""https://deutschewelle.sharepoint.com/:x:/t/GR-GR-ReCo-KID2/EYEtCb8IvOZEuSSA55rABBUB3_4in40EKMY6BdThah8juw?e=q3tyR0"">list of objects</a>.<br /><br />The area you are searching in is:<br /> - Comuna Stoic?ne?ti<br /><br />Please put the selected objects in meaningful relations to each other, using *only* and *all* of the following types:<br /> - At least one object contains one or more of the other objects.<br /><br />The overall style of your prompt should be:<br /> - Elaborate wording, all in one sentence.<br /><br />Additional instructions:<br /> - None<br />";Please find me a public library with a coffee bar and outdoor seating in Comuna Stoic?ne?ti;"area:
+    type: area
+    value: Canterbury Region, New Zealand
+entities:
+  - id: 0
+    type: nwr
+    name: public library
+  - id: 1
+    type: nwr
+    name: coffee bar
+    properties:
+      - name: outdoor seating
+        operator: '='
+        value: yes
+relations:
+  - type: contains
+    source: 0
+    target: 1";;;;;;;;;;;;;;;;;;
+doc_401;"Please stick to the following instructions and choose the relevant items from the respective lists to write a sound and logical prompt for finding a location with SPOT.<br /><br />For your search, please choose 2 object(s) from this <a target=”_blank” href=""https://deutschewelle.sharepoint.com/:x:/t/GR-GR-ReCo-KID2/EYEtCb8IvOZEuSSA55rABBUB3_4in40EKMY6BdThah8juw?e=q3tyR0"">list of objects</a>.<br /><br />The area you are searching in is:<br /> - Wallowa County<br /><br />Please put the selected objects in meaningful relations to each other, using *only* and *all* of the following types:<br /> - All objects are within a distinct radius from each other. Please use up to 5 digits and up to 2 decimals with the imperial system (feet (ft), yards (yd), miles (mi)) for your radius.<br /><br />The overall style of your prompt should be:<br /> - Short and precise, all in one sentence.<br /><br />Additional instructions:<br /> - Please treat one of the objects as a cluster of 8 of this Object when writing the prompt (similar to ""three houses"" instead of ""house"").<br />";Find me eight universities close to a hospital in Wallowa County in a maximum radius of 20 miles;"area:
+    type: area
+    value: Canterbury Region, New Zealand
+entities:
+  - id: 0
+    type: cluster
+    name: university
+    minPoints: 8
+    maxDistance: 20 miles
+  - id: 1
+    type: nwr
+    name: hospital
+relations:
+  - type: dist
+    source: 0
+    target: 1
+    value: 20 miles";;;;;;;;;;;;;;;;;;
+doc_403;"Please stick to the following instructions and choose the relevant items from the respective lists to write a sound and logical prompt for finding a location with SPOT.<br /><br />For your search, please choose 1 object(s) from this <a target=”_blank” href=""https://deutschewelle.sharepoint.com/:x:/t/GR-GR-ReCo-KID2/EYEtCb8IvOZEuSSA55rABBUB3_4in40EKMY6BdThah8juw?e=q3tyR0"">list of objects</a>.<br /><br />The area you are searching in is:<br /> - Canterbury Region, New Zealand<br /><br />Please put the selected objects in meaningful relations to each other, using *only* and *all* of the following types:<br /> - The objects are in no specific relation to another, search for them like they're unrelated.<br /><br />The overall style of your prompt should be:<br /> - Simple language, multiple sentences.<br /><br />Additional instructions:<br /> - None<br />";Find me a police station in Canterbury Region, New Zealand. It should be accessible from the street;"area:
+    type: area
+    value: Canterbury Region, New Zealand
+entities:
+  - id: 0
+    type: nwr
+    name: police station";;;;;;;;;;;;;;;;;;
+doc_406;"Please stick to the following instructions and choose the relevant items from the respective lists to write a sound and logical prompt for finding a location with SPOT.<br /><br />For your search, please choose 2 object(s) from this <a target=”_blank” href=""https://deutschewelle.sharepoint.com/:x:/t/GR-GR-ReCo-KID2/EYEtCb8IvOZEuSSA55rABBUB3_4in40EKMY6BdThah8juw?e=q3tyR0"">list of objects</a>.<br /><br />The area you are searching in is:<br /> - East Attica Regional Unit, Greece<br /><br />Please put the selected objects in meaningful relations to each other, using *only* and *all* of the following types:<br /> - All objects are within a distinct radius from each other. Please use up to 5 digits and up to 2 decimals with the imperial system (feet (ft), yards (yd), miles (mi)) for your radius.<br /><br />The overall style of your prompt should be:<br /> - Elaborate wording, all in one sentence.<br /><br />Additional instructions:<br /> - None<br />";I am looking for an amusement arcade in the East Attica Regional Unit, Greece, with a fire hydrant 15 yards in front of the building;"area:
+    type: area
+    value: East Attica Regional Unit, Greece
+entities:
+  - id: 0
+    type: nwr
+    name: amusement arcade
+  - id: 1
+    type: nwr
+    name: fire hydrant
+relations:
+  - type: dist
+    source: 1
+    target: 0
+    value: 15 yards";;;;;;;;;;;;;;;;;;
+doc_507;"Please stick to the following instructions and choose the relevant items from the respective lists to write a sound and logical prompt for finding a location with SPOT.<br /><br />For your search, please choose 3 object(s) from this <a target=”_blank” href=""https://deutschewelle.sharepoint.com/:x:/t/GR-GR-ReCo-KID2/EYEtCb8IvOZEuSSA55rABBUB3_4in40EKMY6BdThah8juw?e=q3tyR0"">list of objects</a>.<br /> - At least one of the objects must be a brand name.<br /><br />The area you are searching in is:<br /> - Please don't specify a search area.<br /><br />Please put the selected objects in meaningful relations to each other, using *only* and *all* of the following types:<br /> - Set at least two objects at a distinct distance from each other. Please use up to 5 digits and up to 2 decimals with the imperial system (feet (ft), yards (yd), miles (mi)).<br /> - At least one object contains one or more of the other objects.<br /> - Pick a relative relation of objects to each other from this <a target=”_blank” href=""https://deutschewelle.sharepoint.com/:x:/t/GR-GR-ReCo-KID2/EaPukmnqYUFLssJ5nKvuPLQBjBFaIqB_URY6M5wzaKBlsA?e=r4ftNa"">list of relative distance terms</a><br /><br />The overall style of your prompt should be:<br /> - Elaborate wording, multiple sentences.<br /> - Containing many grammar mistakes.<br /><br />Additional instructions:<br /> - None<br />";I am looking for locations. I searching for an communications tower who is located within construction site. The aforementioned tower are locate in close distances to H&M.;"area:
+  type: bbox
+entities:
+  - id: 0
+    type: nwr
+    name: communications tower
+  - id: 1
+    type: nwr
+    name: construction site
+  - id: 2
+    type: nwr
+    name: H&M
+relations:
+  - type: contains
+    source: 1
+    target: 0
+  - type: dist
+    source: 1
+    target: 2
+    value: 100 m";;;;;;;;;;;;;;;;;;
+doc_503;"Please stick to the following instructions and choose the relevant items from the respective lists to write a sound and logical prompt for finding a location with SPOT.<br /><br />For your search, please choose 3 object(s) from this <a target=”_blank” href=""https://deutschewelle.sharepoint.com/:x:/t/GR-GR-ReCo-KID2/EYEtCb8IvOZEuSSA55rABBUB3_4in40EKMY6BdThah8juw?e=q3tyR0"">list of objects</a>.<br /><br />The area you are searching in is:<br /> - Please don't specify a search area.<br /><br />Please put the selected objects in meaningful relations to each other, using *only* and *all* of the following types:<br /> - Set at least two objects at a distinct distance from each other. Please use up to 5 digits and up to 2 decimals with the imperial system (feet (ft), yards (yd), miles (mi)).<br /> - Pick a relative relation of objects to each other from this <a target=”_blank” href=""https://deutschewelle.sharepoint.com/:x:/t/GR-GR-ReCo-KID2/EaPukmnqYUFLssJ5nKvuPLQBjBFaIqB_URY6M5wzaKBlsA?e=r4ftNa"">list of relative distance terms</a><br /><br />The overall style of your prompt should be:<br /> - Short and precise, all in one sentence.<br /> - Containing a few grammar mistakes.<br /><br />Additional instructions:<br /> - None<br />";Find me a location with a public bookcase in front of bicycle shop, with the bicycle shop is around 1.5 miles from a water park.;"area:
+  type: bbox
+entities:
+  - id: 0
+    type: nwr
+    name: public bookcase
+  - id: 1
+    type: nwr
+    name: bicycle shop
+  - id: 2
+    type: nwr
+    name: water park
+relations:
+  - type: dist
+    source: 0
+    target: 1
+    value: 150 m
+  - type: dist
+    source: 1
+    target: 2
+    value: 1.5 miles";;;;;;;;;;;;;;;;;;
+doc_504;"Please stick to the following instructions and choose the relevant items from the respective lists to write a sound and logical prompt for finding a location with SPOT.<br /><br />For your search, please choose 2 object(s) from this <a target=”_blank” href=""https://deutschewelle.sharepoint.com/:x:/t/GR-GR-ReCo-KID2/EYEtCb8IvOZEuSSA55rABBUB3_4in40EKMY6BdThah8juw?e=q3tyR0"">list of objects</a>.<br /><br />The area you are searching in is:<br /> - Horní ?ermná, Pardubický kraj, Czech Republic<br /><br />Please put the selected objects in meaningful relations to each other, using *only* and *all* of the following types:<br /> - All objects are within a distinct radius from each other. Please use up to 5 digits and up to 2 decimals with the imperial system (feet (ft), yards (yd), miles (mi)) for your radius.<br /><br />The overall style of your prompt should be:<br /> - Elaborate wording, multiple sentences.<br /><br />Additional instructions:<br /> - None<br />";I am searching for a location that fulfils the following requirements in Horní ?ermná, Pardubický kraj, Czech Republic. It features a large car park, which is located at an approximately 500 yard distance from a fashion boutique.;"area:
+  type: area
+  value: Horní ?ermná, Pardubický kraj, Czech Republic
+entities:
+  - id: 0
+    type: nwr
+    name: car park
+  - id: 1
+    type: nwr
+    name: fashion boutique
+relations:
+  - type: dist
+    source: 0
+    target: 1
+    value: 500 yard";;;;;;;;;;;;;;;;;;
+doc_505;"Please stick to the following instructions and choose the relevant items from the respective lists to write a sound and logical prompt for finding a location with SPOT.<br /><br />For your search, please choose 3 object(s) from this <a target=”_blank” href=""https://deutschewelle.sharepoint.com/:x:/t/GR-GR-ReCo-KID2/EYEtCb8IvOZEuSSA55rABBUB3_4in40EKMY6BdThah8juw?e=q3tyR0"">list of objects</a>.<br /><br />The area you are searching in is:<br /> - Please don't specify a search area.<br /><br />Please put the selected objects in meaningful relations to each other, using *only* and *all* of the following types:<br /> - Set at least two objects at a distinct distance from each other. Please use up to 5 digits and up to 2 decimals with the imperial system (feet (ft), yards (yd), miles (mi)).<br /> - Pick a relative relation of objects to each other from this <a target=”_blank” href=""https://deutschewelle.sharepoint.com/:x:/t/GR-GR-ReCo-KID2/EaPukmnqYUFLssJ5nKvuPLQBjBFaIqB_URY6M5wzaKBlsA?e=r4ftNa"">list of relative distance terms</a><br /><br />The overall style of your prompt should be:<br /> - Short and precise, multiple sentences.<br /> - Containing many grammar mistakes.<br /><br />Additional instructions:<br /> - None<br />";There is canal that is ~ 600yd from boat dock. The boat dock are also surrounded from grassland.;"area:
+  type: bbox
+entities:
+  - id: 0
+    type: nwr
+    name: canal
+  - id: 1
+    type: nwr
+    name: boat dock
+  - id: 2
+    type: nwr
+    name: grassland
+relations:
+  - type: dist
+    source: 0
+    target: 1
+    value: 600yd
+  - type: contains
+    source: 2
+    target: 1";;;;;;;;;;;;;;;;;;
+doc_113;"Please stick to the following instructions and choose the relevant items from the respective lists to write a sound and logical prompt for finding a location with SPOT.<br /><br />For your search, please choose 3 object(s) from this <a target=”_blank” href=""https://deutschewelle.sharepoint.com/:x:/t/GR-GR-ReCo-KID2/EYEtCb8IvOZEuSSA55rABBUB3_4in40EKMY6BdThah8juw?e=q3tyR0"">list of objects</a>.<br /><br />The area you are searching in is:<br /> - Bernau am Chiemsee, Bavaria, Germany<br /><br />Please put the selected objects in meaningful relations to each other, using *only* and *all* of the following types:<br /> - Set at least two objects at a distinct distance from each other. Please use up to 5 digits and up to 2 decimals with the metric system (meters (m), kilometers (km)).<br /> - Pick a relative relation of objects to each other from this <a target=”_blank” href=""https://deutschewelle.sharepoint.com/:x:/t/GR-GR-ReCo-KID2/EaPukmnqYUFLssJ5nKvuPLQBjBFaIqB_URY6M5wzaKBlsA?e=r4ftNa"">list of relative distance terms</a><br /><br />The overall style of your prompt should be:<br /> - Elaborate wording, all in one sentence.<br /><br />Additional instructions:<br /> - Please treat one of the objects as a cluster of 9 of this Object when writing the prompt (similar to ""three houses"" instead of ""house"").<br />";Please identify the exact location of a butcher in Bernau am Chiemsee, Bavaria, Germany, that is 30 m from the entrance to a park in which I can see 9 benches that are next to each other.;"area:
+  type: area
+  value: Bernau am Chiemsee, Bavaria, Germany
+entities:
+  - id: 0
+    type: nwr
+    name: butcher
+  - id: 1
+    type: nwr
+    name: park
+  - id: 2
+    type: cluster
+    name: bench
+    minPoints: 9
+    maxDistance: 50 m
+relations:
+  - type: dist
+    source: 0
+    target: 1
+    value: 30 m
+  - type: contains
+    source: 1
+    target: 2";;;;;;;;;;;;;;;;;;
+doc_114;"Please stick to the following instructions and choose the relevant items from the respective lists to write a sound and logical prompt for finding a location with SPOT.<br /><br />For your search, please choose 3 object(s) from this <a target=”_blank” href=""https://deutschewelle.sharepoint.com/:x:/t/GR-GR-ReCo-KID2/EYEtCb8IvOZEuSSA55rABBUB3_4in40EKMY6BdThah8juw?e=q3tyR0"">list of objects</a>.<br /><br />The area you are searching in is:<br /> - England, United Kingdom<br /><br />Please put the selected objects in meaningful relations to each other, using *only* and *all* of the following types:<br /> - Set at least two objects at a distinct distance from each other. Please use up to 5 digits and up to 2 decimals with the imperial system (feet (ft), yards (yd), miles (mi)).<br /><br />The overall style of your prompt should be:<br /> - Elaborate wording, multiple sentences.<br /><br />Additional instructions:<br /> - When writing the prompt, please make sure you use Burmese letters for the the area name. We suggest using an (AI) translation tool to transform the area name into the respective writing.<br />";Please identify the exact location of a Funeral Home that is 500 yd away from a flower store and 1.6 mi from a highway link in ????????? ??????????????????.;"area:
+  type: area
+  value: ????????? ??????????????????
+entities:
+  - id: 0
+    type: nwr
+    name: funeral home
+  - id: 1
+    type: nwr
+    name: flower store
+  - id: 2
+    type: nwr
+    name: highway link
+relations:
+  - type: dist
+    source: 0
+    target: 1
+    value: 500 yd
+  - type: dist
+    source: 0
+    target: 2
+    value: 1.6 mi";;;;;;;;;;;;;;;;;;
+doc_108;"Please stick to the following instructions and choose the relevant items from the respective lists to write a sound and logical prompt for finding a location with SPOT.<br /><br />For your search, please choose 2 object(s) from this <a target=”_blank” href=""https://deutschewelle.sharepoint.com/:x:/t/GR-GR-ReCo-KID2/EYEtCb8IvOZEuSSA55rABBUB3_4in40EKMY6BdThah8juw?e=q3tyR0"">list of objects</a>.<br /><br />The area you are searching in is:<br /> - Cowley County, Kansas, United States<br /><br />Please put the selected objects in meaningful relations to each other, using *only* and *all* of the following types:<br /> - All objects are within a distinct radius from each other. Please use up to 5 digits and up to 2 decimals with the metric system (meters (m), kilometers (km)) for your radius.<br /><br />The overall style of your prompt should be:<br /> - Elaborate wording, all in one sentence.<br /><br />Additional instructions:<br /> - None<br />";I'm searching for a location in Cowley County, Kansas, US from where I can see 2 benches and an elementary school all within 25 m from each other.;"area:
+  type: area
+  value: Cowley County, Kansas, US
+entities:
+  - id: 0
+    type: cluster
+    name: bench
+    minPoints: 2
+    maxDistance: 25 m
+  - id: 1
+    type: nwr
+    name: elementary school
+relations:
+  - type: dist
+    source: 0
+    target: 1
+    value: 25 m";;;;;;;;;;;;;;;;;;
+doc_110;"Please stick to the following instructions and choose the relevant items from the respective lists to write a sound and logical prompt for finding a location with SPOT.<br /><br />For your search, please choose 3 object(s) from this <a target=”_blank” href=""https://deutschewelle.sharepoint.com/:x:/t/GR-GR-ReCo-KID2/EYEtCb8IvOZEuSSA55rABBUB3_4in40EKMY6BdThah8juw?e=q3tyR0"">list of objects</a>.<br /><br />The area you are searching in is:<br /> - Rivière du Rempart, Mauritius<br /><br />Please put the selected objects in meaningful relations to each other, using *only* and *all* of the following types:<br /> - At least one object contains one or more of the other objects.<br /><br />The overall style of your prompt should be:<br /> - Simple language, all in one sentence.<br /><br />Additional instructions:<br /> - None<br />";I'm searching for sports center that contains a swimming pool and a baseball field, in Rivière du Rempart, Mauritius.;"area:
+  type: area
+  value: Rivière du Rempart, Mauritius
+entities:
+  - id: 0
+    type: nwr
+    name: sports center
+  - id: 1
+    type: nwr
+    name: swimming pool
+  - id: 2
+    type: nwr
+    name: baseball field
+relations:
+  - type: contains
+    source: 0
+    target: 1
+  - type: contains
+    source: 0
+    target: 2";;;;;;;;;;;;;;;;;;
+doc_109;"Please stick to the following instructions and choose the relevant items from the respective lists to write a sound and logical prompt for finding a location with SPOT.<br /><br />For your search, please choose 3 object(s) from this <a target=”_blank” href=""https://deutschewelle.sharepoint.com/:x:/t/GR-GR-ReCo-KID2/EYEtCb8IvOZEuSSA55rABBUB3_4in40EKMY6BdThah8juw?e=q3tyR0"">list of objects</a>.<br /><br />The area you are searching in is:<br /> - Amphoe Phu Pha Man, Khon Kaen, Thailand<br /><br />Please put the selected objects in meaningful relations to each other, using *only* and *all* of the following types:<br /> - Set at least two objects at a distinct distance from each other. Please use up to 5 digits and up to 2 decimals with the metric system (meters (m), kilometers (km)).<br /><br />The overall style of your prompt should be:<br /> - Simple language, all in one sentence.<br /><br />Additional instructions:<br /> - None<br />";Searching for a beach in Amphoe Phu Pha Man, Khon Kaen, Thailand, with 2 taverns next to each other and a scuba center 1.2 km away.;"area:
+  type: area
+  value: Amphoe Phu Pha Man, Khon Kaen, Thailand
+entities:
+  - id: 0
+    type: nwr
+    name: beach
+  - id: 1
+    type: cluster
+    name: tavern
+    minPoints: 2
+    maxDistance: 50 m
+  - id: 2
+    type: nwr
+    name: scuba center
+relations:
+  - type: contains
+    source: 0
+    target: 1
+  - type: dist
+    source: 0
+    target: 1
+    value: 1.2 km";;;;;;;;;;;;;;;;;;
+doc_111;"Please stick to the following instructions and choose the relevant items from the respective lists to write a sound and logical prompt for finding a location with SPOT.<br /><br />For your search, please choose 2 object(s) from this <a target=”_blank” href=""https://deutschewelle.sharepoint.com/:x:/t/GR-GR-ReCo-KID2/EYEtCb8IvOZEuSSA55rABBUB3_4in40EKMY6BdThah8juw?e=q3tyR0"">list of objects</a>.<br /><br />The area you are searching in is:<br /> - Maclean, New South Wales, Australia<br /><br />Please put the selected objects in meaningful relations to each other, using *only* and *all* of the following types:<br /> - All objects are within a distinct radius from each other. Please use up to 5 digits and up to 2 decimals with the imperial system (feet (ft), yards (yd), miles (mi)) for your radius.<br /><br />The overall style of your prompt should be:<br /> - Short and precise, multiple sentences.<br /><br />Additional instructions:<br /> - None<br />";Find a pharmacy in Maclean, New South Wales, Australia. The pharmacy is 130,5 yd from the entrance to a book store.;"area:
+  type: area
+  value: Maclean, New South Wales, Australia
+entities:
+  - id: 0
+    type: nwr
+    name: pharmacy
+  - id: 1
+    type: nwr
+    name: book store
+relations:
+  - type: dist
+    source: 0
+    target: 1
+    value: 130,5 yd";;;;;;;;;;;;;;;;;;
+doc_112;"Please stick to the following instructions and choose the relevant items from the respective lists to write a sound and logical prompt for finding a location with SPOT.<br /><br />For your search, please choose 3 object(s) from this <a target=”_blank” href=""https://deutschewelle.sharepoint.com/:x:/t/GR-GR-ReCo-KID2/EYEtCb8IvOZEuSSA55rABBUB3_4in40EKMY6BdThah8juw?e=q3tyR0"">list of objects</a>.<br /><br />The area you are searching in is:<br /> - Bavaria<br /><br />Please put the selected objects in meaningful relations to each other, using *only* and *all* of the following types:<br /> - Set at least two objects at a distinct distance from each other. Please use up to 5 digits and up to 2 decimals with the metric system (meters (m), kilometers (km)).<br /><br />The overall style of your prompt should be:<br /> - Simple language, all in one sentence.<br /><br />Additional instructions:<br /> - None<br />";Find me a church in Bavaria from where I can reach a supermarket in 500 m and see a mountain within 2 km.;"area:
+  type: area
+  value: Bavaria
+entities:
+  - id: 0
+    type: nwr
+    name: church
+  - id: 1
+    type: nwr
+    name: supermarket
+  - id: 2
+    type: nwr
+    name: mountain
+relations:
+  - type: dist
+    source: 0
+    target: 1
+    value: 500 m
+  - type: distance
+    source: 0
+    target: 2
+    value: 2 km";;;;;;;;;;;;;;;;;;
+doc_115;"Please stick to the following instructions and choose the relevant items from the respective lists to write a sound and logical prompt for finding a location with SPOT.<br /><br />For your search, please choose 3 object(s) from this <a target=”_blank” href=""https://deutschewelle.sharepoint.com/:x:/t/GR-GR-ReCo-KID2/EYEtCb8IvOZEuSSA55rABBUB3_4in40EKMY6BdThah8juw?e=q3tyR0"">list of objects</a>.<br /><br />The area you are searching in is:<br /> - Please don't specify a search area.<br /><br />Please put the selected objects in meaningful relations to each other, using *only* and *all* of the following types:<br /> - Set at least two objects at a distinct distance from each other. Please use up to 5 digits and up to 2 decimals with the imperial system (feet (ft), yards (yd), miles (mi)).<br /> - Pick a relative relation of objects to each other from this <a target=”_blank” href=""https://deutschewelle.sharepoint.com/:x:/t/GR-GR-ReCo-KID2/EaPukmnqYUFLssJ5nKvuPLQBjBFaIqB_URY6M5wzaKBlsA?e=r4ftNa"">list of relative distance terms</a><br /><br />The overall style of your prompt should be:<br /> - Elaborate wording, all in one sentence.<br /><br />Additional instructions:<br /> - None<br />";Please identify the exact location of a restaurant that is next to a bus stop and 250 yd from a historic monument.;"area:
+  type: bbox
+entities:
+  - id: 0
+    type: nwr
+    name: restaurant
+  - id: 1
+    type: nwr
+    name: bus stop
+  - id: 2
+    type: nwr
+    name: historic monument
+relations:
+  - type: dist
+    source: 0
+    target: 1
+    value: 50 m
+  - type: dist
+    source: 0
+    target: 2
+    value: 250 yd";;;;;;;;;;;;;;;;;;
+doc_8;;Please find me a doctor within 100 meters form a health centre and next to a dentist in Rogaland, Norway.;"area:
+  type: area
+  value: Rogaland, Norway
+entities:
+  - id: 0
+    type: nwr
+    name: doctor
+  - id: 1
+    type: nwr
+    name: health centre
+  - id: 2
+    type: nwr
+    name: dentist
+relations:
+  - type: dist
+    source: 1
+    target: 2
+    value: 100 meters
+  - type: dist
+    source: 0
+    target: 2
+    value: 50 m";;;;;;;;;;;;;;;;;;
+doc_12;;Plase find a boat rentl place in Garbagna Novarese that i 300 meters from a car wash and a MC???.;"area:
+  type: area
+  value: Garbagna Novarese
+entities:
+  - id: 0
+    type: nwr
+    name: boat rentl place
+  - id: 1
+    type: nwr
+    name: car wash
+  - id: 2
+    type: nwr
+    name: MC???
+relations:
+  - type: dist
+    source: 0
+    target: 1
+    value: 300 meters
+  - type: dist
+    source: 0
+    target: 2
+    value: 300 meters";;;;;;;;;;;;;;;;;;
+doc_5;;Please find me in Windsor, United States, a car rental. The car rental  is next to pub and within 200 meters an ice cream parlor, which is next to a parking complex.;"area:
+  type: area
+  value: Windsor, United States
+entities:
+  - id: 0
+    type: nwr
+    name: car rental
+  - id: 1
+    type: nwr
+    name: pub
+  - id: 2
+    type: nwr
+    name: ice cream parlor
+  - id: 3
+    type: nwr
+    name: parking complex
+relations:
+  - type: dist
+    source: 0
+    target: 1
+    value: 50 meters
+  - type: dist
+    source: 0
+    target: 2
+    value: 200 meters
+  - type: dist
+    source: 2
+    target: 3
+    value: 50 meters";;;;;;;;;;;;;;;;;;
+doc_9;;Please find a music venue in a country park in Italy that is 100 meters from a nursing home and a kiosk.;"area:
+  type: area
+  value: Italy
+entities:
+  - id: 0
+    type: nwr
+    name: music venue
+  - id: 1
+    type: nwr
+    name: country park
+  - id: 2
+    type: nwr
+    name: nursing home
+  - id: 3
+    type: nwr
+    name: kiosk
+relations:
+  - type: contains
+    source: 1
+    target: 0
+  - type: dist
+    source: 0
+    target: 2
+    value: 100 meters
+  - type: dist
+    source: 0
+    target: 3
+    value: 100 meters";;;;;;;;;;;;;;;;;;
+doc_3;;Please find me a cafe and an ice cream parlor within a radius of 100 meters to each other in the Tovuz District in Azerbaijan.;"area:
+  type: area
+  value: Tovuz District in Azerbaijan
+entities:
+  - id: 0
+    type: nwr
+    name: cafe
+  - id: 1
+    type: nwr
+    name: ice cream parlor
+relations:
+  - type: dist
+    source: 0
+    target: 1
+    value: 100 m";;;;;;;;;;;;;;;;;;
+doc_4;;Please find me a research Institute in Stevens County, United States.;"area:
+  type: area
+  value: Stevens County, United States
+entities:
+  - id: 0
+    type: nwr
+    name: research Institute";;;;;;;;;;;;;;;;;;
+doc_6;;Please find a pharmacy that is 50 meters from a tax stand and close to a health car center, but close to a wall in Kadayanallur, India. ;"area:
+  type: area
+  value: Kadayanallur, India
+entities:
+  - id: 0
+    type: nwr
+    name: pharmacy
+  - id: 1
+    type: nwr
+    name: tax stand
+  - id: 2
+    type: nwr
+    name: health car center
+  - id: 3
+    type: nwr
+    name: wall
+relations:
+  - type: dist
+    source: 0
+    target: 1
+    value: 50 m
+  - type: dist
+    source: 0
+    target: 2
+    value: 150 m
+  - type: dist
+    source: 0
+    target: 3
+    value: 150 m";;;;;;;;;;;;;;;;;;
+doc_10;;I am loking for an air twer in Port Moresby in Papua New Guinea that is 50 metrs from a car wash and I can se a youth center on the opposite side.;"area:
+  type: area
+  value: Port Moresby in Papua New Guinea
+entities:
+  - id: 0
+    type: nwr
+    name: air twer
+  - id: 1
+    type: nwr
+    name: car wash
+  - id: 2
+    type: nwr
+    name: youth center
+relations:
+  - type: dist
+    source: 0
+    target: 1
+    value: 50 m
+  - type: dist
+    source: 0
+    target: 2
+    value: 250 m";;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;
