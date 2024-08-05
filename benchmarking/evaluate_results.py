@@ -49,9 +49,6 @@ class Result(BaseModel, frozen=True):
         description="Percentage of corectly identified entities over the total ents",
         default=0.0)
 
-    are_properties_exactly_same: ResultDataType = Field(description="True if entity are equal, otherwise False",
-                                                        default=ResultDataType.NOT_APPLICABLE)
-
 
 class AreaAnalyzer:
     def __init__(self):
@@ -153,8 +150,6 @@ class EntityAnalyzer:
             return ResultDataType.FALSE
         entities1_sorted, entities2_sorted = self.sort_entities(entities1, entities2)
         for ent1, ent2 in zip(entities1_sorted, entities2_sorted):
-            print(ent1)
-            print(ent2)
             if 'type' not in ent1:
                 return ResultDataType.FALSE
             if ent1['name'] != ent2['name'] or ent1['type'] != ent2['type']:
@@ -291,7 +286,6 @@ def compare_yaml(area_analyzer: AreaAnalyzer, entity_analyzer: EntityAnalyzer, p
     are_entities_exactly_same = ResultDataType.FALSE
     are_entities_same_exclude_props = ResultDataType.FALSE
     are_relations_exactly_same = ResultDataType.NOT_APPLICABLE
-    are_properties_exactly_same = ResultDataType.NOT_APPLICABLE
     percentage_of_correctly_identified_properties = -1
 
     if generated_data:
@@ -349,8 +343,7 @@ def compare_yaml(area_analyzer: AreaAnalyzer, entity_analyzer: EntityAnalyzer, p
                   are_entities_same_exclude_props=are_entities_same_exclude_props,
                   percentage_entities_partial_match_exclude_props=percentage_entities_partial_match_exclude_props,
                   percentage_of_correctly_identified_properties=percentage_of_correctly_identified_properties,
-                  are_relations_exactly_same=are_relations_exactly_same,
-                  are_properties_exactly_same=are_properties_exactly_same)
+                  are_relations_exactly_same=are_relations_exactly_same)
 
 
 if __name__ == '__main__':
