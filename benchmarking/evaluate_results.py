@@ -152,7 +152,7 @@ class EntityAnalyzer:
         for ent1, ent2 in zip(entities1_sorted, entities2_sorted):
             if 'type' not in ent1:
                 return ResultDataType.FALSE
-            if ent1['name'] != ent2['name'] or ent1['type'] != ent2['type']:
+            if ent1['name'] != ent2['name'] and ent1['type'] != ent2['type']:
                 return ResultDataType.FALSE
 
             properties_check_results = property_analyzer.compare_properties(ent1.get('properties', []), ent2.get('properties', []))
@@ -174,7 +174,7 @@ class EntityAnalyzer:
         for ent1, ent2 in zip(entities1_sorted, entities2_sorted):
             if 'type' not in ent1:
                 return ResultDataType.FALSE
-            if ent1['name'] != ent2['name'] or ent1['type'] != ent2['type']:
+            if ent1['name'] != ent2['name'] and ent1['type'] != ent2['type']:
                 return ResultDataType.FALSE
 
         return ResultDataType.TRUE
@@ -257,7 +257,7 @@ def compare_relations(relations1, relations2) -> ResultDataType:
     for id in range(len(relations1)):
         if relations1[id]["type"] == "contains":
             c1.append([relations1[id]["source"], relations1[id]["target"]])
-        elif relations1[id]["type"] == "distance":
+        elif relations1[id]["type"] == "dist" or relations1[id]["type"] == "distance":
             r1.add(frozenset({relations1[id]["source"], relations1[id]["target"], relations1[id]["value"]}))
     c1s = sorted(c1, key=lambda x: (x[0], x[1]))
     c2s = sorted(c2, key=lambda x: (x[0], x[1]))
