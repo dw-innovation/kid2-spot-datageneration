@@ -1,7 +1,7 @@
 import unittest
 
 from unittest.mock import patch
-from datageneration.data_model import Entity, Property, Relation
+from datageneration.data_model import Entity, Property, Relation, Distance
 from datageneration.relation_generator import RelationGenerator
 
 '''Run python -m unittest datageneration.tests.test_relation_generator'''
@@ -83,7 +83,8 @@ class TestRelationGenerator(unittest.TestCase):
 
         relations.extend(self.relation_generator.generate_individual_distances(entity_ids=other_entity_ids))
         expected_relations = [Relation(type='contains', source=0, target=1, value=None),
-                              Relation(type='dist', source=1, target=2, value="100 m")]
-        relations[1].value = "100 m"
+                              Relation(type='distance', source=1, target=2, value=Distance(magnitude="100", metric="m"))]
+
+        relations[1].value = Distance(magnitude="100", metric="m")
 
         self.assertEqual(relations, expected_relations)

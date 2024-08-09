@@ -1,6 +1,6 @@
 from enum import Enum
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import List, Optional, Union
 
 
 # Tag Combinations
@@ -75,12 +75,16 @@ class Entity(BaseModel):
     type: str = Field(default='nwr')
     properties: Optional[List[Property]] = None
 
+class Distance(BaseModel, frozen=True):
+    magnitude: str
+    metric: str
+
 
 class Relation(BaseModel):
     type: str
     source: int
     target: int
-    value: Optional[str] = None
+    value: Optional[Distance] = None
 
 
 class Relations(BaseModel):
@@ -108,7 +112,7 @@ class LocPoint(BaseModel):
 
 # Relative Spatial Terms
 class RelSpatial(BaseModel):
-    distance: str
+    distance: Distance
     values: List[str]
 
 

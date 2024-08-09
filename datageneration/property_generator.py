@@ -47,6 +47,7 @@ class PropertyGenerator:
         if tag.key == "height":
             # todo rename this
             generated_numerical_value = get_random_decimal_with_metric(max_digits=5)
+            generated_numerical_value = f'{generated_numerical_value.magnitude} {generated_numerical_value.metric}'
         else:
             # todo rename this
             generated_numerical_value = str(get_random_integer(max_digits=3))

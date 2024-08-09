@@ -9,8 +9,10 @@ python -m datageneration.gpt_data_generator \
 --styles_path datageneration/prompts/styles.txt \
 --prob_usage_of_relative_spatial_terms 0.4 \
 --prob_usage_of_written_numbers 0.3 \
+--prob_distance_writing_no_whitespace 0.1 \
+--prob_distance_writing_with_full_metric 1.0 \
 --prob_of_typos 0.3 \
 --max_dist_digits 5 \
 --save_yaml_csv \
---generate_sentences
+--generate_prompts
 # Options: --generate_prompts , --generate_sentences
