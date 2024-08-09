@@ -187,7 +187,7 @@ class TestGPTGenerator(unittest.TestCase):
                     Entity(id=1, is_area=True, name='reservoir', type='nwr',
                            properties=[Property(name='brand name', operator='~', value='Cranberry Lane')])]
 
-        self.gen.prob_desc_away_full_metric=1.0
+        self.gen.prob_desc_away_full_metric = 1.0
 
         generated_prompt = self.gen.prompt_helper.add_desc_away_prompt_helper(relation=test_rel_1,
                                                                               selected_phrases_desc=selected_phrases_desc,
@@ -208,9 +208,11 @@ class TestGPTGenerator(unittest.TestCase):
         # test randomness
         generated_prompts = set()
         for i in range(self.randomness_limit):
-            generated_prompt = self.prompt_helper.add_prompt_for_within_radius_relation(Distance(magnitude="1539", metric="yd"))
+            generated_prompt = self.prompt_helper.add_prompt_for_within_radius_relation(
+                Distance(magnitude="1539", metric="yd"))
             generated_prompts.add(generated_prompt)
         self.assertLessEqual(len(generated_prompts), self.randomness_limit)
+
     #
     # def test_add_relation_with_contain(self):
     #     # test case 1
@@ -247,7 +249,6 @@ class TestGPTGenerator(unittest.TestCase):
     #     self.assertTrue(generated_prompt.startswith("- The reservoir is"))
     #     self.assertTrue("allotment" in generated_prompt)
     #     assert len(individual_rels.relations) == 4
-
 
 if __name__ == '__main__':
     unittest.main()
