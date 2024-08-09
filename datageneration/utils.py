@@ -97,6 +97,7 @@ def translate_queries_to_yaml(combs):
 
 def clean_up_query(query):
     for entity in query["entities"]:
+        entity.pop("is_area", None)
         if len(entity["properties"]) == 0:
             entity.pop('properties', None)
         else:
@@ -111,6 +112,10 @@ def clean_up_query(query):
         for relation in query["relations"]:
             if relation["value"] is None:
                 relation.pop('value', None)
+            else:
+                rel_magnitude = relation["value"]['magnitude']
+                rel_metric = relation["value"]['metric']
+                relation['value'] = f'{rel_magnitude} {rel_metric}'
     return query
 
 
