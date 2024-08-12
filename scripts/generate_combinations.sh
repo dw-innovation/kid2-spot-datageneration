@@ -13,4 +13,5 @@ python -m datageneration.generate_combination_table \
 --percentage_of_two_word_areas 0.5 \
 --prob_generating_contain_rel 0.5 \
 --ratio_within_radius_within 0.6 \
---samples 30
+--prob_adding_brand_names_as_entity 0.3 \
+--samples 1000
