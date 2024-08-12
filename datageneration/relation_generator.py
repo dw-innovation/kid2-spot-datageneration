@@ -23,6 +23,7 @@ class RelationGenerator:
         self.tasks = [relation_task.value for relation_task in RELATION_TASKS]
 
     def generate_individual_distances(self, entity_ids: List[int]) -> List[Relation]:
+        np.random.shuffle(entity_ids)
         relations = []
         for t_no in range(len(entity_ids)-1):
             relations.append(
