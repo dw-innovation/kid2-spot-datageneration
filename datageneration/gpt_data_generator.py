@@ -349,7 +349,7 @@ class PromptHelper:
 
         modified_magnitude = randint(low, high) * 100
 
-        written_magnitude = num2words(distance.magnitude)
+        written_magnitude = num2words(modified_magnitude)
         if np.random.choice([True, False]):
             written_magnitude = written_magnitude.replace(",", "")
 
@@ -380,7 +380,7 @@ class PromptHelper:
             1.0 - self.prob_distance_writing_no_whitespace, self.prob_distance_writing_no_whitespace])
         if selected_task == "with_full_metric":
             metric = self.dist_lookup[metric]
-            distance_as_str = f"{magnitude}{metric}" if remove_whitespace else f'{magnitude}{metric}'
+            distance_as_str = f"{magnitude}{metric}" if remove_whitespace else f'{magnitude} {metric}'
 
         else:
             distance_as_str = f"{magnitude}{metric}" if remove_whitespace else f'{magnitude} {metric}'
