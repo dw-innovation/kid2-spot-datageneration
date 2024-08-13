@@ -153,6 +153,13 @@ def load_list_of_strings(list_of_strings_path: str) -> List[str]:
     return list_of_strings
 
 
+def normalize_entity_name(entity_name):
+    if 'brand:' in entity_name:
+        entity_name = entity_name.replace('brand:', '')
+
+    return entity_name
+
+
 class PromptHelper:
     '''
     It is a helper class for prompt generation. It has templates and functions for paraphrasing prompts.
@@ -318,9 +325,9 @@ class PromptHelper:
                                          selected_relative_spatial: RelSpatial, entities: List[Entity]):
         for entity in entities:
             if entity.id == relation.target:
-                target_ent = entity.name
+                target_ent = normalize_entity_name(entity.name)
             if entity.id == relation.source:
-                source_ent = entity.name
+                source_ent = normalize_entity_name(entity.name)
         generated_prompt = (f"- Use this term to describe the spatial relation between the {source_ent} and the "
                             f"{target_ent} (similar to \"X is _ Y\"): {selected_relative_spatial_term}\n")
         overwritten_distance = selected_relative_spatial.distance
@@ -357,9 +364,9 @@ class PromptHelper:
 
         for entity in entities:
             if entity.id == relation.target:
-                target_ent = entity.name
+                target_ent = normalize_entity_name(entity.name)
             if entity.id == relation.source:
-                source_ent = entity.name
+                source_ent = normalize_entity_name(entity.name)
 
         generated_prompt = (f"- The {source_ent} is{selected_phrases_desc} {distance} {selected_phrases_away} "
                             f"the {target_ent}\n")
@@ -409,9 +416,9 @@ class PromptHelper:
             if relation.type == "contains":
                 for entity in entities:
                     if entity.id == relation.target:
-                        target_ent = entity.name
+                        target_ent = normalize_entity_name(entity.name)
                     if entity.id == relation.source:
-                        source_ent = entity.name
+                        source_ent = normalize_entity_name(entity.name)
                 generated_prompt += f"- The {target_ent} is {selected_phrase} the {source_ent}\n"
             else:
                 individual_rels.append(relation)
@@ -475,7 +482,8 @@ class GPTDataGenerator:
         core_prompt += "Objects:\n"
 
         for entity_id, entity in enumerate(entities):
-            core_prompt = core_prompt + "- Obj. " + str(entity_id) + ": " + entity.name
+            entity_name = normalize_entity_name(entity.name)
+            core_prompt = core_prompt + "- Obj. " + str(entity_id) + ": " + entity_name
             if len(entity.properties) > 0:
                 core_prompt += " | Properties -> "
                 core_prompt = self.prompt_helper.add_property_prompt(core_prompt=core_prompt,
