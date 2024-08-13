@@ -19,7 +19,8 @@ def generate_and_condition(conditions: List) -> Dict[str, List[Tag]]:
     :param conditions: A list of conditions, where each condition is represented as a list of Tag objects.
     :return: A dictionary containing the 'AND' condition, with the key 'and' mapped to a list of Tag objects.
     """
-    return {"and": list(chain.from_iterable(conditions))}
+    res = {"and": list(chain.from_iterable(conditions))}
+    return res
 
 
 def generate_or_condition(conditions: List) -> Union[List[Tag], Dict[str, List[Tag]]]:
@@ -32,10 +33,15 @@ def generate_or_condition(conditions: List) -> Union[List[Tag], Dict[str, List[T
     :param conditions: A list of conditions, where each condition is represented as a list of Tag objects.
     :return: A dictionary containing the 'AND' condition, with the key 'and' mapped to a list of Tag objects.
     """
-    if isinstance(conditions[0], Tag):
+    first_condition = conditions[0]
+
+    if isinstance(first_condition, Tag) or len(conditions) > 1:
         return {"or": conditions}
-    else:
-        return conditions[0]
+
+    if isinstance(first_condition, dict):
+        return first_condition
+
+    return conditions[0]
 
 
 def transform_tags_to_imr(tags_str: str) -> List[Dict[str, List[Tag]]]:
