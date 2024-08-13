@@ -400,7 +400,8 @@ if __name__ == '__main__':
                               property_analyzer=property_analyzer,
                               yaml_true_string=yaml_true_string,
                               yaml_pred_string=yaml_pred_string)
-        results.append(result.dict())
+        meta_vals = {key: gold_label[key] for key in meta_fields}
+        results.append(result.dict() | meta_vals)
 
         for meta_field in meta_fields:
             if gold_label[meta_field] == 1:
@@ -428,14 +429,15 @@ if __name__ == '__main__':
                         'are_relations_exactly_same']:
         print(f"===Results for {result_type}===")
         na_samples = results[results[result_type] == ResultDataType.NOT_APPLICABLE]
-        print(f"Number of NA samples: {len(na_samples)}")
         true_preds = results[results[result_type] == ResultDataType.TRUE]
         acc = len(true_preds) / (len(results) - len(na_samples))
-        print(f'Accuracy of {result_type}')
-        print(acc)
 
-        evaluation_scores[result_type + "_NA"] = len(na_samples)
+        if result_type == "are_relations_exactly_same":
+            evaluation_scores[result_type + "_NA"] = len(na_samples)
+            print(f"  Number of NA samples: {len(na_samples)}")
+
         evaluation_scores[result_type + "_acc"] = acc
+        print(f'  Accuracy of {result_type}: {acc}')
 
     # Results with float type
     for result_type in ['percentage_entities_partial_match_exclude_props',
@@ -445,16 +447,32 @@ if __name__ == '__main__':
         na_results = results[results[result_type] == -1]
         valid_results = results[results[result_type] != -1]
         acc = np.mean(valid_results[result_type].to_numpy())
-        print("Number of NA samples:", len(na_results))
-        print(f'Average {result_type}')
-        print(acc)
 
-        evaluation_scores[result_type + "_NA"] = len(na_samples)
+        if result_type == "percentage_of_correctly_identified_properties":
+            evaluation_scores[result_type + "_NA"] = len(na_samples)
+            print(f"  Number of NA samples: {len(na_samples)}")
+        print(f'  Average {result_type}: {acc}')
+
         evaluation_scores[result_type + "_acc"] = acc
 
     evaluation_scores = evaluation_scores | meta_results
 
     evaluation_scores = pd.DataFrame(evaluation_scores, index=[0])
+
+
+    def convert_custom_type(value):
+        if value == ResultDataType.TRUE:
+            return "True"
+        elif value == ResultDataType.FALSE:
+            return "False"
+        elif value == ResultDataType.NOT_APPLICABLE:
+            return "Not Applicable"
+        return value
+
+    results = results.map(convert_custom_type)
+    # results.replace(to_replace=ResultDataType.TRUE, value="True")
+    # results.replace(to_replace=ResultDataType.FALSE, value="False")
+    # results.replace(to_replace=ResultDataType.NOT_APPLICABLE, value="Not Applicable")
 
     with pd.ExcelWriter(out_file_path) as writer:
         results.to_excel(writer)
