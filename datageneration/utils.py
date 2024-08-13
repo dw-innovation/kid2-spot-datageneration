@@ -51,7 +51,7 @@ def add_yaml_to_filename(output_file):
 def write_output(generated_combs, output_file):
     with open(output_file, "w") as out_file:
         for generated_comb in generated_combs:
-            json.dump(generated_comb.model_dump(mode="json"), out_file)
+            json.dump(generated_comb.model_dump(mode="json"), out_file, ensure_ascii=False)
             out_file.write('\n')
 
 
@@ -61,7 +61,7 @@ def write_dict_output(generated_combs, output_file, bool_add_yaml=True):
 
     with open(output_file, "w") as out_file:
         for generated_comb in generated_combs:
-            json.dump(generated_comb, out_file)
+            json.dump(generated_comb, out_file, ensure_ascii=False)
             out_file.write('\n')
 
 
