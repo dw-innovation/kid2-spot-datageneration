@@ -426,34 +426,27 @@ if __name__ == '__main__':
                         'is_area_light_match',
                         'are_entities_exactly_same',
                         'are_entities_same_exclude_props',
+                        'percentage_entities_partial_match_exclude_props',
+                        'percentage_of_correctly_identified_properties',
                         'are_relations_exactly_same']:
         print(f"===Results for {result_type}===")
-        na_samples = results[results[result_type] == ResultDataType.NOT_APPLICABLE]
-        true_preds = results[results[result_type] == ResultDataType.TRUE]
-        acc = len(true_preds) / (len(results) - len(na_samples))
 
-        if result_type == "are_relations_exactly_same":
-            evaluation_scores[result_type + "_NA"] = len(na_samples)
-            print(f"  Number of NA samples: {len(na_samples)}")
+        if result_type in ['percentage_entities_partial_match_exclude_props',
+                        'percentage_of_correctly_identified_properties']:
+            na_samples = results[results[result_type] == -1]
+            valid_results = results[results[result_type] != -1]
+            acc = np.mean(valid_results[result_type].to_numpy())
+        else:
+            na_samples = results[results[result_type] == ResultDataType.NOT_APPLICABLE]
+            true_preds = results[results[result_type] == ResultDataType.TRUE]
+            acc = len(true_preds) / (len(results) - len(na_samples))
 
         evaluation_scores[result_type + "_acc"] = acc
         print(f'  Accuracy of {result_type}: {acc}')
 
-    # Results with float type
-    for result_type in ['percentage_entities_partial_match_exclude_props',
-                        'percentage_of_correctly_identified_properties']:
-        print(f"===Results for {result_type}===")
-
-        na_results = results[results[result_type] == -1]
-        valid_results = results[results[result_type] != -1]
-        acc = np.mean(valid_results[result_type].to_numpy())
-
-        if result_type == "percentage_of_correctly_identified_properties":
+        if result_type in ["are_relations_exactly_same", "percentage_of_correctly_identified_properties"]:
             evaluation_scores[result_type + "_NA"] = len(na_samples)
             print(f"  Number of NA samples: {len(na_samples)}")
-        print(f'  Average {result_type}: {acc}')
-
-        evaluation_scores[result_type + "_acc"] = acc
 
     evaluation_scores = evaluation_scores | meta_results
 
