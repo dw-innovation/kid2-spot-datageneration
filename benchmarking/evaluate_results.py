@@ -340,7 +340,7 @@ def compare_yaml(area_analyzer: AreaAnalyzer, entity_analyzer: EntityAnalyzer, p
 
             else:
                 are_relations_exactly_same = compare_relations(ref_data['relations'], generated_data['relations'])
-    if (is_area_exact_match == ResultDataType.TRUE and are_entities_exactly_same == ResultDataType.TRUE
+    if (is_area_light_match == ResultDataType.TRUE and are_entities_exactly_same == ResultDataType.TRUE
         and (are_relations_exactly_same == ResultDataType.TRUE or
              are_relations_exactly_same == ResultDataType.NOT_APPLICABLE)):
         is_perfect_match = ResultDataType.TRUE
