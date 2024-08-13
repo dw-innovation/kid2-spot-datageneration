@@ -130,7 +130,7 @@ def post_processing(text):
 
 
 def load_rel_spatial_terms(relative_spatial_terms_path: str) -> List[RelSpatial]:
-    relative_spatial_terms = pd.read_csv(relative_spatial_terms_path).to_dict(orient='records')
+    relative_spatial_terms = pd.read_csv(relative_spatial_terms_path, sep=';').to_dict(orient='records')
     processed_rel_spatial_terms = []
     for relative_spatial_term in relative_spatial_terms:
         values = list(map(lambda x: x.rstrip().strip(), relative_spatial_term['Vals'].split(',')))
@@ -253,6 +253,8 @@ class PromptHelper:
         if not is_number(entity_property.value) and np.random.choice([True, False]):
             metric = self.dist_lookup[entity_property.value.rsplit(" ", 1)[-1]]
             value = entity_property.value.rsplit(" ", 1)[0] + " " + metric
+            if np.random.choice([True, False]):
+                value = value.replace(" ", "")
         else:
             value = entity_property.value
 
@@ -324,7 +326,7 @@ class PromptHelper:
         overwritten_distance = selected_relative_spatial.distance
         return generated_prompt, overwritten_distance
 
-    def generate_written_word_distance(self, distance: Distance) -> tuple[Distance, Distance]:
+    def generate_written_word_distance(self, distance: Distance, max_digits: int) -> tuple[Distance, Distance]:
         """
         Generates a random number starting at 100, with the last two digits always being zero, and returns it as both
         a scalar and written number.
@@ -344,7 +346,7 @@ class PromptHelper:
         if np.random.choice([True, False]):
             written_magnitude = written_magnitude.replace(",", "")
 
-        numeric = Distance(magnitude=modified_magnitude, metric=distance.metric)
+        numeric = Distance(magnitude=str(modified_magnitude), metric=distance.metric)
         written = Distance(magnitude=written_magnitude, metric=distance.metric)
         return numeric, written
 
@@ -531,7 +533,7 @@ class GPTDataGenerator:
                                               distance=overwritten_distance)
             elif use_written_distance:
                 numeric_distance, written_distance = self.prompt_helper.generate_written_word_distance(
-                    distance=relation.value)
+                    distance=relation.value, max_digits=self.max_dist_digits)
 
                 written_distance_relation = Relation(type=relation.type, source=relation.source,
                                                      target=relation.target, value=written_distance)
@@ -550,7 +552,7 @@ class GPTDataGenerator:
             1.0 - self.prob_usage_of_written_numbers, self.prob_usage_of_written_numbers])
         if use_written_distance:
             numeric_distance, written_distance = self.prompt_helper.generate_written_word_distance(
-                distance)
+                distance, max_digits=self.max_dist_digits)
             for relation in relations.relations:
                 self.update_relation_distance(relations=relations,
                                               relation_to_be_updated=relation,
