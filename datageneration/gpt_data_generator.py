@@ -376,8 +376,12 @@ class PromptHelper:
         magnitude = distance.magnitude
         metric = distance.metric
         selected_task = np.random.choice(self.distance_writing_styles, p=self.distance_writing_styles_probs)
-        remove_whitespace = np.random.choice([False, True], p=[
-            1.0 - self.prob_distance_writing_no_whitespace, self.prob_distance_writing_no_whitespace])
+
+        if magnitude.isdigit():
+            remove_whitespace = np.random.choice([False, True], p=[
+                1.0 - self.prob_distance_writing_no_whitespace, self.prob_distance_writing_no_whitespace])
+        else:
+            remove_whitespace = False
         if selected_task == "with_full_metric":
             metric = self.dist_lookup[metric]
             distance_as_str = f"{magnitude}{metric}" if remove_whitespace else f'{magnitude} {metric}'
