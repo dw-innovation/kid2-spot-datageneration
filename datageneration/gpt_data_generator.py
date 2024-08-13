@@ -333,20 +333,19 @@ class PromptHelper:
         :param max_digits: maximum number of digits allowed
         :return: numeric - new numeric value, written - corresponding number in written words
         """
-        # print("===DISTANCE===")
-        # print(distance)
-        # todo: why do we generate again???? i remove it
-        # digits = randint(1, max_digits - 2)
-        # low = np.power(10, digits - 1)
-        # high = np.power(10, digits) - 1
-        #
-        # numeric = randint(low, high) * 100
-        numeric = distance
-        written = Distance(magnitude=num2words(distance.magnitude), metric=distance.metric)
+        digits = randint(1, max_digits - 2)
+        low = np.power(10, digits - 1)
+        high = np.power(10, digits) - 1
 
-        # todo: I commented out, I don't know why it is important
-        # if np.random.choice([True, False]):
-        #     written = written.replace(",", "")
+
+        modified_magnitude = randint(low, high) * 100
+
+        written_magnitude = num2words(distance.magnitude)
+        if np.random.choice([True, False]):
+            written_magnitude = written_magnitude.replace(",", "")
+
+        numeric = Distance(magnitude=modified_magnitude, metric=distance.metric)
+        written = Distance(magnitude=written_magnitude, metric=distance.metric)
         return numeric, written
 
     def add_desc_away_prompt_helper(self, relation: Relation, selected_phrases_desc: str, selected_phrases_away: str,

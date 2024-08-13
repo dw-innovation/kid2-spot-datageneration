@@ -216,7 +216,7 @@ class CombinationRetriever(object):
                     if len(fetched_examples) > num_examples - 1:
                         return fetched_examples
 
-                    if not add_non_roman_examples:
+                    if not self.add_non_roman_examples:
                         if is_roman(_example):
                             fetched_examples.add(_example)
                     else:
