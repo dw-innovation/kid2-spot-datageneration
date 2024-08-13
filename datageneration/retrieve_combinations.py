@@ -91,7 +91,7 @@ def split_tags(tags: str) -> List[TagProperty]:
 
 
 class CombinationRetriever(object):
-    def __init__(self, source: str, prop_limit: int, min_together_count: int):
+    def __init__(self, source: str, prop_limit: int, min_together_count: int, add_non_roman_examples: bool):
         if source.endswith('xlsx'):
             tag_df = pd.read_excel(source, engine='openpyxl')
         else:

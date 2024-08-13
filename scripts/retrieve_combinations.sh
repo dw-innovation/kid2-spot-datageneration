@@ -11,4 +11,5 @@ python -m datageneration.retrieve_combinations \
 --source datageneration/data/Spot_primary_keys_bundles.xlsx \
 --output_file datageneration/data/prop_examples_v13.jsonl \
 --prop_example_limit 50000 \
---generate_property_examples
+--generate_property_examples \
+--add_non_roman_examples
