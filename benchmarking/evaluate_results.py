@@ -22,6 +22,11 @@ class Result(BaseModel, frozen=True):
     yaml_pred_string: str = Field(...)
     is_parsable_yaml: ResultDataType = Field(description="True if yaml can be parsed, otherwise False",
                                              default=ResultDataType.FALSE)
+
+    is_perfect_match: ResultDataType = Field(description="True if area, entities+props and relations are equal, otherwise False",
+                                                default=ResultDataType.FALSE)
+
+
     is_area_exact_match: ResultDataType = Field(description="True if areas are equal, otherwise False",
                                                 default=ResultDataType.FALSE)
 
@@ -48,6 +53,9 @@ class Result(BaseModel, frozen=True):
     percentage_of_correctly_identified_properties: float = Field(
         description="Percentage of corectly identified entities over the total ents",
         default=0.0)
+
+    def __getitem__(self, item):
+        return getattr(self, item)
 
 
 class AreaAnalyzer:
@@ -92,10 +100,13 @@ class PropertyAnalyzer:
 
     def convert_values_to_string(self, data):
         for item in data:
+            item["name"] = item["name"].lower()
             if 'value' not in item:
                 continue
             if isinstance(item['value'], (int, float)):
                 item['value'] = str(item['value'])
+            else:
+                item['value'] = item['value'].lower()
 
         return data
 
@@ -114,8 +125,6 @@ class PropertyAnalyzer:
         props2 = self.convert_values_to_string(props2)
         props1_sorted = sorted(props1, key=lambda x: x['name'])
         props2_sorted = sorted(props2, key=lambda x: x['name'])
-
-        print(props1_sorted)
 
         return ResultDataType.TRUE if (props1_sorted == props2_sorted) else ResultDataType.FALSE
 
@@ -150,12 +159,13 @@ class EntityAnalyzer:
             return ResultDataType.FALSE
         entities1_sorted, entities2_sorted = self.sort_entities(entities1, entities2)
         for ent1, ent2 in zip(entities1_sorted, entities2_sorted):
-            if 'type' not in ent1:
-                return ResultDataType.FALSE
-            if ent1['name'] != ent2['name'] and ent1['type'] != ent2['type']:
+            # if 'type' not in ent1:
+            #     return ResultDataType.FALSE
+            if ent1['name'].lower() != ent2['name'].lower() or ent1['type'] != ent2['type']:
                 return ResultDataType.FALSE
 
-            properties_check_results = property_analyzer.compare_properties(ent1.get('properties', []), ent2.get('properties', []))
+            properties_check_results = property_analyzer.compare_properties(ent1.get('properties', []),
+                                                                            ent2.get('properties', []))
 
             if properties_check_results == ResultDataType.FALSE:
                 return ResultDataType.FALSE
@@ -163,8 +173,8 @@ class EntityAnalyzer:
         return ResultDataType.TRUE
 
     def sort_entities(self, entities1, entities2):
-        entities1_sorted = sorted(entities1, key=lambda x: x['name'])
-        entities2_sorted = sorted(entities2, key=lambda x: x['name'])
+        entities1_sorted = sorted(entities1, key=lambda x: x['name'].lower())
+        entities2_sorted = sorted(entities2, key=lambda x: x['name'].lower())
         return entities1_sorted, entities2_sorted
 
     def compare_entities_exclude_props(self, entities1, entities2) -> ResultDataType:
@@ -172,9 +182,9 @@ class EntityAnalyzer:
             return ResultDataType.FALSE
         entities1_sorted, entities2_sorted = self.sort_entities(entities1, entities2)
         for ent1, ent2 in zip(entities1_sorted, entities2_sorted):
-            if 'type' not in ent1:
-                return ResultDataType.FALSE
-            if ent1['name'] != ent2['name'] and ent1['type'] != ent2['type']:
+            # if 'type' not in ent1:
+            #     return ResultDataType.FALSE
+            if ent1['name'].lower() != ent2['name'].lower() or ent1['type'] != ent2['type']:
                 return ResultDataType.FALSE
 
         return ResultDataType.TRUE
@@ -193,7 +203,7 @@ class EntityAnalyzer:
         total_ents = len(entities1_sorted)
         matched_ents = 0
         for ent1, ent2 in zip(entities1_sorted, entities2_sorted):
-            if ent1['name'] == ent2['name'] or ent1['type'] == ent2['type']:
+            if ent1['name'].lower() == ent2['name'].lower() and ent1['type'] == ent2['type']:
                 matched_ents += 1
         return matched_ents / total_ents
 
@@ -231,9 +241,9 @@ def prepare_relation(data) -> ResultDataType:
     prepped_relation = copy.deepcopy(data["relations"])
     for id in range(len(data["relations"])):
         prepped_relation[id]["source"] = \
-            [ent["name"] for ent in data["entities"] if ent["id"] == relations[id]["source"]][0]
+            [ent["name"].lower() for ent in data["entities"] if ent["id"] == relations[id]["source"]][0]
         prepped_relation[id]["target"] = \
-            [ent["name"] for ent in data["entities"] if ent["id"] == relations[id]["target"]][0]
+            [ent["name"].lower() for ent in data["entities"] if ent["id"] == relations[id]["target"]][0]
     return prepped_relation
 
 
@@ -282,6 +292,7 @@ def compare_yaml(area_analyzer: AreaAnalyzer, entity_analyzer: EntityAnalyzer, p
     """
     _, ref_data = is_parsable_yaml(yaml_true_string)
     _is_parsable_yaml, generated_data = is_parsable_yaml(yaml_pred_string)
+    is_perfect_match = ResultDataType.FALSE
     is_area_exact_match = ResultDataType.FALSE
     are_entities_exactly_same = ResultDataType.FALSE
     are_entities_same_exclude_props = ResultDataType.FALSE
@@ -311,11 +322,9 @@ def compare_yaml(area_analyzer: AreaAnalyzer, entity_analyzer: EntityAnalyzer, p
                 ref_entities_with_properties[ref_entity['name']] = ref_entity['properties']
 
         if len(ref_entities_with_properties) > 0:
-            print("!!!entities with properties!!!!")
-            print(generated_data['entities'])
+            # print("!!!entities with properties!!!!")
             predicted_entities_with_properties = {}
             for pred_entity in generated_data['entities']:
-                print(pred_entity)
                 if 'properties' in pred_entity:
                     predicted_entities_with_properties[pred_entity['name']] = pred_entity['properties']
             percentage_of_correctly_identified_properties = property_analyzer.percentage_of_correctly_identified_properties(
@@ -331,9 +340,14 @@ def compare_yaml(area_analyzer: AreaAnalyzer, entity_analyzer: EntityAnalyzer, p
 
             else:
                 are_relations_exactly_same = compare_relations(ref_data['relations'], generated_data['relations'])
+    if (is_area_exact_match == ResultDataType.TRUE and are_entities_exactly_same == ResultDataType.TRUE
+        and (are_relations_exactly_same == ResultDataType.TRUE or
+             are_relations_exactly_same == ResultDataType.NOT_APPLICABLE)):
+        is_perfect_match = ResultDataType.TRUE
 
     return Result(yaml_pred_string=yaml_pred_string,
                   yaml_true_string=yaml_true_string,
+                  is_perfect_match=is_perfect_match,
                   is_parsable_yaml=_is_parsable_yaml,
                   is_area_exact_match=is_area_exact_match,
                   is_area_light_match=is_area_light_match,
@@ -352,11 +366,20 @@ if __name__ == '__main__':
     parser.add_argument('--gold_sheet_name', type=str, required=True)
     parser.add_argument('--pred_file_path', type=str, required=True)
     parser.add_argument('--out_file_path', type=str, required=True)
+    parser.add_argument('--out_file_path_sum', type=str, required=True)
     # parser.add_argument('--geolocations_file_path', help='Path to a file containing cities, countries, etc.')
     args = parser.parse_args()
     # geolocations_file_path = args.geolocations_file_path
     out_file_path = args.out_file_path
+    out_file_path_sum = args.out_file_path_sum
     pred_file_path = args.pred_file_path
+
+    meta_fields = ["1 entity", "2 entities", "3 entities", "distance relation", "area", "proporties",
+                   "typos", "grammar mistakes", "rel spatial term", "cluster", "contains relation",
+                   "brand/name as property", "brand/name standalone", "non-roman alphabet"]
+    meta_results = dict.fromkeys(meta_fields, 0)
+    meta_results_counter = dict.fromkeys(meta_fields, 0)
+
     predictions = pd.read_json(path_or_buf=pred_file_path, lines=True).to_dict(orient='records')
 
     gold_file_path = args.gold_file_path
@@ -366,7 +389,6 @@ if __name__ == '__main__':
     area_analyzer = AreaAnalyzer()
     property_analyzer = PropertyAnalyzer()
     entity_analyzer = EntityAnalyzer(property_analyzer=property_analyzer)
-
 
     results = []
     for prediction, gold_label in tqdm(zip(predictions, gold_labels), total=len(gold_labels)):
@@ -380,10 +402,26 @@ if __name__ == '__main__':
                               yaml_pred_string=yaml_pred_string)
         results.append(result.dict())
 
+        for meta_field in meta_fields:
+            if gold_label[meta_field] == 1:
+                if result["is_perfect_match"] == ResultDataType.TRUE:
+                    meta_results[meta_field] += 1
+                    meta_results_counter[meta_field] += 1
+                else:
+                    meta_results_counter[meta_field] += 1
+
+    for meta_field in meta_fields:
+        if meta_results_counter[meta_field] == 0:
+            del meta_results[meta_field]
+        else:
+            meta_results[meta_field] = meta_results[meta_field] / meta_results_counter[meta_field]
+
     results = pd.DataFrame(results)
 
+    evaluation_scores = {}
+
     # Results with binary type
-    for result_type in ['is_parsable_yaml', 'is_area_exact_match',
+    for result_type in ['is_perfect_match', 'is_parsable_yaml', 'is_area_exact_match',
                         'is_area_light_match',
                         'are_entities_exactly_same',
                         'are_entities_same_exclude_props',
@@ -395,6 +433,9 @@ if __name__ == '__main__':
         acc = len(true_preds) / (len(results) - len(na_samples))
         print(f'Accuracy of {result_type}')
         print(acc)
+
+        evaluation_scores[result_type + "_NA"] = len(na_samples)
+        evaluation_scores[result_type + "_acc"] = acc
 
     # Results with float type
     for result_type in ['percentage_entities_partial_match_exclude_props',
@@ -408,5 +449,14 @@ if __name__ == '__main__':
         print(f'Average {result_type}')
         print(acc)
 
+        evaluation_scores[result_type + "_NA"] = len(na_samples)
+        evaluation_scores[result_type + "_acc"] = acc
+
+    evaluation_scores = evaluation_scores | meta_results
+
+    evaluation_scores = pd.DataFrame(evaluation_scores, index=[0])
+
     with pd.ExcelWriter(out_file_path) as writer:
         results.to_excel(writer)
+    with pd.ExcelWriter(out_file_path_sum) as writer:
+        evaluation_scores.to_excel(writer)
