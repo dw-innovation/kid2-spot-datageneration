@@ -1,4 +1,4 @@
-VERSION=v13
+VERSION=v14
 
 python -m datageneration.generate_combination_table \
 --geolocations_file_path datageneration/data/countries+states+cities.json \
@@ -7,11 +7,11 @@ python -m datageneration.generate_combination_table \
 --output_file datageneration/results/${VERSION}/samples.jsonl \
 --write_output \
 --max_distance_digits 5 \
---max_number_of_entities_in_prompt 4 \
---max_number_of_props_in_entity 4 \
---prob_of_entities_with_props 0.3 \
+--max_number_of_entities_in_prompt 3 \
+--max_number_of_props_in_entity 3 \
+--prob_of_entities_with_props 0.6 \
 --prob_of_two_word_areas 0.5 \
 --prob_generating_contain_rel 0.5 \
 --ratio_within_radius_within 0.6 \
---prob_adding_brand_names_as_entity 0.3 \
---samples 1000
+--prob_adding_brand_names_as_entity 0.25 \
+--samples 20000
