@@ -23,9 +23,10 @@ class QueryCombinationGenerator(object):
                  prob_of_two_word_areas: float,
                  prob_generating_contain_rel: float,
                  prob_adding_brand_names_as_entity: float,
+                 prob_of_non_roman_areas: float,
                  ratio_within_radius_within: float):
         self.entity_tag_combinations = list(filter(lambda x: 'core' in x.comb_type.value, tag_combinations))
-        self.area_generator = AreaGenerator(geolocation_file, prob_of_two_word_areas)
+        self.area_generator = AreaGenerator(geolocation_file, prob_of_two_word_areas, prob_of_non_roman_areas)
         self.prob_adding_brand_names_as_entity = prob_adding_brand_names_as_entity
         self.property_generator = PropertyGenerator(property_examples)
         self.relation_generator = RelationGenerator(max_distance_digits=max_distance_digits,
@@ -256,6 +257,7 @@ if __name__ == '__main__':
     parser.add_argument('--max_number_of_entities_in_prompt', type=int, default=4)
     parser.add_argument('--max_number_of_props_in_entity', type=int, default=4)
     parser.add_argument('--prob_of_entities_with_props', type=float, default=0.3)
+    parser.add_argument('--prob_of_non_roman_areas', type=float, default=0.2)
     parser.add_argument('--prob_of_two_word_areas', type=float, default=0.5)
     parser.add_argument('--prob_adding_brand_names_as_entity', type=float, default=0.5)
     parser.add_argument('--prob_generating_contain_rel', type=float, default=0.3)
@@ -274,6 +276,7 @@ if __name__ == '__main__':
     prob_of_entities_with_props = args.prob_of_entities_with_props
     prob_of_two_word_areas = args.prob_of_two_word_areas
     prob_generating_contain_rel = args.prob_generating_contain_rel
+    prob_of_non_roman_areas = args.prob_of_non_roman_areas
     prob_adding_brand_names_as_entity = args.prob_adding_brand_names_as_entity
     ratio_within_radius_within = args.ratio_within_radius_within
 
@@ -286,6 +289,7 @@ if __name__ == '__main__':
                                                      property_examples=property_examples,
                                                      max_distance_digits=args.max_distance_digits,
                                                      prob_of_two_word_areas=prob_of_two_word_areas,
+                                                     prob_of_non_roman_areas=prob_of_non_roman_areas,
                                                      prob_generating_contain_rel=prob_generating_contain_rel,
                                                      prob_adding_brand_names_as_entity=prob_adding_brand_names_as_entity,
                                                      ratio_within_radius_within=ratio_within_radius_within)

@@ -1,11 +1,13 @@
+import json
 import numpy as np
 import pandas as pd
 from enum import Enum
 from pydantic import BaseModel
-from typing import List
+from typing import List, Dict
 
 from datageneration.data_model import Area
-
+from datageneration.enrich_geo_database import area_names_non_roman_vocab
+from datageneration.utils import NON_ROMAN_LANGUAGES
 
 class NamedAreaData(BaseModel):
     city: str
@@ -54,17 +56,34 @@ def load_named_area_data(geolocation_file: str) -> List[NamedAreaData]:
     return (locs_with_cities_single_word, locs_with_cities_two_words, locs_with_states_single_word,
             locs_with_states_two_words)
 
+def load_non_roman_vocab(non_roman_vocab_file: str) -> Dict:
+    with open(non_roman_vocab_file, 'r') as json_file:
+        non_roman_vocab = json.load(json_file)
+    return non_roman_vocab
+
+
 
 class AreaGenerator:
-    def __init__(self, geolocation_file: str, percentage_of_two_word_areas: float):
+    def __init__(self, geolocation_file: str, non_roman_vocab_file: str, prob_of_two_word_areas: float, prob_of_non_roman_areas: float):
         (self.locs_with_cities_single_word, self.locs_with_cities_two_words,self.locs_with_states_single_word,
             self.locs_with_states_two_words) = load_named_area_data(geolocation_file)
+        self.area_non_roman_vocab = load_non_roman_vocab(non_roman_vocab_file)
         self.tasks = [area_task.value for area_task in AREA_TASKS]
         self.two_word_city_selection = [True, False]
         self.two_word_state_selection = [True, False]
-        self.percentage_of_two_word_areas = percentage_of_two_word_areas
+        self.prob_of_two_word_areas = prob_of_two_word_areas
+        self.prob_of_non_roman_areas = prob_of_non_roman_areas
 
-    def get_area(self, required_type=None) -> Area:
+    def translate_into_non_roman(self, area: NamedAreaData, target_lang) -> NamedAreaData:
+        print("area")
+        print(area)
+
+        print("target_lang")
+        print(target_lang)
+        print(self.area_non_roman_vocab[area.city])
+        pass
+
+    def get_area(self, required_type=None) -> NamedAreaData:
         """
         A method that returns a random area. Probability of one or two word areas is determined by a class variable.
         The argument "required_type" can determine whether the one or two word specification must apply to either
@@ -73,8 +92,8 @@ class AreaGenerator:
         :param required_type: determines what will be set to one/two words, either "city" or "state" or None for random
         :return: the drawn area
         """
-        use_two_word_area = np.random.choice([True, False], p=[self.percentage_of_two_word_areas,
-                                                               1-self.percentage_of_two_word_areas])
+        use_two_word_area = np.random.choice([True, False], p=[self.prob_of_two_word_areas,
+                                                               1 - self.prob_of_two_word_areas])
 
         if use_two_word_area:
             if required_type == "city":
@@ -93,7 +112,18 @@ class AreaGenerator:
                 idx = np.random.choice([0, 1])
                 draft_from = [self.locs_with_cities_single_word, self.locs_with_states_single_word][idx]
 
-        return np.random.choice(draft_from)
+        selected_area = np.random.choice(draft_from)
+
+        use_non_roman_alphabets = np.random.choice([True, False], p=[self.prob_of_non_roman_areas,
+                                                               1 - self.prob_of_non_roman_areas])
+
+        if use_non_roman_alphabets:
+            np.random.shuffle(NON_ROMAN_LANGUAGES)
+            selected_lang = NON_ROMAN_LANGUAGES[0]
+            print(selected_area)
+            selected_area = self.translate_into_non_roman(area=selected_area, target_lang = selected_lang)
+
+        return selected_area
 
     def generate_no_area(self) -> Area:
         '''

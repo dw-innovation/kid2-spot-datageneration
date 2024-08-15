@@ -12,6 +12,12 @@ from datageneration.data_model import Distance
 
 SEPERATORS = ['=', '>', '~']
 
+NON_ROMAN_LANGUAGES = [
+    'am', 'ar', 'arz', 'azb', 'ba', 'be_x_old', 'be', 'bg', 'bn', 'ce', 'ckb', 'cv',
+    'el', 'fa', 'he', 'hi', 'hy', 'hyw', 'ja', 'ka', 'kk', 'kn', 'ky', 'mdf', 'mhr', 'ml',
+    'mrj', 'mr', 'myv', 'os', 'pa', 'pnb', 'ps', 'ru', 'skr', 'ta', 'tg', 'th', 'tt', 'udm',
+    'ur', 'wuu', 'xmf', 'yi', 'zgh', 'zh_min_nan', 'zh_yue', 'zh'
+]
 
 # numerical value generator
 def get_random_decimal_with_metric(max_digits: int) -> Distance:

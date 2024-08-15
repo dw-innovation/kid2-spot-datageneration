@@ -5,13 +5,7 @@ from argparse import ArgumentParser
 from tqdm import tqdm
 from typing import Dict
 from diskcache import Cache
-
-NON_ROMAN_LANGUAGES = [
-    'am', 'ar', 'arz', 'azb', 'ba', 'be_x_old', 'be', 'bg', 'bn', 'ce', 'ckb', 'cv',
-    'el', 'fa', 'he', 'hi', 'hy', 'hyw', 'ja', 'ka', 'kk', 'kn', 'ky', 'mdf', 'mhr', 'ml',
-    'mrj', 'mr', 'myv', 'os', 'pa', 'pnb', 'ps', 'ru', 'skr', 'ta', 'tg', 'th', 'tt', 'udm',
-    'ur', 'wuu', 'xmf', 'yi', 'zgh', 'zh_min_nan', 'zh_yue', 'zh'
-]
+from datageneration.utils import NON_ROMAN_LANGUAGES
 
 WIKIDATA_API_WIKIPEDIA_SITE_LINKS = 'https://www.wikidata.org/w/api.php?action=wbgetentities&ids=WD_ID&props=sitelinks&format=json'
 WIKIDATA_API_WD_REQUEST_ENDPOINT='https://en.wikipedia.org/w/api.php?action=query&prop=pageprops&ppprop=wikibase_item&redirects=1&titles=TITLE&format=json'
@@ -84,6 +78,7 @@ def extract_non_roman_alternatives(area_name: str):
         non_roman_versions = get_dict_of_non_roman_alternatives(area_wd_id)
         if len(non_roman_versions) == 0:
             return non_roman_versions
+    print(f'area_name {area_name}: {area_wd_id}')
     return non_roman_versions
 
 
@@ -107,7 +102,7 @@ if __name__ == '__main__':
                 vocabulary[country_name] = {'non_roman_versions': non_roman_versions}
 
         for state in sample['states']:
-            state_name = sample['name']
+            state_name = state['name']
 
             if state_name not in vocabulary:
                 non_roman_versions = extract_non_roman_alternatives(state_name)
@@ -115,11 +110,14 @@ if __name__ == '__main__':
                     vocabulary[state_name] = {'non_roman_versions': non_roman_versions}
 
             for city in state['cities']:
-                city_name = sample['name']
+                city_name = city['name']
                 if city_name not in vocabulary:
                     non_roman_versions = extract_non_roman_alternatives(city_name)
                     if non_roman_versions:
-                        vocabulary[state_name] = {'non_roman_versions': non_roman_versions}
+                        vocabulary[city_name] = {'non_roman_versions': non_roman_versions}
+
+
+    print(list(vocabulary.keys()))
 
     with open(output_file, 'w') as json_file:
         json.dump(vocabulary, json_file, ensure_ascii=False)
