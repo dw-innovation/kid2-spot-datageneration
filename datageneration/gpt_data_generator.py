@@ -154,8 +154,8 @@ def load_list_of_strings(list_of_strings_path: str) -> List[str]:
 
 
 def normalize_entity_name(entity_name):
-    if 'brand:' in entity_name:
-        entity_name = entity_name.replace('brand:', '')
+    # if 'brand:' in entity_name:
+    #     entity_name = entity_name.replace('brand:', '')
 
     return entity_name
 
@@ -178,12 +178,15 @@ class PromptHelper:
             "to the object.\n"
             "Mention the area, cover all entities and their respective properties, and describe "
             "the respective relations. Stick to the descriptions of entities and relations "
-            "provided and don’t add anything. Stick to the values of each relation. Distances "
-            "always refer to a maximum distance. Vary your phrasing. Do not affirm this request "
-            "and return nothing but the answer.\n\n ==Persona==\n{persona} "
-            "\n\n ==Style==\n{style}")
+            "provided and don’t add anything. When describing names or brand (names), be creative in "
+            "your phrasing (examples being a \"book store of brand Thalia\" vs. \"a Thalia book store\", "
+            "or simply e.g. \"a Thalia\" if the type of object is not given). "
+            "Stick to the values of each relation. Distances always refer to a maximum distance. "
+            "Vary your phrasing. Do not affirm this request and return nothing but the answer.\n\n "
+            "==Persona==\n{persona} \n\n ==Style==\n{style}")
         self.typo_templates = [
             "\n\n==Other specifications==\nThe text should contain a {amount} amount of typos.",
+            "\n\n==Other specifications==\nThe text should contain a {amount} amount of grammar mistakes.",
             "\n\n==Other specifications==\nThe text should contain a {amount} amount of typos and grammar mistakes."
         ]
         self.typo_amounts = ["small", "medium", "large"]
@@ -413,21 +416,20 @@ class PromptHelper:
         :return: generated_prompt, List[Relation]: list of individual relations
         '''
         selected_phrase = np.random.choice(self.phrases_contains)
-        generated_prompt = ""
 
-        individual_rels = []
-        for relation in relations:
+        generated_prompts = []
+        positions = []
+        for id, relation in enumerate(relations):
             if relation.type == "contains":
                 for entity in entities:
                     if entity.id == relation.target:
                         target_ent = normalize_entity_name(entity.name)
                     if entity.id == relation.source:
                         source_ent = normalize_entity_name(entity.name)
-                generated_prompt += f"- The {target_ent} is {selected_phrase} the {source_ent}\n"
-            else:
-                individual_rels.append(relation)
+                generated_prompts.append(f"- The {target_ent} is {selected_phrase} the {source_ent}\n")
+                positions.append(id)
 
-        return (generated_prompt, Relations(type='individual_distance', relations=individual_rels))
+        return (generated_prompts, positions)
 
 
 class GPTDataGenerator:
@@ -496,17 +498,25 @@ class GPTDataGenerator:
 
         core_relation = ''
 
+        cont_prompts = []
+        cont_pos = []
+        ind_prompts = []
+        ind_pos = []
         if relations.type in ["individual_distances_with_contains", "contains_relation"]:
-            generated_prompt, individual_rels = self.prompt_helper.add_relation_with_contain(relations.relations,
-                                                                                             entities)
-            core_relation += generated_prompt
-        else:
-            individual_rels = relations
+            cont_prompts, cont_pos = self.prompt_helper.add_relation_with_contain(relations.relations, entities)
 
         if relations.type in ["individual_distances", "individual_distances_with_contains"]:
-            core_relation += self.individual_prompt_generation(individual_rels, entities)
+            ind_prompts, ind_pos = self.individual_prompt_generation(relations, entities)
+
+        if relations.type in ["individual_distances", "individual_distances_with_contains", "contains_relation"]:
+            for pos in range(len(relations.relations)):
+                if pos in cont_pos:
+                    core_relation += cont_prompts.pop(0)
+                elif pos in ind_pos:
+                    core_relation += ind_prompts.pop(0)
+
         elif relations.type == "within_radius":
-            core_relation += self.radius_prompt_generation(individual_rels)
+            core_relation += self.radius_prompt_generation(relations)
 
         if len(core_relation) > 0:
             core_relation = "Distances:\n" + core_relation
@@ -524,38 +534,43 @@ class GPTDataGenerator:
         return persona_style_tag_pairs
 
     def individual_prompt_generation(self, relations, entities):
-        indiv_prompt = ""
-        for relation in relations.relations:
-            use_relative_spatial_terms = np.random.choice([False, True], p=[
-                1.0 - self.prob_usage_of_relative_spatial_terms, self.prob_usage_of_relative_spatial_terms])
-            use_written_distance = np.random.choice([False, True], p=[
-                1.0 - self.prob_usage_of_written_numbers, self.prob_usage_of_written_numbers])
-            # In case both relative term and written word are selected, randomly only select one of them
-            if use_relative_spatial_terms and use_written_distance:
-                if random.choice([True, False]):
-                    use_relative_spatial_terms = False
-                else:
-                    use_written_distance = False
-            if use_relative_spatial_terms:
-                generated_prompt, overwritten_distance = self.prompt_helper.add_relative_spatial_terms(relation,
-                                                                                                       entities)
-                indiv_prompt += generated_prompt
-                self.update_relation_distance(relations=relations,
-                                              relation_to_be_updated=relation,
-                                              distance=overwritten_distance)
-            elif use_written_distance:
-                numeric_distance, written_distance = self.prompt_helper.generate_written_word_distance(
-                    distance=relation.value, max_digits=self.max_dist_digits)
+        indiv_prompt = []
+        positions = []
+        for id, relation in enumerate(relations.relations):
+            if relation.type == "distance":
+                use_relative_spatial_terms = np.random.choice([False, True], p=[
+                    1.0 - self.prob_usage_of_relative_spatial_terms, self.prob_usage_of_relative_spatial_terms])
+                use_written_distance = np.random.choice([False, True], p=[
+                    1.0 - self.prob_usage_of_written_numbers, self.prob_usage_of_written_numbers])
+                # In case both relative term and written word are selected, randomly only select one of them
+                if use_relative_spatial_terms and use_written_distance:
+                    if random.choice([True, False]):
+                        use_relative_spatial_terms = False
+                    else:
+                        use_written_distance = False
+                if use_relative_spatial_terms:
+                    generated_prompt, overwritten_distance = self.prompt_helper.add_relative_spatial_terms(relation,
+                                                                                                           entities)
+                    indiv_prompt.append(generated_prompt)
+                    positions.append(id)
+                    self.update_relation_distance(relations=relations,
+                                                  relation_to_be_updated=relation,
+                                                  distance=overwritten_distance)
+                elif use_written_distance:
+                    numeric_distance, written_distance = self.prompt_helper.generate_written_word_distance(
+                        distance=relation.value, max_digits=self.max_dist_digits)
 
-                written_distance_relation = Relation(type=relation.type, source=relation.source,
-                                                     target=relation.target, value=written_distance)
-                indiv_prompt += self.prompt_helper.add_desc_away_prompt(written_distance_relation, entities)
-                self.update_relation_distance(relations=relations,
-                                              relation_to_be_updated=relation,
-                                              distance=numeric_distance)
-            else:
-                indiv_prompt += self.prompt_helper.add_desc_away_prompt(relation, entities)
-        return indiv_prompt
+                    written_distance_relation = Relation(type=relation.type, source=relation.source,
+                                                         target=relation.target, value=written_distance)
+                    indiv_prompt.append(self.prompt_helper.add_desc_away_prompt(written_distance_relation, entities))
+                    positions.append(id)
+                    self.update_relation_distance(relations=relations,
+                                                  relation_to_be_updated=relation,
+                                                  distance=numeric_distance)
+                else:
+                    indiv_prompt.append(self.prompt_helper.add_desc_away_prompt(relation, entities))
+                    positions.append(id)
+        return (indiv_prompt, positions)
 
     def radius_prompt_generation(self, relations):
         radius_prompt = ""

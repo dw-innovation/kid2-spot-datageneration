@@ -49,7 +49,7 @@ class QueryCombinationGenerator(object):
         """
         peak_value = 3  # Number of entity with the highest probability
         decay_rate_right = 0.7
-        decay_rate_left = 0.3
+        decay_rate_left = 0.5 #0.3
         entity_nums = np.arange(1, max_number_of_entities_in_prompt + 1)
         probabilities = np.zeros(max_number_of_entities_in_prompt)
         probabilities[peak_value - 1] = 1
@@ -125,7 +125,9 @@ class QueryCombinationGenerator(object):
             is_area = selected_tag_comb.is_area
 
             # Randomise whether probabilities should be added to ensure high enough ratio of zero property cases
-            add_properties = np.random.choice([True, False], p=[prob_of_entities_with_props,
+            add_properties = False
+            if not selected_brand_name:
+                add_properties = np.random.choice([True, False], p=[prob_of_entities_with_props,
                                                                 1 - prob_of_entities_with_props])
             if add_properties and max_number_of_props_in_entity >= 1:
                 candidate_properties = selected_tag_comb.tag_properties
@@ -176,31 +178,36 @@ class QueryCombinationGenerator(object):
         :param relations: The relations of the query
         :return: The sorted entities and relations
         """
-        sorted_entities = []
         sorted_relations = copy.deepcopy(relations)
-        lookup_table = dict()
-        id = 0
-        # Loop over all relations, which must be in the order that "contains" relations come first.
-        for relation in relations.relations:
-            # If the "source" (area) is not yet known, add that first
-            if entities[relation.source] not in sorted_entities:
-                sorted_entities.append(entities[relation.source])
-                sorted_entities[-1].id = id
-                lookup_table[relation.source] = id
-                id += 1
-            # After the "source" (area) was added, add all their "targets" (points contained within)
-            if entities[relation.target] not in sorted_entities:
-                sorted_entities.append(entities[relation.target])
-                sorted_entities[-1].id = id
-                lookup_table[relation.target] = id
-                id += 1
+        sorted_relations.relations = sorted(relations.relations, key=lambda r: (min(r.source, r.target), max(r.source, r.target)))
 
-        # Update the relations based on lookup table to match with the new entity IDs
-        for sorted_relation in sorted_relations.relations:
-            sorted_relation.source = lookup_table[sorted_relation.source]
-            sorted_relation.target = lookup_table[sorted_relation.target]
+        return entities, sorted_relations
 
-        return sorted_entities, sorted_relations
+        # sorted_entities = []
+        # sorted_relations = copy.deepcopy(relations)
+        # lookup_table = dict()
+        # id = 0
+        # # Loop over all relations, which must be in the order that "contains" relations come first.
+        # for relation in relations.relations:
+        #     # If the "source" (area) is not yet known, add that first
+        #     if entities[relation.source] not in sorted_entities:
+        #         sorted_entities.append(entities[relation.source])
+        #         sorted_entities[-1].id = id
+        #         lookup_table[relation.source] = id
+        #         id += 1
+        #     # After the "source" (area) was added, add all their "targets" (points contained within)
+        #     if entities[relation.target] not in sorted_entities:
+        #         sorted_entities.append(entities[relation.target])
+        #         sorted_entities[-1].id = id
+        #         lookup_table[relation.target] = id
+        #         id += 1
+        #
+        # # Update the relations based on lookup table to match with the new entity IDs
+        # for sorted_relation in sorted_relations.relations:
+        #     sorted_relation.source = lookup_table[sorted_relation.source]
+        #     sorted_relation.target = lookup_table[sorted_relation.target]
+        #
+        # return sorted_entities, sorted_relations
 
     def run(self, num_queries: int, max_number_of_entities_in_prompt: int, max_number_of_props_in_entity: int,
             prob_of_entities_with_props: float) -> List[LocPoint]:
