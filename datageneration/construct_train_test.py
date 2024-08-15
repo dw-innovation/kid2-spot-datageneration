@@ -30,10 +30,16 @@ if __name__ == '__main__':
     samples_df = pd.read_json(input_file, orient='records', lines=True)
     processed_samples_df = []
     for idx, sample in samples_df.iterrows():
+        sentence = sample["sentence"]
+        if '''sorry''' in sentence.lower():
+            continue
+        if isinstance(sentence, float):
+            continue
+
         query = sample["query"]
         query = yaml.safe_load(query)
         query_string = yaml.dump(query, allow_unicode=True)
-        processed_samples_df.append({'query': query_string, 'sentence': sample['sentence']})
+        processed_samples_df.append({'query': query_string, 'sentence': sentence})
 
 
     processed_samples_df = pd.DataFrame(processed_samples_df)
@@ -43,5 +49,6 @@ if __name__ == '__main__':
     print(f"Number of training set: {len(training_set)}")
     print(f"Number of validated samples: {len(development_set)}")
 
-    development_set.to_csv(output_folder / 'dev.tsv', sep="\t", index=False)
     training_set.to_csv(output_folder / 'train.tsv', sep="\t", index=False)
+    development_set.to_csv(output_folder / 'dev.tsv', sep="\t", index=False)
+
