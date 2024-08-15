@@ -11,7 +11,7 @@ Execute it as follows: python -m unittest datageneration.tests.test_tag_to_imr
 
 class TestTag2ImrConverter(unittest.TestCase):
     def setUp(self):
-        self.primary_key_table = pd.read_excel('datageneration/tests/data/Primary_Keys_test10.xlsx', engine='openpyxl')
+        self.primary_key_table = pd.read_excel('datageneration/data/Spot_primary_keys_bundles.xlsx', engine='openpyxl')
 
     def test_tag_to_imr(self):
         tags_str = 'route=bus, route= train, route= ferry, route=tram, route=trolleybus, route=subway'
@@ -53,6 +53,20 @@ class TestTag2ImrConverter(unittest.TestCase):
         }]
         predicted_tags = transform_tags_to_imr(tags_str)
         self.assertEqual(expected_tags, predicted_tags)
+
+        tags_str = 'public_transport=platform AND subway=yes, public_transport=stop_position AND subway=yes, public_transport=station AND subway=yes, railway=subway_entrance'
+        expected_tags = [{"or": [{"and": [Tag(key='public_transport', operator='=', value='platform'),
+                                         Tag(key='subway', operator='=', value='yes')]},
+                                {"and": [Tag(key='public_transport', operator='=', value='stop_position'),
+                                         Tag(key='subway', operator='=', value='yes')]},
+                                {"and": [Tag(key='public_transport', operator='=', value='station'),
+                                         Tag(key='subway', operator='=', value='yes')]},
+                                Tag(key='railway', operator='=', value='subway_entrance'),
+
+                                ]}]
+        predicted_tags = transform_tags_to_imr(tags_str)
+        self.assertEqual(expected_tags, predicted_tags)
+
 
 if __name__ == '__main__':
     unittest.main()

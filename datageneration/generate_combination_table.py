@@ -1,3 +1,4 @@
+import copy
 import json
 import numpy as np
 import pandas as pd
@@ -5,7 +6,6 @@ from argparse import ArgumentParser
 from pathlib import Path
 from tqdm import tqdm
 from typing import List
-import copy
 
 from datageneration.area_generator import AreaGenerator, NamedAreaData, load_named_area_data
 from datageneration.data_model import TagPropertyExample, TagProperty, Property, TagCombination, Entity, Relations, \
@@ -16,16 +16,22 @@ from datageneration.utils import write_output
 
 
 class QueryCombinationGenerator(object):
-    def __init__(self, geolocation_file: str, tag_combinations: List[TagCombination],
-                 property_examples: List[TagPropertyExample], max_distance_digits: int,
-                 percentage_of_two_word_areas: float, prob_generating_contain_rel: float,
+    def __init__(self, geolocation_file: str,
+                 tag_combinations: List[TagCombination],
+                 property_examples: List[TagPropertyExample],
+                 max_distance_digits: int,
+                 prob_of_two_word_areas: float,
+                 prob_generating_contain_rel: float,
+                 prob_adding_brand_names_as_entity: float,
                  ratio_within_radius_within: float):
         self.entity_tag_combinations = list(filter(lambda x: 'core' in x.comb_type.value, tag_combinations))
-        self.area_generator = AreaGenerator(geolocation_file, percentage_of_two_word_areas)
+        self.area_generator = AreaGenerator(geolocation_file, prob_of_two_word_areas)
+        self.prob_adding_brand_names_as_entity = prob_adding_brand_names_as_entity
         self.property_generator = PropertyGenerator(property_examples)
         self.relation_generator = RelationGenerator(max_distance_digits=max_distance_digits,
                                                     prob_generating_contain_rel=prob_generating_contain_rel,
                                                     ratio_within_radius_within=ratio_within_radius_within)
+
     def get_number_of_entities(self, max_number_of_entities_in_prompt: int) -> int:
         """
         This method of selecting the number of entities uses an exponential decay method that returns
@@ -74,14 +80,14 @@ class QueryCombinationGenerator(object):
         return selected_num_of_props
 
     def generate_entities(self, max_number_of_entities_in_prompt: int, max_number_of_props_in_entity: int,
-                          percentage_of_entities_with_props: float) -> List[Entity]:
+                          prob_of_entities_with_props: float) -> List[Entity]:
         """
         Generates a list of entities with associated properties based on random selection of descriptors.
 
         Args:
             max_number_of_entities_in_prompt (int): Number of entities to generate.
             max_number_of_props_in_entity (int): Maximum number of properties each entity can have.
-            percentage_of_entities_with_props (float): Ratio of entities that have a non-zero number of properties
+            prob_of_entities_with_props (float): Ratio of entities that have a non-zero number of properties
 
         Returns:
             List[Entity]: A list of generated entities with associated properties.
@@ -104,16 +110,23 @@ class QueryCombinationGenerator(object):
             selected_tag_comb = self.entity_tag_combinations[selected_idx_for_combinations]
             associated_descriptors = selected_tag_comb.descriptors
 
-            if "brand name" in associated_descriptors:
+            selected_brand_name = np.random.choice([True, False], p=[self.prob_adding_brand_names_as_entity,
+                                                                     1 - self.prob_adding_brand_names_as_entity])
+
+            if selected_brand_name:
                 brand_examples = self.property_generator.select_named_property_example("brand~***example***")
-                entity_name = "brand: " + np.random.choice(brand_examples)
+                entity_name = f"brand:{np.random.choice(brand_examples)}"
+            # if "brand name" in associated_descriptors:
+            #     brand_examples = self.property_generator.select_named_property_example("brand~***example***")
+            #     entity_name = "brand: " + np.random.choice(brand_examples)
             else:
                 entity_name = np.random.choice(associated_descriptors)
+
             is_area = selected_tag_comb.is_area
 
             # Randomise whether probabilities should be added to ensure high enough ratio of zero property cases
-            add_properties = np.random.choice([True, False], p=[percentage_of_entities_with_props,
-                                                                1 - percentage_of_entities_with_props])
+            add_properties = np.random.choice([True, False], p=[prob_of_entities_with_props,
+                                                                1 - prob_of_entities_with_props])
             if add_properties and max_number_of_props_in_entity >= 1:
                 candidate_properties = selected_tag_comb.tag_properties
                 if len(candidate_properties) == 0:
@@ -190,7 +203,7 @@ class QueryCombinationGenerator(object):
         return sorted_entities, sorted_relations
 
     def run(self, num_queries: int, max_number_of_entities_in_prompt: int, max_number_of_props_in_entity: int,
-            percentage_of_entities_with_props: float) -> List[LocPoint]:
+            prob_of_entities_with_props: float) -> List[LocPoint]:
         '''
         A method that generates random query combinations and optionally saves them to a JSON file.
         It gets a list of random tag combinations and adds additional information that is required to generate
@@ -204,7 +217,7 @@ class QueryCombinationGenerator(object):
         :param num_queries: (int) TODO
         :param max_number_of_entities_in_prompt: (int) TODO
         :param max_number_of_props_in_entity: (int) TODO
-        :param percentage_of_entities_with_props: (int) TODO
+        :param prob_of_entities_with_props: (int) TODO
         :param percentage_of_entities_with_props: (float) TODO
         :return: loc_points (List[LocPoint])
         '''
@@ -213,7 +226,7 @@ class QueryCombinationGenerator(object):
             area = self.generate_area()
             entities = self.generate_entities(max_number_of_entities_in_prompt=max_number_of_entities_in_prompt,
                                               max_number_of_props_in_entity=max_number_of_props_in_entity,
-                                              percentage_of_entities_with_props=percentage_of_entities_with_props)
+                                              prob_of_entities_with_props=prob_of_entities_with_props)
             relations = self.generate_relations(entities=entities)
 
             if relations.type in ["individual_distances_with_contains", "contains_relation"]:
@@ -242,8 +255,9 @@ if __name__ == '__main__':
     parser.add_argument('--samples', help='Number of the samples to generate', type=int)
     parser.add_argument('--max_number_of_entities_in_prompt', type=int, default=4)
     parser.add_argument('--max_number_of_props_in_entity', type=int, default=4)
-    parser.add_argument('--percentage_of_entities_with_props', type=float, default=0.3)
-    parser.add_argument('--percentage_of_two_word_areas', type=float, default=0.5)
+    parser.add_argument('--prob_of_entities_with_props', type=float, default=0.3)
+    parser.add_argument('--prob_of_two_word_areas', type=float, default=0.5)
+    parser.add_argument('--prob_adding_brand_names_as_entity', type=float, default=0.5)
     parser.add_argument('--prob_generating_contain_rel', type=float, default=0.3)
     parser.add_argument('--ratio_within_radius_within', type=float, default=0.3)
 
@@ -257,9 +271,10 @@ if __name__ == '__main__':
     output_file = args.output_file
     max_number_of_entities_in_prompt = args.max_number_of_entities_in_prompt
     max_number_of_props_in_entity = args.max_number_of_props_in_entity
-    percentage_of_entities_with_props = args.percentage_of_entities_with_props
-    percentage_of_two_word_areas = args.percentage_of_two_word_areas
+    prob_of_entities_with_props = args.prob_of_entities_with_props
+    prob_of_two_word_areas = args.prob_of_two_word_areas
     prob_generating_contain_rel = args.prob_generating_contain_rel
+    prob_adding_brand_names_as_entity = args.prob_adding_brand_names_as_entity
     ratio_within_radius_within = args.ratio_within_radius_within
 
     tag_combinations = pd.read_json(tag_combination_path, lines=True).to_dict('records')
@@ -270,14 +285,15 @@ if __name__ == '__main__':
                                                      tag_combinations=tag_combinations,
                                                      property_examples=property_examples,
                                                      max_distance_digits=args.max_distance_digits,
-                                                     percentage_of_two_word_areas=percentage_of_two_word_areas,
+                                                     prob_of_two_word_areas=prob_of_two_word_areas,
                                                      prob_generating_contain_rel=prob_generating_contain_rel,
+                                                     prob_adding_brand_names_as_entity=prob_adding_brand_names_as_entity,
                                                      ratio_within_radius_within=ratio_within_radius_within)
 
     generated_combs = query_comb_generator.run(num_queries=num_samples,
                                                max_number_of_entities_in_prompt=max_number_of_entities_in_prompt,
                                                max_number_of_props_in_entity=max_number_of_props_in_entity,
-                                               percentage_of_entities_with_props=percentage_of_entities_with_props)
+                                               prob_of_entities_with_props=prob_of_entities_with_props)
 
     if args.write_output:
         write_output(generated_combs, output_file=output_file)

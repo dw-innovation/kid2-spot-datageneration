@@ -91,7 +91,7 @@ def split_tags(tags: str) -> List[TagProperty]:
 
 
 class CombinationRetriever(object):
-    def __init__(self, source: str, prop_limit: int, min_together_count: int):
+    def __init__(self, source: str, prop_limit: int, min_together_count: int, add_non_roman_examples: bool):
         if source.endswith('xlsx'):
             tag_df = pd.read_excel(source, engine='openpyxl')
         else:
@@ -112,6 +112,9 @@ class CombinationRetriever(object):
                                                                           self.all_tags_property_ids)]
         self.tags_requiring_many_examples = ["name~***example***", "brand~***example***", "addr:street~***example***",
                                              "addr:housenumber=***example***"]
+
+
+        self.add_non_roman_examples = add_non_roman_examples
 
     def fetch_tag_properties(self, tag_df: pd.DataFrame) -> List[TagProperty]:
         '''
@@ -212,7 +215,11 @@ class CombinationRetriever(object):
                 for _example in example.split(';'):
                     if len(fetched_examples) > num_examples - 1:
                         return fetched_examples
-                    if is_roman(_example):
+
+                    if not self.add_non_roman_examples:
+                        if is_roman(_example):
+                            fetched_examples.add(_example)
+                    else:
                         fetched_examples.add(_example)
             # Fetch next page recursively
             return fetch_examples_recursively(curr_page + 1, fetched_examples)
@@ -355,6 +362,7 @@ if __name__ == '__main__':
                         action='store_true')
     parser.add_argument('--generate_property_examples', help='Generate property examples',
                         action='store_true')
+    parser.add_argument('--add_non_roman_examples', action='store_true', default=True)
 
     args = parser.parse_args()
 
@@ -362,11 +370,12 @@ if __name__ == '__main__':
     prop_limit = int(args.prop_limit)
     min_together_count = args.min_together_count
     prop_example_limit = args.prop_example_limit
+    add_non_roman_examples = args.add_non_roman_examples
     output_file = args.output_file
     generate_tag_list_with_properties = args.generate_tag_list_with_properties
     generate_property_examples = args.generate_property_examples
 
-    comb_retriever = CombinationRetriever(source=source, prop_limit=prop_limit, min_together_count=min_together_count)
+    comb_retriever = CombinationRetriever(source=source, prop_limit=prop_limit, min_together_count=min_together_count, add_non_roman_examples=add_non_roman_examples)
 
     if generate_tag_list_with_properties:
         tag_combinations = comb_retriever.generate_tag_list_with_properties()

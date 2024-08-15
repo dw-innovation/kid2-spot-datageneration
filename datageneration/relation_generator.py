@@ -7,6 +7,8 @@ from datageneration.data_model import Relation, Relations, Entity
 from datageneration.utils import get_random_decimal_with_metric
 
 
+RELATION_TYPE='distance'
+
 class RELATION_TASKS(Enum):
     INDIVIDUAL_DISTANCES = 'individual_distances'
     WITHIN_RADIUS = 'within_radius'
@@ -21,10 +23,11 @@ class RelationGenerator:
         self.tasks = [relation_task.value for relation_task in RELATION_TASKS]
 
     def generate_individual_distances(self, entity_ids: List[int]) -> List[Relation]:
+        np.random.shuffle(entity_ids)
         relations = []
         for t_no in range(len(entity_ids)-1):
             relations.append(
-                Relation(type='dist', source=entity_ids[t_no], target=entity_ids[t_no+1],
+                Relation(type=RELATION_TYPE, source=entity_ids[t_no], target=entity_ids[t_no+1],
                          value=get_random_decimal_with_metric(self.MAX_DISTANCE_DIGITS)))
         return relations
 
@@ -41,7 +44,7 @@ class RelationGenerator:
         for t_no in range(num_entities):
             if t_no != num_entities - 1:
                 relations.append(
-                    Relation(type='dist', source=0, target=t_no + 1,
+                    Relation(type=RELATION_TYPE, source=0, target=t_no + 1,
                              value=distance))
         return relations
 

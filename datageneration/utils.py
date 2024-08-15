@@ -2,27 +2,34 @@ import copy
 import csv
 import itertools
 import json
-import yaml
 import numpy as np
-from random import randint
+import yaml
 from pathlib import Path
+from random import randint
 from typing import List
+
+from datageneration.data_model import Distance
 
 SEPERATORS = ['=', '>', '~']
 
 
 # numerical value generator
-def get_random_decimal_with_metric(max_digits: int) -> str:
+def get_random_decimal_with_metric(max_digits: int) -> Distance:
+    '''
+    It generates a random distance. Distance has magnitude and metric information.
+    Magnitude is a float number. Metric is a string obj from a list of metrics: cm, m, km, etc.
+    :param max_digits:
+    :return: Distance[magnitude,metric]
+    '''
     digits = randint(1, max_digits)
     low = np.power(10, digits - 1)
     high = np.power(10, digits) - 1
-    num = randint(low, high)
+    magnitude = randint(low, high)
+
     if np.random.choice([True, False], 1)[0]:
-        num = num / np.random.choice([10, 100], 1)[0]
+        magnitude = magnitude / np.random.choice([10, 100], 1)[0]
 
-    dist = str(num) + " " + np.random.choice(["cm", "m", "km", "in", "ft", "yd", "mi"], 1)[0]
-
-    return dist
+    return Distance(magnitude=str(magnitude), metric=np.random.choice(["cm", "m", "km", "in", "ft", "yd", "mi"], 1)[0])
 
 
 def get_random_integer(max_digits: int) -> int:
@@ -44,7 +51,7 @@ def add_yaml_to_filename(output_file):
 def write_output(generated_combs, output_file):
     with open(output_file, "w") as out_file:
         for generated_comb in generated_combs:
-            json.dump(generated_comb.model_dump(mode="json"), out_file)
+            json.dump(generated_comb.model_dump(mode="json"), out_file, ensure_ascii=False)
             out_file.write('\n')
 
 
@@ -54,7 +61,7 @@ def write_dict_output(generated_combs, output_file, bool_add_yaml=True):
 
     with open(output_file, "w") as out_file:
         for generated_comb in generated_combs:
-            json.dump(generated_comb, out_file)
+            json.dump(generated_comb, out_file, ensure_ascii=False)
             out_file.write('\n')
 
 
@@ -90,6 +97,7 @@ def translate_queries_to_yaml(combs):
 
 def clean_up_query(query):
     for entity in query["entities"]:
+        entity.pop("is_area", None)
         if len(entity["properties"]) == 0:
             entity.pop('properties', None)
         else:
@@ -104,7 +112,12 @@ def clean_up_query(query):
         for relation in query["relations"]:
             if relation["value"] is None:
                 relation.pop('value', None)
+            else:
+                rel_magnitude = relation["value"]['magnitude']
+                rel_metric = relation["value"]['metric']
+                relation['value'] = f'{rel_magnitude} {rel_metric}'
     return query
+
 
 def split_descriptors(descriptors: str) -> List[str]:
     '''this function splits the descriptors as a list of single descriptor'''
@@ -117,6 +130,7 @@ def split_descriptors(descriptors: str) -> List[str]:
         processed_descriptors.add(descriptor)
 
     return processed_descriptors
+
 
 class CompoundTagPropertyProcessor:
     def expand_list(self, tag_compounds: str) -> List[str]:
