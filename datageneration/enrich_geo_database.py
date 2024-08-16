@@ -6,11 +6,32 @@ from tqdm import tqdm
 from typing import Dict
 from diskcache import Cache
 from datageneration.utils import NON_ROMAN_LANGUAGES
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 WIKIDATA_API_WIKIPEDIA_SITE_LINKS = 'https://www.wikidata.org/w/api.php?action=wbgetentities&ids=WD_ID&props=sitelinks&format=json'
 WIKIDATA_API_WD_REQUEST_ENDPOINT='https://en.wikipedia.org/w/api.php?action=query&prop=pageprops&ppprop=wikibase_item&redirects=1&titles=TITLE&format=json'
 cache_wikidata_ids = Cache("wikidata-ids-cache")
 cache_wikidata_non_roman_names = Cache("wikidata-non_roman_names-cache")
+
+def requests_retry_session(
+    retries=3,
+    backoff_factor=0.3,
+    status_forcelist=(500, 502, 504),
+    session=None,
+):
+    session = session or requests.Session()
+    retry = Retry(
+        total=retries,
+        read=retries,
+        connect=retries,
+        backoff_factor=backoff_factor,
+        status_forcelist=status_forcelist,
+    )
+    adapter = HTTPAdapter(max_retries=retry)
+    session.mount('http://', adapter)
+    session.mount('https://', adapter)
+    return session
 
 
 @cache_wikidata_ids.memoize()
@@ -21,7 +42,7 @@ def request_wd_id(wd_title):
     :return:
     '''
     endpoint = WIKIDATA_API_WD_REQUEST_ENDPOINT.replace('TITLE', wd_title)
-    response = requests.get(endpoint)
+    response = requests_retry_session().get(endpoint)
     response.raise_for_status()
     wd_id = None
     data = None
@@ -43,7 +64,7 @@ def request_wd_id(wd_title):
 @cache_wikidata_non_roman_names.memoize()
 def get_dict_of_non_roman_alternatives(wd_id: str) -> Dict:
     endpoint = WIKIDATA_API_WIKIPEDIA_SITE_LINKS.replace('WD_ID', wd_id)
-    response = requests.get(endpoint)
+    response = requests_retry_session().get(endpoint)
     response.raise_for_status()
     data = None
     results = {}

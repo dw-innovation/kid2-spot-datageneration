@@ -2,6 +2,7 @@ VERSION=v15
 
 python -m datageneration.generate_combination_table \
 --geolocations_file_path datageneration/data/countries+states+cities.json \
+--non_roman_vocab_file_path datageneration/data/area_non_roman_vocab.json \
 --tag_combination_path datageneration/data/tag_combinations_${VERSION}.jsonl \
 --tag_prop_examples_path datageneration/data/prop_examples_${VERSION}.jsonl \
 --output_file datageneration/results/${VERSION}/samples.jsonl \
@@ -14,4 +15,5 @@ python -m datageneration.generate_combination_table \
 --prob_generating_contain_rel 0.5 \
 --ratio_within_radius_within 0.4 \
 --prob_adding_brand_names_as_entity 0.05 \
---samples 500
+--prob_of_non_roman_areas 0.0 \
+--samples 20000

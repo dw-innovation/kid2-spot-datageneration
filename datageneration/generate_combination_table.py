@@ -17,6 +17,7 @@ from datageneration.utils import write_output
 
 class QueryCombinationGenerator(object):
     def __init__(self, geolocation_file: str,
+                 non_roman_vocab_file: str,
                  tag_combinations: List[TagCombination],
                  property_examples: List[TagPropertyExample],
                  max_distance_digits: int,
@@ -26,7 +27,7 @@ class QueryCombinationGenerator(object):
                  prob_of_non_roman_areas: float,
                  ratio_within_radius_within: float):
         self.entity_tag_combinations = list(filter(lambda x: 'core' in x.comb_type.value, tag_combinations))
-        self.area_generator = AreaGenerator(geolocation_file, prob_of_two_word_areas, prob_of_non_roman_areas)
+        self.area_generator = AreaGenerator(geolocation_file=geolocation_file, non_roman_vocab_file=non_roman_vocab_file, prob_of_two_word_areas=prob_of_two_word_areas, prob_of_non_roman_areas=prob_of_non_roman_areas)
         self.prob_adding_brand_names_as_entity = prob_adding_brand_names_as_entity
         self.property_generator = PropertyGenerator(property_examples)
         self.relation_generator = RelationGenerator(max_distance_digits=max_distance_digits,
@@ -255,6 +256,7 @@ if __name__ == '__main__':
     '''
     parser = ArgumentParser()
     parser.add_argument('--geolocations_file_path', help='Path to a file containing cities, countries, etc.')
+    parser.add_argument('--non_roman_vocab_file_path', help='Path to a file containing a vocabulary of areas with non-roman alphabets')
     parser.add_argument('--tag_combination_path', help='tag list file generated via retrieve_combinations')
     parser.add_argument('--tag_prop_examples_path', help='Examples of tag properties')
     parser.add_argument('--output_file', help='File to save the output')
@@ -275,6 +277,7 @@ if __name__ == '__main__':
     tag_combination_path = args.tag_combination_path
     tag_prop_examples_path = args.tag_prop_examples_path
     geolocations_file_path = args.geolocations_file_path
+    non_roman_vocab_file_path = args.non_roman_vocab_file_path
     max_distance_digits = args.max_distance_digits
     num_samples = args.samples
     output_file = args.output_file
@@ -292,6 +295,7 @@ if __name__ == '__main__':
     property_examples = pd.read_json(tag_prop_examples_path, lines=True).to_dict('records')
 
     query_comb_generator = QueryCombinationGenerator(geolocation_file=geolocations_file_path,
+                                                     non_roman_vocab_file=non_roman_vocab_file_path,
                                                      tag_combinations=tag_combinations,
                                                      property_examples=property_examples,
                                                      max_distance_digits=args.max_distance_digits,

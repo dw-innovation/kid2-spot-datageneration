@@ -12,6 +12,6 @@ echo Generate Property Examples
 python -m datageneration.retrieve_combinations \
 --source datageneration/data/Spot_primary_keys_bundles.xlsx \
 --output_file datageneration/data/prop_examples_${VERSION}.jsonl \
---prop_example_limit 500 \
+--prop_example_limit 1000 \
 --generate_property_examples \
 --add_non_roman_examples

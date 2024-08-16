@@ -182,6 +182,7 @@ class PromptHelper:
             "your phrasing (examples being a \"book store of brand Thalia\" vs. \"a Thalia book store\", "
             "or simply e.g. \"a Thalia\" if the type of object is not given). "
             "Stick to the values of each relation. Distances always refer to a maximum distance. "
+            "If no distance is given, do not use any terms such as close, near, create sentences such as \"find a house and a restaurant\". "
             "Vary your phrasing. Do not affirm this request and return nothing but the answer.\n\n "
             "==Persona==\n{persona} \n\n ==Style==\n{style}")
         self.typo_templates = [
@@ -520,6 +521,8 @@ class GPTDataGenerator:
 
         if len(core_relation) > 0:
             core_relation = "Distances:\n" + core_relation
+        else:
+            core_relation = "Distances:\nNo distance is given."
 
         core_prompt = core_prompt + core_relation
         core_prompt = search_prompt + core_prompt + self.prompt_helper.ending()
