@@ -9,9 +9,11 @@ from datageneration.utils import NON_ROMAN_LANGUAGES
 
 WIKIDATA_API_WIKIPEDIA_SITE_LINKS = 'https://www.wikidata.org/w/api.php?action=wbgetentities&ids=WD_ID&props=sitelinks&format=json'
 WIKIDATA_API_WD_REQUEST_ENDPOINT='https://en.wikipedia.org/w/api.php?action=query&prop=pageprops&ppprop=wikibase_item&redirects=1&titles=TITLE&format=json'
-cache_wikidata = Cache("wikidata-cache")
+cache_wikidata_ids = Cache("wikidata-ids-cache")
+cache_wikidata_non_roman_names = Cache("wikidata-non_roman_names-cache")
 
-@cache_wikidata.memoize()
+
+@cache_wikidata_ids.memoize()
 def request_wd_id(wd_title):
     '''
     Given name of an area, it returns its wikidata id if it has.
@@ -38,7 +40,7 @@ def request_wd_id(wd_title):
             return wd_id
     return wd_id
 
-@cache_wikidata.memoize()
+@cache_wikidata_non_roman_names.memoize()
 def get_dict_of_non_roman_alternatives(wd_id: str) -> Dict:
     endpoint = WIKIDATA_API_WIKIPEDIA_SITE_LINKS.replace('WD_ID', wd_id)
     response = requests.get(endpoint)
@@ -78,7 +80,6 @@ def extract_non_roman_alternatives(area_name: str):
         non_roman_versions = get_dict_of_non_roman_alternatives(area_wd_id)
         if len(non_roman_versions) == 0:
             return non_roman_versions
-    print(f'area_name {area_name}: {area_wd_id}')
     return non_roman_versions
 
 
@@ -116,8 +117,6 @@ if __name__ == '__main__':
                     if non_roman_versions:
                         vocabulary[city_name] = {'non_roman_versions': non_roman_versions}
 
-
-    print(list(vocabulary.keys()))
 
     with open(output_file, 'w') as json_file:
         json.dump(vocabulary, json_file, ensure_ascii=False)

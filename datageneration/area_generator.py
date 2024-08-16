@@ -75,13 +75,10 @@ class AreaGenerator:
         self.prob_of_non_roman_areas = prob_of_non_roman_areas
 
     def translate_into_non_roman(self, area: NamedAreaData, target_lang) -> NamedAreaData:
-        print("area")
-        print(area)
-
-        print("target_lang")
-        print(target_lang)
-        print(self.area_non_roman_vocab[area.city])
-        pass
+        translated_city = self.area_non_roman_vocab[area.city]['non_roman_versions'][target_lang]
+        translated_state = self.area_non_roman_vocab[area.city]['non_roman_versions'][target_lang]
+        translated_country = self.area_non_roman_vocab[area.city]['non_roman_versions'][target_lang]
+        return NamedAreaData(city=translated_city, state=translated_state, country=translated_country)
 
     def get_area(self, required_type=None) -> NamedAreaData:
         """
