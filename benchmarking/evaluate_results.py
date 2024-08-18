@@ -6,6 +6,7 @@ import yaml
 from argparse import ArgumentParser
 from pydantic import BaseModel, Field
 from tqdm import tqdm
+from collections import Counter
 
 from benchmarking.utils import write_output
 from benchmarking.yaml_parser import validate_and_fix_yaml
@@ -26,11 +27,7 @@ class Result(BaseModel, frozen=True):
     is_perfect_match: ResultDataType = Field(description="True if area, entities+props and relations are equal, otherwise False",
                                                 default=ResultDataType.FALSE)
 
-
-    is_area_exact_match: ResultDataType = Field(description="True if areas are equal, otherwise False",
-                                                default=ResultDataType.FALSE)
-
-    is_area_light_match: ResultDataType = Field(description="True if areas are equal, otherwise False",
+    is_area_match: ResultDataType = Field(description="True if areas are equal, otherwise False",
                                                 default=ResultDataType.FALSE)
     num_entities_on_ref_data: int = 0
     num_entities_on_gen_data: int = 0
@@ -40,17 +37,28 @@ class Result(BaseModel, frozen=True):
     are_entities_exactly_same: ResultDataType = Field(description="True if entity are equal, otherwise False",
                                                       default=ResultDataType.FALSE)
 
-    are_entities_same_exclude_props: ResultDataType = Field(description="True if entity are equal, otherwise False",
-                                                            default=ResultDataType.FALSE)
-
-    percentage_entities_partial_match_exclude_props: float = Field(
+    percentage_entities_exactly_same: float = Field(
         description="Percentage of corectly identified entities over the total ents",
         default=0.0)
 
-    are_relations_exactly_same: ResultDataType = Field(description="True if entity are equal, otherwise False",
+    are_entities_same_exclude_props: ResultDataType = Field(description="True if entity are equal, otherwise False",
+                                                            default=ResultDataType.FALSE)
+
+    percentage_entities_same_exclude_props: float = Field(
+        description="Percentage of corectly identified entities over the total ents, exclude props",
+        default=0.0)
+
+    are_relations_exactly_same: ResultDataType = Field(description="True if relations are equal, otherwise False",
                                                        default=ResultDataType.NOT_APPLICABLE)
 
-    percentage_of_correctly_identified_properties: float = Field(
+    percentage_relations_same: float = Field(
+        description="Percentage of corectly identified entities over the total ents, exclude props",
+        default=0.0)
+
+    are_properties_same: ResultDataType = Field(description="True if relations are equal, otherwise False",
+                                                       default=ResultDataType.NOT_APPLICABLE)
+
+    percentage_properties_same: float = Field(
         description="Percentage of corectly identified entities over the total ents",
         default=0.0)
 
@@ -110,7 +118,7 @@ class PropertyAnalyzer:
 
         return data
 
-    def compare_properties(self, props1, props2) -> ResultDataType:
+    def compare_properties(self, props1, props2) -> int:
         """
         Check if two lists of properties are identical. The lists are first sorted via their names, to make sure the order
         does not affect the results.
@@ -119,34 +127,42 @@ class PropertyAnalyzer:
         :param props2: The second property list to compare.
         :return: Boolean whether the two property lists are the same.
         """
-        if len(props1) != len(props2):
-            return ResultDataType.FALSE
+        matches = 0
         props1 = self.convert_values_to_string(props1)
-        props2 = self.convert_values_to_string(props2)
-        props1_sorted = sorted(props1, key=lambda x: x['name'])
-        props2_sorted = sorted(props2, key=lambda x: x['name'])
+        props2_copy = self.convert_values_to_string(copy.deepcopy(props2))
+        for p1 in props1:
+            for id, p2 in enumerate(props2_copy):
+                if p1 == p2:
+                    props2_copy.pop(id)
+                    matches += 1
+                    break
 
-        return ResultDataType.TRUE if (props1_sorted == props2_sorted) else ResultDataType.FALSE
+        return matches
 
-    def percentage_of_correctly_identified_properties(self, ref_entities, prop_entities):
-        total_props = len(ref_entities)
+    def percentage_properties_same(self, ref_entities, prop_entities) -> float:
+        total_props = 0
         correctly_identified_properties = 0
         for ent, props in ref_entities.items():
+
             if ent not in prop_entities:
+                total_props += len(props)
                 continue
+            else:
+                total_props += max(len(props), len(prop_entities[ent]))
 
-            result = self.compare_properties(props1=props, props2=prop_entities[ent])
-            if result == ResultDataType.TRUE:
-                correctly_identified_properties += 1
+            correctly_identified_properties += self.compare_properties(props1=props, props2=prop_entities[ent])
 
-        return correctly_identified_properties / total_props
+        if total_props > 0:
+            return correctly_identified_properties / total_props
+        else:
+            return -1.0
 
 
 class EntityAnalyzer:
     def __init__(self, property_analyzer: PropertyAnalyzer):
         self.property_analyzer = property_analyzer
 
-    def compare_entities_strict(self, entities1, entities2) -> ResultDataType:
+    def compare_entities(self, entities1, entities2, compare_props=True) -> ResultDataType:
         """
         Check if two lists of entities are identical. The lists are first sorted via their names, to make sure the order
         does not affect the results.
@@ -155,57 +171,32 @@ class EntityAnalyzer:
         :param entities2: The second entity list to compare.
         :return: Boolean whether the two entity lists are the same.
         """
-        if len(entities1) != len(entities2):
-            return ResultDataType.FALSE
-        entities1_sorted, entities2_sorted = self.sort_entities(entities1, entities2)
-        for ent1, ent2 in zip(entities1_sorted, entities2_sorted):
-            # if 'type' not in ent1:
-            #     return ResultDataType.FALSE
-            if ent1['name'].lower() != ent2['name'].lower() or ent1['type'] != ent2['type']:
-                return ResultDataType.FALSE
+        total_ents = max(len(entities1), len(entities2))
+        matches = 0
 
-            properties_check_results = property_analyzer.compare_properties(ent1.get('properties', []),
-                                                                            ent2.get('properties', []))
+        entities2_copy = copy.deepcopy(entities2)
+        for ent1 in entities1:
+            for id, ent2 in enumerate(entities2_copy):
+                if ent1['name'].lower() == ent2['name'].lower() and ent1['type'] == ent2['type']:
+                    if compare_props and 'properties' in ent1:
+                        prop_matches = property_analyzer.compare_properties(ent1.get('properties', []),
+                                                                                          ent2.get('properties', []))
+                        percentage_properties_same = prop_matches / len(ent1.get('properties', []))
+                        if percentage_properties_same in [1.0, -1.0]:
+                            entities2_copy.pop(id)
+                            matches += 1
+                            break
+                    else:
+                        entities2_copy.pop(id)
+                        matches += 1
+                        break
 
-            if properties_check_results == ResultDataType.FALSE:
-                return ResultDataType.FALSE
-
-        return ResultDataType.TRUE
+        return matches / total_ents
 
     def sort_entities(self, entities1, entities2):
         entities1_sorted = sorted(entities1, key=lambda x: x['name'].lower())
         entities2_sorted = sorted(entities2, key=lambda x: x['name'].lower())
         return entities1_sorted, entities2_sorted
-
-    def compare_entities_exclude_props(self, entities1, entities2) -> ResultDataType:
-        if len(entities1) != len(entities2):
-            return ResultDataType.FALSE
-        entities1_sorted, entities2_sorted = self.sort_entities(entities1, entities2)
-        for ent1, ent2 in zip(entities1_sorted, entities2_sorted):
-            # if 'type' not in ent1:
-            #     return ResultDataType.FALSE
-            if ent1['name'].lower() != ent2['name'].lower() or ent1['type'] != ent2['type']:
-                return ResultDataType.FALSE
-
-        return ResultDataType.TRUE
-
-    def compare_entities_partial_match_exclude_props(self, entities1, entities2) -> ResultDataType:
-        """
-        Check if two lists of entities are identical. The lists are first sorted via their names, to make sure the order
-        does not affect the results.
-
-        :param entities1: The first entity list to compare.
-        :param entities2: The second entity list to compare.
-        :return: Boolean whether the two entity lists are the same.
-        """
-        entities1_sorted, entities2_sorted = self.sort_entities(entities1, entities2)
-
-        total_ents = len(entities1_sorted)
-        matched_ents = 0
-        for ent1, ent2 in zip(entities1_sorted, entities2_sorted):
-            if ent1['name'].lower() == ent2['name'].lower() and ent1['type'] == ent2['type']:
-                matched_ents += 1
-        return matched_ents / total_ents
 
 
 def is_parsable_yaml(yaml_string) -> ResultDataType:
@@ -258,8 +249,8 @@ def compare_relations(relations1, relations2) -> ResultDataType:
     :param relations2: The second relations list to compare.
     :return: Boolean whether the two relations lists are the same.
     """
-    if len(relations1) != len(relations2):
-        return ResultDataType.FALSE
+    total_relations = max(len(relations1), len(relations2))
+    matches = 0
     r1 = set()
     r2 = set()
     c1 = list()
@@ -269,14 +260,25 @@ def compare_relations(relations1, relations2) -> ResultDataType:
             c1.append([relations1[id]["source"], relations1[id]["target"]])
         elif relations1[id]["type"] == "dist" or relations1[id]["type"] == "distance":
             r1.add(frozenset({relations1[id]["source"], relations1[id]["target"], relations1[id]["value"]}))
-    c1s = sorted(c1, key=lambda x: (x[0], x[1]))
-    c2s = sorted(c2, key=lambda x: (x[0], x[1]))
-    if c1s != c2s:
-        return ResultDataType.FALSE
-    if r1 != r2:
-        return ResultDataType.TRUE
+    for id in range(len(relations2)):
+        if relations2[id]["type"] == "contains":
+            c2.append([relations2[id]["source"], relations2[id]["target"]])
+        elif relations2[id]["type"] == "dist" or relations2[id]["type"] == "distance":
+            r2.add(frozenset({relations2[id]["source"], relations2[id]["target"], relations2[id]["value"]}))
 
-    return ResultDataType.TRUE
+    r1 = Counter(r1)
+    r2 = Counter(r2)
+    for item in r1:
+        if item in r2:
+            matches += 1
+    c2_copy = copy.deepcopy(c2)
+    for c1_ in c1:
+        for id2, c2_ in enumerate(c2_copy):
+            if c1_ == c2_:
+                c2_copy.pop(id2)
+                matches += 1
+
+    return matches / total_relations
 
 
 def compare_yaml(area_analyzer: AreaAnalyzer, entity_analyzer: EntityAnalyzer, property_analyzer: PropertyAnalyzer,
@@ -293,28 +295,39 @@ def compare_yaml(area_analyzer: AreaAnalyzer, entity_analyzer: EntityAnalyzer, p
     _, ref_data = is_parsable_yaml(yaml_true_string)
     _is_parsable_yaml, generated_data = is_parsable_yaml(yaml_pred_string)
     is_perfect_match = ResultDataType.FALSE
-    is_area_exact_match = ResultDataType.FALSE
+    is_area_same = ResultDataType.FALSE
     are_entities_exactly_same = ResultDataType.FALSE
+    percentage_entities_exactly_same = -1.0
     are_entities_same_exclude_props = ResultDataType.FALSE
+    percentage_entities_same_exclude_props = -1.0
     are_relations_exactly_same = ResultDataType.NOT_APPLICABLE
-    percentage_of_correctly_identified_properties = -1
+    percentage_relations_same = -1.0
+    are_properties_same = ResultDataType.NOT_APPLICABLE
+    percentage_properties_same = -1.0
 
     if generated_data:
-        is_area_exact_match = area_analyzer.compare_areas_strict(ref_data['area'], generated_data['area'])
-        is_area_light_match = area_analyzer.compare_areas_light(ref_data['area'], generated_data['area'])
-        are_entities_exactly_same = entity_analyzer.compare_entities_strict(ref_data['entities'],
-                                                                            generated_data['entities'])
-
-        are_entities_same_exclude_props = entity_analyzer.compare_entities_exclude_props(ref_data['entities'],
-                                                                                         generated_data['entities'])
-
-        percentage_entities_partial_match_exclude_props = entity_analyzer.compare_entities_partial_match_exclude_props(
-            ref_data['entities'],
-            generated_data['entities'])
-
-        # todo: property check
         num_entities_on_ref_data = len(ref_data['entities'])
         num_entities_on_gen_data = len(generated_data['entities'])
+        if "relations" in ref_data:
+            num_relations_on_ref_data = len(ref_data['relations'])
+        else:
+            num_relations_on_ref_data = -1.0
+        if "relations" in generated_data:
+            num_relations_on_gen_data = len(generated_data['relations'])
+        else:
+            num_relations_on_gen_data = -1.0
+
+        is_area_match = area_analyzer.compare_areas_light(ref_data['area'], generated_data['area'])
+        percentage_entities_exactly_same = entity_analyzer.compare_entities(ref_data['entities'],
+                                                                            generated_data['entities'])
+
+        if percentage_entities_exactly_same == 1.0:
+            are_entities_exactly_same = ResultDataType.TRUE
+
+        percentage_entities_same_exclude_props = entity_analyzer.compare_entities(ref_data['entities'],
+                                                                    generated_data['entities'], False)
+        if percentage_entities_same_exclude_props == 1.0:
+            are_entities_same_exclude_props = ResultDataType.TRUE
 
         ref_entities_with_properties = {}
         for ref_entity in ref_data['entities']:
@@ -322,13 +335,19 @@ def compare_yaml(area_analyzer: AreaAnalyzer, entity_analyzer: EntityAnalyzer, p
                 ref_entities_with_properties[ref_entity['name']] = ref_entity['properties']
 
         if len(ref_entities_with_properties) > 0:
-            # print("!!!entities with properties!!!!")
             predicted_entities_with_properties = {}
             for pred_entity in generated_data['entities']:
                 if 'properties' in pred_entity:
                     predicted_entities_with_properties[pred_entity['name']] = pred_entity['properties']
-            percentage_of_correctly_identified_properties = property_analyzer.percentage_of_correctly_identified_properties(
+            percentage_properties_same = property_analyzer.percentage_properties_same(
                 ref_entities=ref_entities_with_properties, prop_entities=predicted_entities_with_properties)
+        if percentage_properties_same == 1.0:
+            are_properties_same = ResultDataType.TRUE
+        elif percentage_properties_same == -1.0:
+            are_properties_same = ResultDataType.NOT_APPLICABLE
+        else:
+            are_properties_same = ResultDataType.FALSE
+
 
         # todo: recheck this!!
         if 'relations' not in ref_data:
@@ -339,8 +358,15 @@ def compare_yaml(area_analyzer: AreaAnalyzer, entity_analyzer: EntityAnalyzer, p
                 are_relations_exactly_same = ResultDataType.FALSE
 
             else:
-                are_relations_exactly_same = compare_relations(ref_data['relations'], generated_data['relations'])
-    if (is_area_light_match == ResultDataType.TRUE and are_entities_exactly_same == ResultDataType.TRUE
+                ref_relations_prepared = prepare_relation(ref_data)
+                generated_relations_prepared = prepare_relation(generated_data)
+                percentage_relations_same = compare_relations(ref_relations_prepared, generated_relations_prepared)
+                if percentage_relations_same == 1.0:
+                    are_relations_exactly_same = ResultDataType.TRUE
+                else:
+                    are_relations_exactly_same = ResultDataType.FALSE
+
+    if (is_area_match == ResultDataType.TRUE and are_entities_exactly_same == ResultDataType.TRUE
         and (are_relations_exactly_same == ResultDataType.TRUE or
              are_relations_exactly_same == ResultDataType.NOT_APPLICABLE)):
         is_perfect_match = ResultDataType.TRUE
@@ -349,15 +375,19 @@ def compare_yaml(area_analyzer: AreaAnalyzer, entity_analyzer: EntityAnalyzer, p
                   yaml_true_string=yaml_true_string,
                   is_perfect_match=is_perfect_match,
                   is_parsable_yaml=_is_parsable_yaml,
-                  is_area_exact_match=is_area_exact_match,
-                  is_area_light_match=is_area_light_match,
+                  is_area_match=is_area_match,
                   num_entities_on_ref_data=num_entities_on_ref_data,
                   num_entities_on_gen_data=num_entities_on_gen_data,
+                  num_relations_on_ref_data=num_relations_on_ref_data,
+                  num_relations_on_gen_data=num_relations_on_gen_data,
                   are_entities_exactly_same=are_entities_exactly_same,
+                  percentage_entities_exactly_same=percentage_entities_exactly_same,
                   are_entities_same_exclude_props=are_entities_same_exclude_props,
-                  percentage_entities_partial_match_exclude_props=percentage_entities_partial_match_exclude_props,
-                  percentage_of_correctly_identified_properties=percentage_of_correctly_identified_properties,
-                  are_relations_exactly_same=are_relations_exactly_same)
+                  percentage_entities_same_exclude_props=percentage_entities_same_exclude_props,
+                  are_properties_same=are_properties_same,
+                  percentage_properties_same=percentage_properties_same,
+                  are_relations_exactly_same=are_relations_exactly_same,
+                  percentage_relations_same=percentage_relations_same)
 
 
 if __name__ == '__main__':
@@ -422,17 +452,23 @@ if __name__ == '__main__':
     evaluation_scores = {}
 
     # Results with binary type
-    for result_type in ['is_perfect_match', 'is_parsable_yaml', 'is_area_exact_match',
-                        'is_area_light_match',
+    for result_type in ['is_perfect_match',
+                        'is_parsable_yaml',
+                        'is_area_match',
                         'are_entities_exactly_same',
+                        'percentage_entities_exactly_same',
                         'are_entities_same_exclude_props',
-                        'percentage_entities_partial_match_exclude_props',
-                        'percentage_of_correctly_identified_properties',
-                        'are_relations_exactly_same']:
+                        'percentage_entities_same_exclude_props',
+                        'are_properties_same',
+                        'percentage_properties_same',
+                        'are_relations_exactly_same',
+                        'percentage_relations_same']:
         print(f"===Results for {result_type}===")
 
-        if result_type in ['percentage_entities_partial_match_exclude_props',
-                        'percentage_of_correctly_identified_properties']:
+        if result_type in ['percentage_entities_exactly_same',
+                        'percentage_entities_same_exclude_props',
+                        'percentage_properties_same',
+                        'percentage_relations_same']:
             na_samples = results[results[result_type] == -1]
             valid_results = results[results[result_type] != -1]
             acc = np.mean(valid_results[result_type].to_numpy())
@@ -444,14 +480,13 @@ if __name__ == '__main__':
         evaluation_scores[result_type + "_acc"] = acc
         print(f'  Accuracy of {result_type}: {acc}')
 
-        if result_type in ["are_relations_exactly_same", "percentage_of_correctly_identified_properties"]:
+        if result_type in ["are_relations_exactly_same", "are_properties_same"]:
             evaluation_scores[result_type + "_NA"] = len(na_samples)
             print(f"  Number of NA samples: {len(na_samples)}")
 
     evaluation_scores = evaluation_scores | meta_results
 
     evaluation_scores = pd.DataFrame(evaluation_scores, index=[0])
-
 
     def convert_custom_type(value):
         if value == ResultDataType.TRUE:
@@ -463,9 +498,6 @@ if __name__ == '__main__':
         return value
 
     results = results.map(convert_custom_type)
-    # results.replace(to_replace=ResultDataType.TRUE, value="True")
-    # results.replace(to_replace=ResultDataType.FALSE, value="False")
-    # results.replace(to_replace=ResultDataType.NOT_APPLICABLE, value="Not Applicable")
 
     with pd.ExcelWriter(out_file_path) as writer:
         results.to_excel(writer)

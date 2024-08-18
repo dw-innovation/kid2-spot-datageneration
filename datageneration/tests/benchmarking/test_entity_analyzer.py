@@ -14,7 +14,7 @@ class TestEvaluation(unittest.TestCase):
     def test_pipeline(self):
         entity_analyzer = EntityAnalyzer()
 
-        predicted_result = entity_analyzer.compare_entities_strict(
+        predicted_result = entity_analyzer.compare_entities(
             entities1=[{'id': 0, 'type': 'nwr', 'name': 'elementary schools'},
                        {'id': 1, 'type': 'nwr', 'name': 'library'}, {'id': 2, 'type': 'nwr', 'name': 'driving school'}],
             entities2=[{'id': 0, 'is_area': True, 'name': 'elementary schools', 'type': 'nwr'},
