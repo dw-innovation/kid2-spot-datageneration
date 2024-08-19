@@ -425,13 +425,15 @@ if __name__ == '__main__':
         assert prediction['sentence'] == gold_label['sentence']
         yaml_pred_string = prediction['model_result']
         yaml_true_string = gold_label['YAML']
-        result = compare_yaml(area_analyzer=area_analyzer,
+        result= {'sentence': prediction['sentence']}
+        comparision_result = compare_yaml(area_analyzer=area_analyzer,
                               entity_analyzer=entity_analyzer,
                               property_analyzer=property_analyzer,
                               yaml_true_string=yaml_true_string,
                               yaml_pred_string=yaml_pred_string)
+        result = result | comparision_result.dict()
         meta_vals = {key: gold_label[key] for key in meta_fields}
-        results.append(result.dict() | meta_vals)
+        results.append(result | meta_vals)
 
         for meta_field in meta_fields:
             if gold_label[meta_field] == 1:
