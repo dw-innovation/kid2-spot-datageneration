@@ -5,7 +5,7 @@ from argparse import ArgumentParser
 from tqdm import tqdm
 from typing import Dict
 from diskcache import Cache
-from datageneration.utils import NON_ROMAN_LANGUAGES
+from datageneration.utils import NON_ROMAN_LANG_GROUPS
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
