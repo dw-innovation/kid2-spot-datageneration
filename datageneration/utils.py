@@ -110,6 +110,9 @@ def translate_queries_to_yaml(combs):
 
 
 def clean_up_query(query):
+    area = query['area']
+    if area['type'] == 'bbox':
+        area.pop('value', None)
     for entity in query["entities"]:
         entity.pop("is_area", None)
         if len(entity["properties"]) == 0:
