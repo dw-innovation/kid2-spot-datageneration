@@ -17,15 +17,17 @@ from datageneration.utils import write_output
 
 class QueryCombinationGenerator(object):
     def __init__(self, geolocation_file: str,
+                 non_roman_vocab_file: str,
                  tag_combinations: List[TagCombination],
                  property_examples: List[TagPropertyExample],
                  max_distance_digits: int,
                  prob_of_two_word_areas: float,
                  prob_generating_contain_rel: float,
                  prob_adding_brand_names_as_entity: float,
+                 prob_of_non_roman_areas: float,
                  ratio_within_radius_within: float):
         self.entity_tag_combinations = list(filter(lambda x: 'core' in x.comb_type.value, tag_combinations))
-        self.area_generator = AreaGenerator(geolocation_file, prob_of_two_word_areas)
+        self.area_generator = AreaGenerator(geolocation_file=geolocation_file, non_roman_vocab_file=non_roman_vocab_file, prob_of_two_word_areas=prob_of_two_word_areas, prob_of_non_roman_areas=prob_of_non_roman_areas)
         self.prob_adding_brand_names_as_entity = prob_adding_brand_names_as_entity
         self.property_generator = PropertyGenerator(property_examples)
         self.relation_generator = RelationGenerator(max_distance_digits=max_distance_digits,
@@ -49,7 +51,7 @@ class QueryCombinationGenerator(object):
         """
         peak_value = 3  # Number of entity with the highest probability
         decay_rate_right = 0.7
-        decay_rate_left = 0.3
+        decay_rate_left = 0.5 #0.3
         entity_nums = np.arange(1, max_number_of_entities_in_prompt + 1)
         probabilities = np.zeros(max_number_of_entities_in_prompt)
         probabilities[peak_value - 1] = 1
@@ -125,7 +127,9 @@ class QueryCombinationGenerator(object):
             is_area = selected_tag_comb.is_area
 
             # Randomise whether probabilities should be added to ensure high enough ratio of zero property cases
-            add_properties = np.random.choice([True, False], p=[prob_of_entities_with_props,
+            add_properties = False
+            if not selected_brand_name:
+                add_properties = np.random.choice([True, False], p=[prob_of_entities_with_props,
                                                                 1 - prob_of_entities_with_props])
             if add_properties and max_number_of_props_in_entity >= 1:
                 candidate_properties = selected_tag_comb.tag_properties
@@ -176,31 +180,36 @@ class QueryCombinationGenerator(object):
         :param relations: The relations of the query
         :return: The sorted entities and relations
         """
-        sorted_entities = []
         sorted_relations = copy.deepcopy(relations)
-        lookup_table = dict()
-        id = 0
-        # Loop over all relations, which must be in the order that "contains" relations come first.
-        for relation in relations.relations:
-            # If the "source" (area) is not yet known, add that first
-            if entities[relation.source] not in sorted_entities:
-                sorted_entities.append(entities[relation.source])
-                sorted_entities[-1].id = id
-                lookup_table[relation.source] = id
-                id += 1
-            # After the "source" (area) was added, add all their "targets" (points contained within)
-            if entities[relation.target] not in sorted_entities:
-                sorted_entities.append(entities[relation.target])
-                sorted_entities[-1].id = id
-                lookup_table[relation.target] = id
-                id += 1
+        sorted_relations.relations = sorted(relations.relations, key=lambda r: (min(r.source, r.target), max(r.source, r.target)))
 
-        # Update the relations based on lookup table to match with the new entity IDs
-        for sorted_relation in sorted_relations.relations:
-            sorted_relation.source = lookup_table[sorted_relation.source]
-            sorted_relation.target = lookup_table[sorted_relation.target]
+        return entities, sorted_relations
 
-        return sorted_entities, sorted_relations
+        # sorted_entities = []
+        # sorted_relations = copy.deepcopy(relations)
+        # lookup_table = dict()
+        # id = 0
+        # # Loop over all relations, which must be in the order that "contains" relations come first.
+        # for relation in relations.relations:
+        #     # If the "source" (area) is not yet known, add that first
+        #     if entities[relation.source] not in sorted_entities:
+        #         sorted_entities.append(entities[relation.source])
+        #         sorted_entities[-1].id = id
+        #         lookup_table[relation.source] = id
+        #         id += 1
+        #     # After the "source" (area) was added, add all their "targets" (points contained within)
+        #     if entities[relation.target] not in sorted_entities:
+        #         sorted_entities.append(entities[relation.target])
+        #         sorted_entities[-1].id = id
+        #         lookup_table[relation.target] = id
+        #         id += 1
+        #
+        # # Update the relations based on lookup table to match with the new entity IDs
+        # for sorted_relation in sorted_relations.relations:
+        #     sorted_relation.source = lookup_table[sorted_relation.source]
+        #     sorted_relation.target = lookup_table[sorted_relation.target]
+        #
+        # return sorted_entities, sorted_relations
 
     def run(self, num_queries: int, max_number_of_entities_in_prompt: int, max_number_of_props_in_entity: int,
             prob_of_entities_with_props: float) -> List[LocPoint]:
@@ -247,6 +256,7 @@ if __name__ == '__main__':
     '''
     parser = ArgumentParser()
     parser.add_argument('--geolocations_file_path', help='Path to a file containing cities, countries, etc.')
+    parser.add_argument('--non_roman_vocab_file_path', help='Path to a file containing a vocabulary of areas with non-roman alphabets')
     parser.add_argument('--tag_combination_path', help='tag list file generated via retrieve_combinations')
     parser.add_argument('--tag_prop_examples_path', help='Examples of tag properties')
     parser.add_argument('--output_file', help='File to save the output')
@@ -256,6 +266,7 @@ if __name__ == '__main__':
     parser.add_argument('--max_number_of_entities_in_prompt', type=int, default=4)
     parser.add_argument('--max_number_of_props_in_entity', type=int, default=4)
     parser.add_argument('--prob_of_entities_with_props', type=float, default=0.3)
+    parser.add_argument('--prob_of_non_roman_areas', type=float, default=0.2)
     parser.add_argument('--prob_of_two_word_areas', type=float, default=0.5)
     parser.add_argument('--prob_adding_brand_names_as_entity', type=float, default=0.5)
     parser.add_argument('--prob_generating_contain_rel', type=float, default=0.3)
@@ -266,6 +277,7 @@ if __name__ == '__main__':
     tag_combination_path = args.tag_combination_path
     tag_prop_examples_path = args.tag_prop_examples_path
     geolocations_file_path = args.geolocations_file_path
+    non_roman_vocab_file_path = args.non_roman_vocab_file_path
     max_distance_digits = args.max_distance_digits
     num_samples = args.samples
     output_file = args.output_file
@@ -274,6 +286,7 @@ if __name__ == '__main__':
     prob_of_entities_with_props = args.prob_of_entities_with_props
     prob_of_two_word_areas = args.prob_of_two_word_areas
     prob_generating_contain_rel = args.prob_generating_contain_rel
+    prob_of_non_roman_areas = args.prob_of_non_roman_areas
     prob_adding_brand_names_as_entity = args.prob_adding_brand_names_as_entity
     ratio_within_radius_within = args.ratio_within_radius_within
 
@@ -282,10 +295,12 @@ if __name__ == '__main__':
     property_examples = pd.read_json(tag_prop_examples_path, lines=True).to_dict('records')
 
     query_comb_generator = QueryCombinationGenerator(geolocation_file=geolocations_file_path,
+                                                     non_roman_vocab_file=non_roman_vocab_file_path,
                                                      tag_combinations=tag_combinations,
                                                      property_examples=property_examples,
                                                      max_distance_digits=args.max_distance_digits,
                                                      prob_of_two_word_areas=prob_of_two_word_areas,
+                                                     prob_of_non_roman_areas=prob_of_non_roman_areas,
                                                      prob_generating_contain_rel=prob_generating_contain_rel,
                                                      prob_adding_brand_names_as_entity=prob_adding_brand_names_as_entity,
                                                      ratio_within_radius_within=ratio_within_radius_within)

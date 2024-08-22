@@ -12,8 +12,22 @@ from datageneration.data_model import Distance
 
 SEPERATORS = ['=', '>', '~']
 
+NON_ROMAN_LANGUAGES = ['ru', 'ba', 'be', 'bg', 'ce', 'cv', 'kk', 'ky', 'mdf', 'mhr', 'mk', 'mrj', 'myv', 'os', 'sr', 'tg', 'tt', 'udm', 'ar', 'arz', 'azb', 'ckb', 'fa', 'pnb', 'ps', 'skr', 'ur', 'he', 'ye', 'ka', 'xmf', 'zh', 'zh_yue', 'wu', 'el', 'ja', 'ta', 'th', 'ur']
 
-# numerical value generator
+NON_ROMAN_LANG_GROUPS = {
+    'cyrillic': ['ru', 'be', 'bg', 'ce', 'cv', 'kk', 'ky', 'mdf', 'mhr', 'mk', 'mrj', 'myv', 'os', 'sr', 'tg', 'tt', 'udm'],
+    'arabic': ['ar', 'arz', 'azb', 'ckb', 'fa', 'pnb', 'ps', 'skr', 'ur'],
+    'hebrew': ['he', 'ye'],
+    'georgian': ['ka', 'xmf'],
+    'chinese': ['zh', 'zh_yue', 'wu'],
+    'greek': ['el'],
+    'japanese': ['ja'],
+    'korean': ['ko'],
+    'tamil': ['ta'],
+    'thai': ['th']
+}
+
+
 def get_random_decimal_with_metric(max_digits: int) -> Distance:
     '''
     It generates a random distance. Distance has magnitude and metric information.
