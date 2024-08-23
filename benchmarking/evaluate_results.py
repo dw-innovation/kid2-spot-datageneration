@@ -29,10 +29,6 @@ class Result(BaseModel, frozen=True):
 
     is_area_match: ResultDataType = Field(description="True if areas are equal, otherwise False",
                                                 default=ResultDataType.FALSE)
-    num_entities_on_ref_data: int = 0
-    num_entities_on_gen_data: int = 0
-    num_relations_on_ref_data: int = 0
-    num_relations_on_gen_data: int = 0
 
     are_entities_exactly_same: ResultDataType = Field(description="True if entity are equal, otherwise False",
                                                       default=ResultDataType.FALSE)
@@ -295,7 +291,7 @@ def compare_yaml(area_analyzer: AreaAnalyzer, entity_analyzer: EntityAnalyzer, p
     _, ref_data = is_parsable_yaml(yaml_true_string)
     _is_parsable_yaml, generated_data = is_parsable_yaml(yaml_pred_string)
     is_perfect_match = ResultDataType.FALSE
-    is_area_same = ResultDataType.FALSE
+    is_area_match = ResultDataType.FALSE
     are_entities_exactly_same = ResultDataType.FALSE
     percentage_entities_exactly_same = -1.0
     are_entities_same_exclude_props = ResultDataType.FALSE
@@ -304,6 +300,11 @@ def compare_yaml(area_analyzer: AreaAnalyzer, entity_analyzer: EntityAnalyzer, p
     percentage_relations_same = -1.0
     are_properties_same = ResultDataType.NOT_APPLICABLE
     percentage_properties_same = -1.0
+    num_entities_on_ref_data: int = 0
+    num_entities_on_gen_data: int = 0
+    num_relations_on_ref_data: int = 0
+    num_relations_on_gen_data: int = 0
+
 
     if generated_data:
         num_entities_on_ref_data = len(ref_data['entities'])
@@ -422,6 +423,7 @@ if __name__ == '__main__':
 
     results = []
     for prediction, gold_label in tqdm(zip(predictions, gold_labels), total=len(gold_labels)):
+        print(prediction['sentence'])
         assert prediction['sentence'] == gold_label['sentence']
         yaml_pred_string = prediction['model_result']
         yaml_true_string = gold_label['YAML']
