@@ -5,8 +5,11 @@ from datageneration.data_model import TagPropertyExample, TagProperty, Property
 from datageneration.utils import get_random_integer, get_random_decimal_with_metric
 
 class PropertyGenerator:
-    def __init__(self, named_property_examples: List[TagPropertyExample]):
+    def __init__(self, named_property_examples: List[TagPropertyExample]
+        ):
         self.named_property_examples = named_property_examples
+
+        self.tasks = []
 
     def select_named_property_example(self, property_name: str) -> List[str]:
         for item in self.named_property_examples:
@@ -14,6 +17,8 @@ class PropertyGenerator:
                 return item['examples']
 
     def generate_non_numerical_property(self, tag_properties) -> Property:
+        # todo: ipek -- i noticed that we haven't assign operator is equal initially the solution should uncomment the below line
+        # operator = '='
         descriptor = np.random.choice(tag_properties.descriptors, 1)[0]
 
         if tag_properties.tags[0].value != "***example***":
@@ -57,6 +62,31 @@ class PropertyGenerator:
 
     def generate_color_property(self, tag_attribute: TagProperty) -> Property:
         raise NotImplemented
+
+    def categorize_properties(self, tag_properties: List[TagProperty]):
+        '''
+        This function categorize the tag properties of an osm tag into three main group.
+        :param tag_properties:
+        :return:
+        '''
+        categories = {}
+
+        for tag_property in tag_properties:
+            if any(t.value == '***numeric***' for t in tag_property.tags):
+                if 'numerical' not in categories:
+                    categories['numerical'] = []
+                categories['numerical'].append(tag_property)
+            else:
+                if any('colour' in t.key for t in tag_property.tags):
+                    if 'color' not in categories:
+                        categories['color'] = []
+                    categories['color'].append(tag_property)
+                else:
+                    if 'non_numerical' not in categories:
+                        categories['non_numerical'] = []
+                    categories['non_numerical'].append(tag_property)
+
+        return categories
 
     def run(self, tag_property: TagProperty) -> Property:
         '''

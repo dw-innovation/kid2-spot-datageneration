@@ -24,6 +24,9 @@ class QueryCombinationGenerator(object):
                  prob_of_two_word_areas: float,
                  prob_generating_contain_rel: float,
                  prob_adding_brand_names_as_entity: float,
+                 prob_of_numerical_properties: float,
+                 prob_of_color_properties: float,
+                 prob_of_non_numerical_properties: float,
                  prob_of_non_roman_areas: float,
                  ratio_within_radius_within: float):
         self.entity_tag_combinations = list(filter(lambda x: 'core' in x.comb_type.value, tag_combinations))
@@ -33,6 +36,9 @@ class QueryCombinationGenerator(object):
         self.relation_generator = RelationGenerator(max_distance_digits=max_distance_digits,
                                                     prob_generating_contain_rel=prob_generating_contain_rel,
                                                     ratio_within_radius_within=ratio_within_radius_within)
+        self.prob_of_numerical_properties = prob_of_numerical_properties
+        self.prob_of_color_properties = prob_of_color_properties
+        self.prob_of_non_numerical_properties = prob_of_non_numerical_properties
 
     def get_number_of_entities(self, max_number_of_entities_in_prompt: int) -> int:
         """
@@ -141,6 +147,7 @@ class QueryCombinationGenerator(object):
                     selected_num_of_props = self.get_number_of_props(current_max_number_of_props)
                 else:
                     selected_num_of_props = current_max_number_of_props
+
                 properties = self.generate_properties(candidate_properties=candidate_properties,
                                                       num_of_props=selected_num_of_props)
                 selected_entities.append(
@@ -152,12 +159,43 @@ class QueryCombinationGenerator(object):
         return selected_entities
 
     def generate_properties(self, candidate_properties: List[TagProperty], num_of_props: int) -> List[Property]:
-        candidate_indices = np.arange(len(candidate_properties))
-        np.random.shuffle(candidate_indices)
-        selected_indices = candidate_indices[:num_of_props]
+        categorized_properties = self.property_generator.categorize_properties(candidate_properties)
+        all_property_categories = ['numerical', 'color', 'non_numerical']
+
+        all_property_category_probs = {
+            'numerical': self.prob_of_numerical_properties,
+            'color': self.prob_of_color_properties,
+            'non_numerical': self.prob_of_non_numerical_properties
+        }
+
+
+        new_all_property_categories = [
+            category for category in all_property_categories
+            if all_property_category_probs.get(category) != 0.0 and category in categorized_properties
+        ]
+
+        new_all_property_category_probs = {
+            category: prob for category, prob in all_property_category_probs.items()
+            if prob != 0.0 and category in categorized_properties
+        }
+
+        all_property_categories = new_all_property_categories
+        all_property_category_probs = new_all_property_category_probs
+
+        all_property_category_probs_values = list(all_property_category_probs.values())
         tag_properties = []
-        for idx in selected_indices:
-            tag_property = candidate_properties[idx]
+        for _ in range(num_of_props):
+            if sum(all_property_category_probs_values) != 1:
+                remaining_prob = (1- sum(all_property_category_probs_values)) / len(all_property_category_probs_values)
+                all_property_category_probs_values = list(map(lambda x: x+remaining_prob, all_property_category_probs_values))
+
+
+            selected_property_category = np.random.choice(all_property_categories, p=all_property_category_probs_values)
+            selected_category_properties = categorized_properties[selected_property_category]
+            candidate_indices = np.arange(len(selected_category_properties))
+            np.random.shuffle(candidate_indices)
+            selected_index = candidate_indices[0]
+            tag_property = selected_category_properties[selected_index]
             tag_property = self.property_generator.run(tag_property)
             tag_properties.append(tag_property)
 
@@ -271,6 +309,9 @@ if __name__ == '__main__':
     parser.add_argument('--prob_adding_brand_names_as_entity', type=float, default=0.5)
     parser.add_argument('--prob_generating_contain_rel', type=float, default=0.3)
     parser.add_argument('--ratio_within_radius_within', type=float, default=0.3)
+    parser.add_argument('--prob_of_numerical_properties', type=float, default=0.3)
+    parser.add_argument('--prob_of_color_properties', type=float, default=0.0)
+    parser.add_argument('--prob_of_non_numerical_properties', type=float, default=0.8)
 
     args = parser.parse_args()
 
@@ -289,6 +330,9 @@ if __name__ == '__main__':
     prob_of_non_roman_areas = args.prob_of_non_roman_areas
     prob_adding_brand_names_as_entity = args.prob_adding_brand_names_as_entity
     ratio_within_radius_within = args.ratio_within_radius_within
+    prob_of_numerical_properties = args.prob_of_numerical_properties
+    prob_of_color_properties = args.prob_of_color_properties
+    prob_of_non_numerical_properties = args.prob_of_non_numerical_properties
 
     tag_combinations = pd.read_json(tag_combination_path, lines=True).to_dict('records')
     tag_combinations = [TagCombination(**tag_comb) for tag_comb in tag_combinations]
@@ -303,6 +347,9 @@ if __name__ == '__main__':
                                                      prob_of_non_roman_areas=prob_of_non_roman_areas,
                                                      prob_generating_contain_rel=prob_generating_contain_rel,
                                                      prob_adding_brand_names_as_entity=prob_adding_brand_names_as_entity,
+                                                     prob_of_numerical_properties=prob_of_numerical_properties,
+                                                     prob_of_color_properties=prob_of_color_properties,
+                                                     prob_of_non_numerical_properties=prob_of_non_numerical_properties,
                                                      ratio_within_radius_within=ratio_within_radius_within)
 
     generated_combs = query_comb_generator.run(num_queries=num_samples,

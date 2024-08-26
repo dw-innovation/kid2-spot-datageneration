@@ -17,45 +17,48 @@ python -m datageneration.generate_combination_table \
 --prob_generating_contain_rel 0.5 \
 --ratio_within_radius_within 0.4 \
 --prob_adding_brand_names_as_entity 0.05 \
+--prob_of_numerical_properties 0.4 \
+--prob_of_color_properties 0.0 \
+--prob_of_non_numerical_properties 0.6 \
 --prob_of_non_roman_areas 1.0 \
 --samples 2000
 
 
-# create entities with properties, reducing non-roman from 1.0 to 0.2
-python -m datageneration.generate_combination_table \
---geolocations_file_path datageneration/data/countries+states+cities.json \
---non_roman_vocab_file_path datageneration/data/area_non_roman_vocab.json \
---tag_combination_path datageneration/data/tag_combinations_${VERSION}.jsonl \
---tag_prop_examples_path datageneration/data/prop_examples_${VERSION}.jsonl \
---output_file datageneration/results/${VERSION}/samples_case_props.jsonl \
---write_output \
---max_distance_digits 5 \
---max_number_of_entities_in_prompt 3 \
---max_number_of_props_in_entity 3 \
---prob_of_entities_with_props 1.0 \
---prob_of_two_word_areas 0.5 \
---prob_generating_contain_rel 0.5 \
---ratio_within_radius_within 0.4 \
---prob_adding_brand_names_as_entity 0.05 \
---prob_of_non_roman_areas 0.2 \
---samples 5000
-
-
-# create entities with contain rels, reducing prop from 1.0 to 0.7
-python -m datageneration.generate_combination_table \
---geolocations_file_path datageneration/data/countries+states+cities.json \
---non_roman_vocab_file_path datageneration/data/area_non_roman_vocab.json \
---tag_combination_path datageneration/data/tag_combinations_${VERSION}.jsonl \
---tag_prop_examples_path datageneration/data/prop_examples_${VERSION}.jsonl \
---output_file datageneration/results/${VERSION}/samples_case_contain_rels.jsonl \
---write_output \
---max_distance_digits 5 \
---max_number_of_entities_in_prompt 3 \
---max_number_of_props_in_entity 3 \
---prob_of_entities_with_props 0.7 \
---prob_of_two_word_areas 0.5 \
---prob_generating_contain_rel 1.0 \
---ratio_within_radius_within 0.4 \
---prob_adding_brand_names_as_entity 0.05 \
---prob_of_non_roman_areas 0.2 \
---samples 2000
+## create entities with properties, reducing non-roman from 1.0 to 0.2
+#python -m datageneration.generate_combination_table \
+#--geolocations_file_path datageneration/data/countries+states+cities.json \
+#--non_roman_vocab_file_path datageneration/data/area_non_roman_vocab.json \
+#--tag_combination_path datageneration/data/tag_combinations_${VERSION}.jsonl \
+#--tag_prop_examples_path datageneration/data/prop_examples_${VERSION}.jsonl \
+#--output_file datageneration/results/${VERSION}/samples_case_props.jsonl \
+#--write_output \
+#--max_distance_digits 5 \
+#--max_number_of_entities_in_prompt 3 \
+#--max_number_of_props_in_entity 3 \
+#--prob_of_entities_with_props 1.0 \
+#--prob_of_two_word_areas 0.5 \
+#--prob_generating_contain_rel 0.5 \
+#--ratio_within_radius_within 0.4 \
+#--prob_adding_brand_names_as_entity 0.05 \
+#--prob_of_non_roman_areas 0.2 \
+#--samples 5000
+#
+#
+## create entities with contain rels, reducing prop from 1.0 to 0.7
+#python -m datageneration.generate_combination_table \
+#--geolocations_file_path datageneration/data/countries+states+cities.json \
+#--non_roman_vocab_file_path datageneration/data/area_non_roman_vocab.json \
+#--tag_combination_path datageneration/data/tag_combinations_${VERSION}.jsonl \
+#--tag_prop_examples_path datageneration/data/prop_examples_${VERSION}.jsonl \
+#--output_file datageneration/results/${VERSION}/samples_case_contain_rels.jsonl \
+#--write_output \
+#--max_distance_digits 5 \
+#--max_number_of_entities_in_prompt 3 \
+#--max_number_of_props_in_entity 3 \
+#--prob_of_entities_with_props 0.7 \
+#--prob_of_two_word_areas 0.5 \
+#--prob_generating_contain_rel 1.0 \
+#--ratio_within_radius_within 0.4 \
+#--prob_adding_brand_names_as_entity 0.05 \
+#--prob_of_non_roman_areas 0.2 \
+#--samples 2000
