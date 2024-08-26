@@ -718,7 +718,7 @@ if __name__ == '__main__':
             with open(output_prompt_generations, "r") as f:
                 generated_queries = [GeneratedPrompt(**json.loads(each_line)) for each_line in f]
             generated_queries_yaml = translate_queries_to_yaml(generated_queries)
-
+            
         parent_dir = Path(output_gpt_generations).parent
         filename_without_extension = Path(output_gpt_generations).stem
         file_extension = Path(output_gpt_generations).suffix
