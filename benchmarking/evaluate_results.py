@@ -66,7 +66,7 @@ class AreaAnalyzer:
     def __init__(self):
         pass
 
-    def compare_areas_strict(self, area1, area2) -> ResultDataType:
+    def compare_areas_strict(self, ref_area, test_area) -> ResultDataType:
         """
         Checks if two areas are identical.
 
@@ -74,9 +74,9 @@ class AreaAnalyzer:
         :param area2: The second area to compare.
         :return: Boolean whether the two areas are the same.
         """
-        return ResultDataType.TRUE if (area1 == area2) else ResultDataType.FALSE
+        return ResultDataType.TRUE if (ref_area == test_area) else ResultDataType.FALSE
 
-    def compare_areas_light(self, area1, area2) -> ResultDataType:
+    def compare_areas_light(self, ref_area, test_area) -> ResultDataType:
         """
         Checks if two areas are identical.
 
@@ -84,18 +84,20 @@ class AreaAnalyzer:
         :param area2: The second area to compare.
         :return: Boolean whether the two areas are the same.
         """
-        if area1["type"] != "bbox":
-            area1['value'] = area1['value'].lower()
-            area2['value'] = area2['value'].lower()
+        if ref_area["type"] != "bbox":
+            if test_area['type'] == "bbox":
+                return ResultDataType.FALSE
+            ref_area['value'] = ref_area['value'].lower()
+            test_area['value'] = test_area['value'].lower()
 
         else:
             # generations sometimes omit the value
-            if area1['type'] == area2['type']:
+            if ref_area['type'] == test_area['type']:
                 return ResultDataType.TRUE
 
         # todo: relaxing encoding issue
 
-        return self.compare_areas_strict(area1=area1, area2=area2)
+        return self.compare_areas_strict(ref_area=ref_area, test_area=test_area)
 
 
 class PropertyAnalyzer:
@@ -173,6 +175,8 @@ class EntityAnalyzer:
         entities2_copy = copy.deepcopy(entities2)
         for ent1 in entities1:
             for id, ent2 in enumerate(entities2_copy):
+                if 'name' not in ent2:
+                    break
                 if ent1['name'].lower() == ent2['name'].lower() and ent1['type'] == ent2['type']:
                     if compare_props and 'properties' in ent1:
                         prop_matches = property_analyzer.compare_properties(ent1.get('properties', []),
@@ -424,6 +428,7 @@ if __name__ == '__main__':
     results = []
     for prediction, gold_label in tqdm(zip(predictions, gold_labels), total=len(gold_labels)):
         print(prediction['sentence'])
+        gold_label['sentence'] = gold_label['sentence'].lower()
         assert prediction['sentence'] == gold_label['sentence']
         yaml_pred_string = prediction['model_result']
         yaml_true_string = gold_label['YAML']
