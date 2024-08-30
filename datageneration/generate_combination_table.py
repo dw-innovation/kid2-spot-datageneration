@@ -5,7 +5,7 @@ import pandas as pd
 from argparse import ArgumentParser
 from pathlib import Path
 from tqdm import tqdm
-from typing import List
+from typing import List, Dict
 
 from datageneration.area_generator import AreaGenerator, NamedAreaData, load_named_area_data
 from datageneration.data_model import TagPropertyExample, TagProperty, Property, TagCombination, Entity, Relations, \
@@ -26,19 +26,43 @@ class QueryCombinationGenerator(object):
                  prob_adding_brand_names_as_entity: float,
                  prob_of_numerical_properties: float,
                  prob_of_color_properties: float,
-                 prob_of_non_numerical_properties: float,
+                 prob_of_popular_non_numerical_properties: float,
+                 prob_of_other_non_numerical_properties: float,
                  prob_of_non_roman_areas: float,
                  ratio_within_radius_within: float):
-        self.entity_tag_combinations = list(filter(lambda x: 'core' in x.comb_type.value, tag_combinations))
+        self.property_generator = PropertyGenerator(property_examples)
+        self.entity_tag_combinations = self.categorize_entities_based_on_their_props(list(filter(lambda x: 'core' in x.comb_type.value, tag_combinations)))
+
         self.area_generator = AreaGenerator(geolocation_file=geolocation_file, non_roman_vocab_file=non_roman_vocab_file, prob_of_two_word_areas=prob_of_two_word_areas, prob_of_non_roman_areas=prob_of_non_roman_areas)
         self.prob_adding_brand_names_as_entity = prob_adding_brand_names_as_entity
-        self.property_generator = PropertyGenerator(property_examples)
         self.relation_generator = RelationGenerator(max_distance_digits=max_distance_digits,
                                                     prob_generating_contain_rel=prob_generating_contain_rel,
                                                     ratio_within_radius_within=ratio_within_radius_within)
         self.prob_of_numerical_properties = prob_of_numerical_properties
-        self.prob_of_color_properties = prob_of_color_properties
-        self.prob_of_non_numerical_properties = prob_of_non_numerical_properties
+        # self.prob_of_color_properties = prob_of_color_properties
+        self.prob_of_popular_non_numerical_properties = prob_of_popular_non_numerical_properties
+        self.prob_of_other_non_numerical_properties = prob_of_other_non_numerical_properties
+        self.all_properties_with_probs = {
+            "numerical": self.prob_of_numerical_properties,
+            "popular_non_numerical": self.prob_of_popular_non_numerical_properties,
+            "other_non_numerical": self.prob_of_other_non_numerical_properties,
+        }
+
+    def categorize_entities_based_on_their_props(self, tag_combinations: List[TagCombination]) -> Dict:
+        categorized_entities = {
+            'numerical': [],
+            # 'color': [],
+            'popular_non_numerical': [],
+            'other_non_numerical': [],
+            'default': [] # add every type of entities here
+        }
+        for tag_combination in tag_combinations:
+            tag_properties = tag_combination.tag_properties
+            categorized_entities['default'].append(tag_combination)
+            prop_categories = self.property_generator.categorize_properties(tag_properties=tag_properties)
+            for prop_key in prop_categories.keys():
+                categorized_entities[prop_key].append(tag_combination)
+        return categorized_entities
 
     def get_number_of_entities(self, max_number_of_entities_in_prompt: int) -> int:
         """
@@ -109,50 +133,56 @@ class QueryCombinationGenerator(object):
         number_of_entities_in_prompt = self.get_number_of_entities(max_number_of_entities_in_prompt)
 
         selected_entities = []
-        selected_entity_numbers = []
+        selected_tag_combs = []
         while len(selected_entities) < number_of_entities_in_prompt:
-            selected_idx_for_combinations = np.random.randint(0, len(self.entity_tag_combinations))
-            if selected_idx_for_combinations in selected_entity_numbers:
-                continue
-            selected_entity_numbers.append(selected_idx_for_combinations)
-            selected_tag_comb = self.entity_tag_combinations[selected_idx_for_combinations]
-            associated_descriptors = selected_tag_comb.descriptors
-
             selected_brand_name = np.random.choice([True, False], p=[self.prob_adding_brand_names_as_entity,
                                                                      1 - self.prob_adding_brand_names_as_entity])
-
-            if selected_brand_name:
-                brand_examples = self.property_generator.select_named_property_example("brand~***example***")
-                entity_name = f"brand:{np.random.choice(brand_examples)}"
-            # if "brand name" in associated_descriptors:
-            #     brand_examples = self.property_generator.select_named_property_example("brand~***example***")
-            #     entity_name = "brand: " + np.random.choice(brand_examples)
-            else:
-                entity_name = np.random.choice(associated_descriptors)
-
-            is_area = selected_tag_comb.is_area
-
-            # Randomise whether probabilities should be added to ensure high enough ratio of zero property cases
-            add_properties = False
             if not selected_brand_name:
                 add_properties = np.random.choice([True, False], p=[prob_of_entities_with_props,
                                                                 1 - prob_of_entities_with_props])
-            if add_properties and max_number_of_props_in_entity >= 1:
-                candidate_properties = selected_tag_comb.tag_properties
-                if len(candidate_properties) == 0:
-                    continue
-                current_max_number_of_props = min(len(candidate_properties), max_number_of_props_in_entity)
-                if current_max_number_of_props > 1:
-                    # selected_num_of_props = np.random.randint(1, max_number_of_props_in_entity)
-                    selected_num_of_props = self.get_number_of_props(current_max_number_of_props)
-                else:
-                    selected_num_of_props = current_max_number_of_props
 
-                properties = self.generate_properties(candidate_properties=candidate_properties,
-                                                      num_of_props=selected_num_of_props)
-                selected_entities.append(
-                    Entity(id=len(selected_entities), is_area=is_area, name=entity_name, properties=properties))
+                if add_properties and max_number_of_props_in_entity >= 1:
+                    selected_property_category = np.random.choice(list(self.all_properties_with_probs.keys()),
+                                                                  p=list(self.all_properties_with_probs.values()))
+                    selected_idx_for_combinations = np.random.randint(0, len(self.entity_tag_combinations[selected_property_category]))
+                    selected_tag_comb = self.entity_tag_combinations[selected_property_category][selected_idx_for_combinations]
+                    is_area = selected_tag_comb.is_area
+
+                    if selected_tag_comb in selected_tag_combs:
+                        continue
+
+                    selected_tag_combs.append(selected_tag_comb)
+                    associated_descriptors = selected_tag_comb.descriptors
+
+                    entity_name = np.random.choice(associated_descriptors)
+                    candidate_properties = selected_tag_comb.tag_properties
+
+                    if len(candidate_properties) == 0:
+                        continue
+
+                    current_max_number_of_props = min(len(candidate_properties), max_number_of_props_in_entity)
+                    if current_max_number_of_props > 1:
+                        # selected_num_of_props = np.random.randint(1, max_number_of_props_in_entity)
+                        selected_num_of_props = self.get_number_of_props(current_max_number_of_props)
+                    else:
+                        selected_num_of_props = current_max_number_of_props
+                    properties = self.generate_properties(candidate_properties=candidate_properties,
+                                                          num_of_props=selected_num_of_props)
+                    selected_entities.append(
+                        Entity(id=len(selected_entities), is_area=is_area, name=entity_name, properties=properties))
+                else:
+                    selected_idx_for_combinations = np.random.randint(0, len(self.entity_tag_combinations['default']))
+                    selected_tag_comb = self.entity_tag_combinations['default'][selected_idx_for_combinations]
+                    is_area = selected_tag_comb.is_area
+                    if selected_tag_comb in selected_tag_combs:
+                        continue
+                    selected_tag_combs.append(selected_tag_comb)
+                    selected_entities.append(
+                        Entity(id=len(selected_entities), is_area=is_area, name=entity_name, properties=[]))
             else:
+                brand_examples = self.property_generator.select_named_property_example("brand~***example***")
+                entity_name = f"brand:{np.random.choice(brand_examples)}"
+                is_area = False
                 selected_entities.append(
                     Entity(id=len(selected_entities), is_area=is_area, name=entity_name, properties=[]))
 
@@ -160,22 +190,15 @@ class QueryCombinationGenerator(object):
 
     def generate_properties(self, candidate_properties: List[TagProperty], num_of_props: int) -> List[Property]:
         categorized_properties = self.property_generator.categorize_properties(candidate_properties)
-        all_property_categories = ['numerical', 'color', 'non_numerical']
-
-        all_property_category_probs = {
-            'numerical': self.prob_of_numerical_properties,
-            'color': self.prob_of_color_properties,
-            'non_numerical': self.prob_of_non_numerical_properties
-        }
-
+        all_property_categories = list(self.all_properties_with_probs.keys())
+        all_properties_with_probs = self.all_properties_with_probs
 
         new_all_property_categories = [
             category for category in all_property_categories
-            if all_property_category_probs.get(category) != 0.0 and category in categorized_properties
+            if all_properties_with_probs.get(category) != 0.0 and category in categorized_properties
         ]
-
         new_all_property_category_probs = {
-            category: prob for category, prob in all_property_category_probs.items()
+            category: prob for category, prob in all_properties_with_probs.items()
             if prob != 0.0 and category in categorized_properties
         }
 
@@ -311,7 +334,8 @@ if __name__ == '__main__':
     parser.add_argument('--ratio_within_radius_within', type=float, default=0.3)
     parser.add_argument('--prob_of_numerical_properties', type=float, default=0.3)
     parser.add_argument('--prob_of_color_properties', type=float, default=0.0)
-    parser.add_argument('--prob_of_non_numerical_properties', type=float, default=0.8)
+    parser.add_argument('--prob_of_popular_non_numerical_properties', type=float, default=0.2)
+    parser.add_argument('--prob_of_other_non_numerical_properties', type=float, default=0.5)
 
     args = parser.parse_args()
 
@@ -332,7 +356,8 @@ if __name__ == '__main__':
     ratio_within_radius_within = args.ratio_within_radius_within
     prob_of_numerical_properties = args.prob_of_numerical_properties
     prob_of_color_properties = args.prob_of_color_properties
-    prob_of_non_numerical_properties = args.prob_of_non_numerical_properties
+    prob_of_other_non_numerical_properties = args.prob_of_other_non_numerical_properties
+    prob_of_popular_non_numerical_properties = args.prob_of_popular_non_numerical_properties
 
     tag_combinations = pd.read_json(tag_combination_path, lines=True).to_dict('records')
     tag_combinations = [TagCombination(**tag_comb) for tag_comb in tag_combinations]
@@ -349,7 +374,8 @@ if __name__ == '__main__':
                                                      prob_adding_brand_names_as_entity=prob_adding_brand_names_as_entity,
                                                      prob_of_numerical_properties=prob_of_numerical_properties,
                                                      prob_of_color_properties=prob_of_color_properties,
-                                                     prob_of_non_numerical_properties=prob_of_non_numerical_properties,
+                                                     prob_of_popular_non_numerical_properties=prob_of_popular_non_numerical_properties,
+                                                     prob_of_other_non_numerical_properties= prob_of_other_non_numerical_properties,
                                                      ratio_within_radius_within=ratio_within_radius_within)
 
     generated_combs = query_comb_generator.run(num_queries=num_samples,

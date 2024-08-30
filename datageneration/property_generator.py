@@ -72,20 +72,20 @@ class PropertyGenerator:
         categories = {}
 
         for tag_property in tag_properties:
-            if any(t.value == '***numeric***' for t in tag_property.tags):
-                if 'numerical' not in categories:
-                    categories['numerical'] = []
-                categories['numerical'].append(tag_property)
-            else:
-                if any('colour' in t.key for t in tag_property.tags):
-                    if 'color' not in categories:
-                        categories['color'] = []
-                    categories['color'].append(tag_property)
+            tag_property_tags = tag_property.tags
+            for tag_property_tag in tag_property_tags:
+                if tag_property_tag.value == '***numeric***':
+                    if 'numerical' not in categories:
+                        categories['numerical'] = []
+                    categories['numerical'].append(tag_property)
+                elif 'brand' == tag_property_tag.key or 'name' == tag_property_tag.key or 'addr:housenumber' == tag_property_tag.key:
+                    if 'popular_non_numerical' not in categories:
+                        categories['popular_non_numerical'] = []
+                    categories['popular_non_numerical'].append(tag_property)
                 else:
-                    if 'non_numerical' not in categories:
-                        categories['non_numerical'] = []
-                    categories['non_numerical'].append(tag_property)
-
+                    if 'other_non_numerical' not in categories:
+                        categories['other_non_numerical'] = []
+                    categories['other_non_numerical'].append(tag_property)
         return categories
 
     def run(self, tag_property: TagProperty) -> Property:
