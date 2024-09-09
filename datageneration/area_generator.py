@@ -157,96 +157,96 @@ class AreaGenerator:
         return selected_area
 
 
-def generate_no_area(self) -> Area:
-    '''
-    It returns no area, bbox
-    '''
-    return Area(type='bbox', value='')
+    def generate_no_area(self) -> Area:
+        '''
+        It returns no area, bbox
+        '''
+        return Area(type='bbox', value='')
 
 
-def generate_city_area(self) -> Area:
-    '''
-    Randomly select if select the city from cities with single word or two word. After corresponding category is
-    selected, we will suffle the corresponding list and then select the city name
-    e.g. Koblenz
-    '''
-    area = self.get_area("city")
+    def generate_city_area(self) -> Area:
+        '''
+        Randomly select if select the city from cities with single word or two word. After corresponding category is
+        selected, we will suffle the corresponding list and then select the city name
+        e.g. Koblenz
+        '''
+        area = self.get_area("city")
 
-    return Area(type='area', value=area.city)
-
-
-def generate_city_and_country_area(self) -> Area:
-    '''
-    Randomly shuffles the geolocation data point
-    Selects the city name and return city_name, country_name where city is located.
-    e.g Koblenz, Germany
-    '''
-    area = self.get_area("city")
-
-    return Area(type='area', value=f'{area.city}, {area.country}')
+        return Area(type='area', value=area.city)
 
 
-def generate_region_area(self) -> Area:
-    '''
-    It filters the unique states in geolocation data points
-    Randomly shuffles it
-    Selects the state
-    e.g Rheinland-Palastine
-    '''
-    area = self.get_area("state")
+    def generate_city_and_country_area(self) -> Area:
+        '''
+        Randomly shuffles the geolocation data point
+        Selects the city name and return city_name, country_name where city is located.
+        e.g Koblenz, Germany
+        '''
+        area = self.get_area("city")
 
-    return Area(type='area', value=area.state)
-
-
-def generate_region_and_country_area(self) -> Area:
-    '''
-    Randomly shuffles the geolocation data point
-    Selects the city name and return state_name and then country_name where city is located.
-    e.g Koblenz, Rheinland-Palastine, Germany
-    '''
-    # todo: this would be problematic when the country does not have states
-    area = self.get_area("state")
-
-    return Area(type='area', value=f'{area.state}, {area.country}')
+        return Area(type='area', value=f'{area.city}, {area.country}')
 
 
-def generate_city_and_region_and_country_area(self) -> Area:
-    '''
-    Randomly shuffles the geolocation data point
-    Selects the city name and return city_name, state_name and then country_name where city is located.
-    e.g Koblenz, Rheinland-Palastine, Germany
-    '''
-    # todo: this would be problematic when the country does not have states
-    area = self.get_area()
+    def generate_region_area(self) -> Area:
+        '''
+        It filters the unique states in geolocation data points
+        Randomly shuffles it
+        Selects the state
+        e.g Rheinland-Palastine
+        '''
+        area = self.get_area("state")
 
-    return Area(type='area', value=f'{area.city}, {area.state}, {area.country}')
+        return Area(type='area', value=area.state)
 
 
-def run(self) -> List[Area]:
-    '''
-    This function a random generation pipeline. That randomly selects the task function which are defined in AREA_TASKS. Next, it calls the generator function that is corresponding to the selected task.
-    '''
-    np.random.shuffle(self.tasks)
-    selected_task = self.tasks[0]
+    def generate_region_and_country_area(self) -> Area:
+        '''
+        Randomly shuffles the geolocation data point
+        Selects the city name and return state_name and then country_name where city is located.
+        e.g Koblenz, Rheinland-Palastine, Germany
+        '''
+        # todo: this would be problematic when the country does not have states
+        area = self.get_area("state")
 
-    if selected_task == AREA_TASKS.NO_AREA.value:
-        return self.generate_no_area()
+        return Area(type='area', value=f'{area.state}, {area.country}')
 
-    elif selected_task == AREA_TASKS.CITY.value:
-        return self.generate_city_area()
 
-    # elif selected_task == AREA_TASKS.DISTRICT.value:
-    #     # todo: we probably need more comprehensive geolocation data, districs are not in the dataset
-    #     return NotImplemented
+    def generate_city_and_region_and_country_area(self) -> Area:
+        '''
+        Randomly shuffles the geolocation data point
+        Selects the city name and return city_name, state_name and then country_name where city is located.
+        e.g Koblenz, Rheinland-Palastine, Germany
+        '''
+        # todo: this would be problematic when the country does not have states
+        area = self.get_area()
 
-    elif selected_task == AREA_TASKS.CITY_AND_COUNTRY.value:
-        return self.generate_city_and_country_area()
+        return Area(type='area', value=f'{area.city}, {area.state}, {area.country}')
 
-    elif selected_task == AREA_TASKS.REGION.value:
-        return self.generate_region_area()
 
-    elif selected_task == AREA_TASKS.REGION_AND_COUNTRY.value:
-        return self.generate_city_and_region_and_country_area()
+    def run(self) -> List[Area]:
+        '''
+        This function a random generation pipeline. That randomly selects the task function which are defined in AREA_TASKS. Next, it calls the generator function that is corresponding to the selected task.
+        '''
+        np.random.shuffle(self.tasks)
+        selected_task = self.tasks[0]
 
-    elif selected_task == AREA_TASKS.CITY_AND_REGION_AND_COUNTRY.value:
-        return self.generate_city_and_region_and_country_area()
+        if selected_task == AREA_TASKS.NO_AREA.value:
+            return self.generate_no_area()
+
+        elif selected_task == AREA_TASKS.CITY.value:
+            return self.generate_city_area()
+
+        # elif selected_task == AREA_TASKS.DISTRICT.value:
+        #     # todo: we probably need more comprehensive geolocation data, districs are not in the dataset
+        #     return NotImplemented
+
+        elif selected_task == AREA_TASKS.CITY_AND_COUNTRY.value:
+            return self.generate_city_and_country_area()
+
+        elif selected_task == AREA_TASKS.REGION.value:
+            return self.generate_region_area()
+
+        elif selected_task == AREA_TASKS.REGION_AND_COUNTRY.value:
+            return self.generate_city_and_region_and_country_area()
+
+        elif selected_task == AREA_TASKS.CITY_AND_REGION_AND_COUNTRY.value:
+            return self.generate_city_and_region_and_country_area()

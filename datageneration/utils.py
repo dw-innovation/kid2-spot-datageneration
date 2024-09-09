@@ -63,7 +63,7 @@ def add_yaml_to_filename(output_file):
 
 
 def write_output(generated_combs, output_file):
-    with open(output_file, "w") as out_file:
+    with open(output_file, "w", encoding="utf-8") as out_file:
         for generated_comb in generated_combs:
             json.dump(generated_comb.model_dump(mode="json"), out_file, ensure_ascii=False)
             out_file.write('\n')
@@ -73,7 +73,7 @@ def write_dict_output(generated_combs, output_file, bool_add_yaml=True):
     if bool_add_yaml:
         output_file = add_yaml_to_filename(output_file)
 
-    with open(output_file, "w") as out_file:
+    with open(output_file, "w", encoding="utf-8") as out_file:
         for generated_comb in generated_combs:
             json.dump(generated_comb, out_file, ensure_ascii=False)
             out_file.write('\n')
@@ -102,7 +102,7 @@ def translate_queries_to_yaml(combs):
 
         query = clean_up_query(query)
 
-        yaml_string = yaml.dump(query)
+        yaml_string = yaml.safe_dump(query, allow_unicode=True)
 
         comb["query"] = yaml_string
 
@@ -110,6 +110,9 @@ def translate_queries_to_yaml(combs):
 
 
 def clean_up_query(query):
+    area = query['area']
+    if area['type'] == 'bbox':
+        area.pop('value', None)
     for entity in query["entities"]:
         entity.pop("is_area", None)
         if len(entity["properties"]) == 0:
