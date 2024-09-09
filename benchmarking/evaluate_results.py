@@ -427,7 +427,7 @@ if __name__ == '__main__':
 
     results = []
     for prediction, gold_label in tqdm(zip(predictions, gold_labels), total=len(gold_labels)):
-        print(prediction['sentence'])
+        prediction['sentence'] = prediction['sentence'].lower()
         gold_label['sentence'] = gold_label['sentence'].lower()
         assert prediction['sentence'] == gold_label['sentence']
         yaml_pred_string = prediction['model_result']
