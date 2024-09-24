@@ -207,7 +207,8 @@ class QueryCombinationGenerator(object):
 
         all_property_category_probs_values = list(all_property_category_probs.values())
         tag_properties = []
-        for _ in range(num_of_props):
+        tag_properties_keys = []
+        while(len(tag_properties)<num_of_props):
             if sum(all_property_category_probs_values) != 1:
                 remaining_prob = (1- sum(all_property_category_probs_values)) / len(all_property_category_probs_values)
                 all_property_category_probs_values = list(map(lambda x: x+remaining_prob, all_property_category_probs_values))
@@ -219,9 +220,13 @@ class QueryCombinationGenerator(object):
             np.random.shuffle(candidate_indices)
             selected_index = candidate_indices[0]
             tag_property = selected_category_properties[selected_index]
+            tag_props_key = ' '.join(tag_property.descriptors)
+            if tag_props_key in tag_properties_keys and tag_props_key not in ['cuisine', 'sport']:
+                # we keep cuisine, sport because facilities can serve multiple cuisine, and offer different sport activities
+                continue
+            tag_properties_keys.append(tag_props_key)
             tag_property = self.property_generator.run(tag_property)
             tag_properties.append(tag_property)
-
         return tag_properties
 
     # todo make it independent from entities
