@@ -59,7 +59,7 @@ python -m datageneration.generate_combination_table \
 --max_distance_digits 5 \
 --max_number_of_entities_in_prompt 3 \
 --max_number_of_props_in_entity 3 \
---prob_of_entities_with_props 0.7 \
+--prob_of_entities_with_props 1.0 \
 --prob_of_two_word_areas 0.2 \
 --prob_generating_contain_rel 0.8 \
 --ratio_within_radius_within 0.4 \
@@ -69,7 +69,7 @@ python -m datageneration.generate_combination_table \
 --prob_of_other_non_numerical_properties 0.7 \
 --prob_adding_brand_names_as_entity 0.05 \
 --prob_of_non_roman_areas 0.5 \
---samples 5000
+--samples 500
 
 #
 # create entities with contain rels, reducing prop from 1.0 to 0.7
