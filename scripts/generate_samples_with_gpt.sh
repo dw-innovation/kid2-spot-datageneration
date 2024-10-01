@@ -45,7 +45,7 @@ python -m datageneration.gpt_data_generator \
 --prob_usage_of_written_numbers 0.25 \
 --prob_distance_writing_no_whitespace 0.4 \
 --prob_distance_writing_with_full_metric 0.3 \
---prob_of_typos 0.8 \
+--prob_of_typos 0.4 \
 --max_dist_digits 5 \
 --save_yaml_csv \
 --generate_prompts \
