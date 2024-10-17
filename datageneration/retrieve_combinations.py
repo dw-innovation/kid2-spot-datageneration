@@ -257,7 +257,7 @@ class CombinationRetriever(object):
             else:
                 curr_num_examples = num_examples
 
-            if all_tags['core/prop'] != 'core' and '***any***' or '***example***' in curr_tag:
+            if all_tags['core/prop'] != 'core' and '***example***' in curr_tag:
                 if all_tags['key'] in ['roof:colour', 'building:colour', 'colour']:
                     examples = self.request_property_examples(all_tags['key'], num_examples=curr_num_examples, count_limit=10000)
 
