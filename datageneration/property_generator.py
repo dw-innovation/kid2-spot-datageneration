@@ -1,13 +1,47 @@
 import numpy as np
-from typing import List
+import pandas as pd
+from typing import List, Dict
 
-from datageneration.data_model import TagPropertyExample, TagProperty, Property
+from datageneration.data_model import TagPropertyExample, TagProperty, Property, ColorBundle
 from datageneration.utils import get_random_integer, get_random_decimal_with_metric
 
+
+def fetch_color_bundle(property_examples: List[TagPropertyExample], bundle_path: str)->Dict[str,List[str]]:
+    data = pd.read_csv(bundle_path)
+    data = data.to_dict('records')
+    color_examples = [item for item in property_examples if 'colour' in item['key']]
+
+    color_bundles = []
+    color_bundles_with_tags = {}
+
+    for color_bundle in data:
+        color_bundles.append(ColorBundle(descriptors = [x.strip() for x in color_bundle['Colour Descriptors'].split(',')],
+                    color_values = [x.strip() for x in color_bundle['Colour Descriptors'].split(',')]))
+
+
+    for color_example in color_examples:
+        color_example_key = color_example['key']
+        related_color_examples = color_example['examples']
+
+
+        related_colors = []
+        for related_color_example in related_color_examples:
+            for color_bundle in color_bundles:
+                if related_color_example in color_bundle.descriptors:
+                    related_colors.extend(color_bundle.descriptors)
+
+        related_colors = list(set(related_colors))
+        color_bundles_with_tags[color_example_key] = related_colors
+
+    return color_bundles_with_tags
+
+
 class PropertyGenerator:
-    def __init__(self, named_property_examples: List[TagPropertyExample]
+    def __init__(self, named_property_examples: List[TagPropertyExample],
+        color_bundles: List[ColorBundle]
         ):
         self.named_property_examples = named_property_examples
+        self.color_bundles = color_bundles
 
         self.tasks = []
 
@@ -61,7 +95,15 @@ class PropertyGenerator:
         # return Property(key=tag_property.key, operator=tag_aproperty.operator, value=generated_numerical_value, name=tag_property.key)
 
     def generate_color_property(self, tag_attribute: TagProperty) -> Property:
-        raise NotImplemented
+        bundles_to_select = []
+        for tag in tag_attribute.tags:
+            tag_key = f'{tag.key}{tag.operator}{tag.value}'
+            bundles_to_select.extend(self.color_bundles[tag_key])
+        selected_color = np.random.choice(bundles_to_select, 1)[0]
+        print(tag_attribute.tags)
+        print(tag_attribute.descriptors)
+        selected_descriptor = np.random.choice(tag_attribute.descriptors)
+        return Property(name=selected_descriptor, operator='=', value=selected_color)
 
     def categorize_properties(self, tag_properties: List[TagProperty]):
         '''
@@ -82,6 +124,10 @@ class PropertyGenerator:
                     if 'popular_non_numerical' not in categories:
                         categories['popular_non_numerical'] = []
                     categories['popular_non_numerical'].append(tag_property)
+                elif 'colour' in tag_property_tag.key:
+                    if 'color' not in categories:
+                        categories['colour'] = []
+                    categories['colour'].append(tag_property)
                 else:
                     if 'other_non_numerical' not in categories:
                         categories['other_non_numerical'] = []
@@ -109,6 +155,7 @@ class PropertyGenerator:
             generated_property = self.generate_numerical_property(tag_property)
         else:
             if any('colour' in t.key for t in tag_property.tags):
+                print(tag_property)
                 generated_property = self.generate_color_property(tag_property)
             else:
                 generated_property = self.generate_non_numerical_property(tag_property)

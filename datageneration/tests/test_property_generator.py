@@ -2,16 +2,17 @@ import unittest
 
 import pandas as pd
 from datageneration.data_model import TagProperty, Property, Tag
-from datageneration.property_generator import PropertyGenerator
+from datageneration.property_generator import PropertyGenerator, fetch_color_bundle
 
 '''Run python -m unittest datageneration.tests.test_property_generator'''
 
 
 class TestPropertyGenerator(unittest.TestCase):
     def setUp(self):
-        property_examples_path = 'datageneration/tests/data/prop_examples_testv12.jsonl'
+        property_examples_path = 'datageneration/tests/data/prop_examples_test.jsonl'
         property_examples = pd.read_json(property_examples_path, lines=True).to_dict('records')
-        self.property_generator = PropertyGenerator(named_property_examples=property_examples)
+        color_bundles = fetch_color_bundle(property_examples = property_examples, bundle_path = 'datageneration/tests/data/colour_bundles.csv')
+        self.property_generator = PropertyGenerator(named_property_examples=property_examples, color_bundles=color_bundles)
 
     def test_named_property(self):
         tag_property = TagProperty(**{"descriptors": ["cuisine"], "tags": [
@@ -59,4 +60,11 @@ class TestPropertyGenerator(unittest.TestCase):
         assert isinstance(other_property, Property)
 
     def test_color_property(self):
-        pass
+        colour_tag_property = TagProperty(descriptors = ['color', 'colour'],
+        tags = [Tag(key='roof:colour', operator='=', value='***example***'),
+                Tag(key='building:colour', operator='=', value='***example***'),
+                Tag(key='colour', operator='=', value='***example***')]
+        )
+
+        color_property = self.property_generator.generate_color_property(colour_tag_property)
+        print(color_property)

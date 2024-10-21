@@ -10,7 +10,7 @@ from typing import List, Dict
 from datageneration.area_generator import AreaGenerator, NamedAreaData, load_named_area_data
 from datageneration.data_model import TagPropertyExample, TagProperty, Property, TagCombination, Entity, Relations, \
     LocPoint, Area
-from datageneration.property_generator import PropertyGenerator
+from datageneration.property_generator import PropertyGenerator, fetch_color_bundle
 from datageneration.relation_generator import RelationGenerator
 from datageneration.utils import write_output
 
@@ -29,8 +29,12 @@ class QueryCombinationGenerator(object):
                  prob_of_popular_non_numerical_properties: float,
                  prob_of_other_non_numerical_properties: float,
                  prob_of_non_roman_areas: float,
-                 ratio_within_radius_within: float):
-        self.property_generator = PropertyGenerator(property_examples)
+                 ratio_within_radius_within: float,
+                 color_bundle_path: str
+                 ):
+
+        color_bundles = fetch_color_bundle(property_examples=property_examples,bundle_path=color_bundle_path)
+        self.property_generator = PropertyGenerator(property_examples, color_bundles=color_bundles)
         self.entity_tag_combinations = self.categorize_entities_based_on_their_props(list(filter(lambda x: 'core' in x.comb_type.value, tag_combinations)))
 
         self.area_generator = AreaGenerator(geolocation_file=geolocation_file, non_roman_vocab_file=non_roman_vocab_file, prob_of_two_word_areas=prob_of_two_word_areas, prob_of_non_roman_areas=prob_of_non_roman_areas)
@@ -39,11 +43,12 @@ class QueryCombinationGenerator(object):
                                                     prob_generating_contain_rel=prob_generating_contain_rel,
                                                     ratio_within_radius_within=ratio_within_radius_within)
         self.prob_of_numerical_properties = prob_of_numerical_properties
-        # self.prob_of_color_properties = prob_of_color_properties
+        self.prob_of_color_properties = prob_of_color_properties
         self.prob_of_popular_non_numerical_properties = prob_of_popular_non_numerical_properties
         self.prob_of_other_non_numerical_properties = prob_of_other_non_numerical_properties
         self.all_properties_with_probs = {
             "numerical": self.prob_of_numerical_properties,
+            "colour": self.prob_of_color_properties,
             "popular_non_numerical": self.prob_of_popular_non_numerical_properties,
             "other_non_numerical": self.prob_of_other_non_numerical_properties,
         }
@@ -51,7 +56,7 @@ class QueryCombinationGenerator(object):
     def categorize_entities_based_on_their_props(self, tag_combinations: List[TagCombination]) -> Dict:
         categorized_entities = {
             'numerical': [],
-            # 'color': [],
+            'colour': [],
             'popular_non_numerical': [],
             'other_non_numerical': [],
             'default': [] # add every type of entities here
@@ -131,7 +136,6 @@ class QueryCombinationGenerator(object):
               Otherwise, entities are generated without properties.
         """
         number_of_entities_in_prompt = self.get_number_of_entities(max_number_of_entities_in_prompt)
-
         selected_entities = []
         selected_tag_combs = []
         while len(selected_entities) < number_of_entities_in_prompt:
@@ -140,10 +144,10 @@ class QueryCombinationGenerator(object):
             if not selected_brand_name:
                 add_properties = np.random.choice([True, False], p=[prob_of_entities_with_props,
                                                                 1 - prob_of_entities_with_props])
-
                 if add_properties and max_number_of_props_in_entity >= 1:
                     selected_property_category = np.random.choice(list(self.all_properties_with_probs.keys()),
                                                                   p=list(self.all_properties_with_probs.values()))
+
                     selected_idx_for_combinations = np.random.randint(0, len(self.entity_tag_combinations[selected_property_category]))
                     selected_tag_comb = self.entity_tag_combinations[selected_property_category][selected_idx_for_combinations]
                     is_area = selected_tag_comb.is_area
@@ -173,6 +177,9 @@ class QueryCombinationGenerator(object):
                 else:
                     selected_idx_for_combinations = np.random.randint(0, len(self.entity_tag_combinations['default']))
                     selected_tag_comb = self.entity_tag_combinations['default'][selected_idx_for_combinations]
+                    associated_descriptors = selected_tag_comb.descriptors
+                    entity_name = np.random.choice(associated_descriptors)
+
                     is_area = selected_tag_comb.is_area
                     if selected_tag_comb in selected_tag_combs:
                         continue
@@ -188,7 +195,7 @@ class QueryCombinationGenerator(object):
 
         return selected_entities
 
-    def generate_properties(self, candidate_properties: List[TagProperty], num_of_props: int) -> List[Property]:
+    def generate_properties(self, candidate_properties: List[TagProperty], num_of_props: int, trial_err_count=100) -> List[Property]:
         categorized_properties = self.property_generator.categorize_properties(candidate_properties)
         all_property_categories = list(self.all_properties_with_probs.keys())
         all_properties_with_probs = self.all_properties_with_probs
@@ -208,7 +215,10 @@ class QueryCombinationGenerator(object):
         all_property_category_probs_values = list(all_property_category_probs.values())
         tag_properties = []
         tag_properties_keys = []
-        while(len(tag_properties)<num_of_props):
+
+        trial_err = 0
+        while(len(tag_properties)<num_of_props) | trial_err < trial_err_count:
+            trial_err += 1
             if sum(all_property_category_probs_values) != 1:
                 remaining_prob = (1- sum(all_property_category_probs_values)) / len(all_property_category_probs_values)
                 all_property_category_probs_values = list(map(lambda x: x+remaining_prob, all_property_category_probs_values))
@@ -325,6 +335,7 @@ if __name__ == '__main__':
     parser.add_argument('--non_roman_vocab_file_path', help='Path to a file containing a vocabulary of areas with non-roman alphabets')
     parser.add_argument('--tag_combination_path', help='tag list file generated via retrieve_combinations')
     parser.add_argument('--tag_prop_examples_path', help='Examples of tag properties')
+    parser.add_argument('--color_bundle_path', help='Path to color bundles')
     parser.add_argument('--output_file', help='File to save the output')
     parser.add_argument('--max_distance_digits', help='Define max distance', type=int)
     parser.add_argument('--write_output', action='store_true')
@@ -363,6 +374,7 @@ if __name__ == '__main__':
     prob_of_color_properties = args.prob_of_color_properties
     prob_of_other_non_numerical_properties = args.prob_of_other_non_numerical_properties
     prob_of_popular_non_numerical_properties = args.prob_of_popular_non_numerical_properties
+    color_bundle_path = args.color_bundle_path
 
     tag_combinations = pd.read_json(tag_combination_path, lines=True).to_dict('records')
     tag_combinations = [TagCombination(**tag_comb) for tag_comb in tag_combinations]
@@ -381,7 +393,8 @@ if __name__ == '__main__':
                                                      prob_of_color_properties=prob_of_color_properties,
                                                      prob_of_popular_non_numerical_properties=prob_of_popular_non_numerical_properties,
                                                      prob_of_other_non_numerical_properties= prob_of_other_non_numerical_properties,
-                                                     ratio_within_radius_within=ratio_within_radius_within)
+                                                     ratio_within_radius_within=ratio_within_radius_within,
+                                                     color_bundle_path=color_bundle_path)
 
     generated_combs = query_comb_generator.run(num_queries=num_samples,
                                                max_number_of_entities_in_prompt=max_number_of_entities_in_prompt,
