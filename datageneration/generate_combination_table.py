@@ -28,6 +28,7 @@ class QueryCombinationGenerator(object):
                  prob_of_color_properties: float,
                  prob_of_popular_non_numerical_properties: float,
                  prob_of_other_non_numerical_properties: float,
+                 prob_of_rare_non_numerical_properties: float,
                  prob_of_non_roman_areas: float,
                  ratio_within_radius_within: float,
                  color_bundle_path: str
@@ -46,9 +47,11 @@ class QueryCombinationGenerator(object):
         self.prob_of_color_properties = prob_of_color_properties
         self.prob_of_popular_non_numerical_properties = prob_of_popular_non_numerical_properties
         self.prob_of_other_non_numerical_properties = prob_of_other_non_numerical_properties
+        self.prob_of_rare_non_numerical_properties = prob_of_rare_non_numerical_properties
         self.all_properties_with_probs = {
             "numerical": self.prob_of_numerical_properties,
             "colour": self.prob_of_color_properties,
+            'rare_non_numerical': self.prob_of_rare_non_numerical_properties,
             "popular_non_numerical": self.prob_of_popular_non_numerical_properties,
             "other_non_numerical": self.prob_of_other_non_numerical_properties,
         }
@@ -57,6 +60,7 @@ class QueryCombinationGenerator(object):
         categorized_entities = {
             'numerical': [],
             'colour': [],
+            'rare_non_numerical': [],
             'popular_non_numerical': [],
             'other_non_numerical': [],
             'default': [] # add every type of entities here
@@ -170,6 +174,11 @@ class QueryCombinationGenerator(object):
                         selected_num_of_props = self.get_number_of_props(current_max_number_of_props)
                     else:
                         selected_num_of_props = current_max_number_of_props
+
+                    print('selected tag prompt')
+                    print(selected_tag_comb)
+                    print('candidate properties')
+                    print(candidate_properties)
                     properties = self.generate_properties(candidate_properties=candidate_properties,
                                                           num_of_props=selected_num_of_props)
                     selected_entities.append(
@@ -217,7 +226,9 @@ class QueryCombinationGenerator(object):
         tag_properties_keys = []
 
         trial_err = 0
-        while(len(tag_properties)<num_of_props) | trial_err < trial_err_count:
+        while(len(tag_properties)<num_of_props):
+            if trial_err == trial_err_count:
+                continue
             trial_err += 1
             if sum(all_property_category_probs_values) != 1:
                 remaining_prob = (1- sum(all_property_category_probs_values)) / len(all_property_category_probs_values)
@@ -347,6 +358,7 @@ if __name__ == '__main__':
     parser.add_argument('--prob_of_two_word_areas', type=float, default=0.5)
     parser.add_argument('--prob_adding_brand_names_as_entity', type=float, default=0.5)
     parser.add_argument('--prob_generating_contain_rel', type=float, default=0.3)
+    parser.add_argument('--prob_of_rare_non_numerical_properties', type=float, default=0.2)
     parser.add_argument('--ratio_within_radius_within', type=float, default=0.3)
     parser.add_argument('--prob_of_numerical_properties', type=float, default=0.3)
     parser.add_argument('--prob_of_color_properties', type=float, default=0.0)
@@ -374,6 +386,7 @@ if __name__ == '__main__':
     prob_of_color_properties = args.prob_of_color_properties
     prob_of_other_non_numerical_properties = args.prob_of_other_non_numerical_properties
     prob_of_popular_non_numerical_properties = args.prob_of_popular_non_numerical_properties
+    prob_of_rare_non_numerical_properties = args.prob_of_rare_non_numerical_properties
     color_bundle_path = args.color_bundle_path
 
     tag_combinations = pd.read_json(tag_combination_path, lines=True).to_dict('records')
@@ -393,6 +406,7 @@ if __name__ == '__main__':
                                                      prob_of_color_properties=prob_of_color_properties,
                                                      prob_of_popular_non_numerical_properties=prob_of_popular_non_numerical_properties,
                                                      prob_of_other_non_numerical_properties= prob_of_other_non_numerical_properties,
+                                                     prob_of_rare_non_numerical_properties=prob_of_rare_non_numerical_properties,
                                                      ratio_within_radius_within=ratio_within_radius_within,
                                                      color_bundle_path=color_bundle_path)
 
