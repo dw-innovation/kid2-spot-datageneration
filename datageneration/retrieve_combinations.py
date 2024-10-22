@@ -276,13 +276,15 @@ class CombinationRetriever(object):
             tuple(bool, int): True and its index in self.tag_properties, False and its index -1 otherwise.
         '''
         exists = False
-
         for tag_prop_idx, tag_prop in enumerate(self.tag_properties):
             for tag_prop_tag in tag_prop.tags:
                 tag_prop_tag_value = tag_prop_tag.value
-                if tag_prop_tag_value in ['***example***', 'yes', '***numeric***']:
+                if tag_prop_tag_value in ['***any***', '***example***', 'yes', '***numeric***']:
                     tag_prop_tag_value = ''
                 if f'{tag_prop_tag.key}{tag_prop_tag.operator}{tag_prop_tag_value}' == other_tag:
+                    exists = True
+                    return (exists, tag_prop_idx)
+                elif f'{tag_prop_tag.key}{tag_prop_tag.operator}' == other_tag:
                     exists = True
                     return (exists, tag_prop_idx)
 
