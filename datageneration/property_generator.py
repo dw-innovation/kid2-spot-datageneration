@@ -112,7 +112,6 @@ class PropertyGenerator:
         :return:
         '''
         categories = {}
-
         for tag_property in tag_properties:
             tag_property_tags = tag_property.tags
             for tag_property_tag in tag_property_tags:
@@ -128,6 +127,10 @@ class PropertyGenerator:
                     if 'color' not in categories:
                         categories['colour'] = []
                     categories['colour'].append(tag_property)
+                elif 'cuisine' in tag_property_tag.key:
+                    if 'rare_non_numerical' not in categories:
+                        categories['rare_non_numerical'] = []
+                    categories['rare_non_numerical'].append(tag_property)
                 else:
                     if 'other_non_numerical' not in categories:
                         categories['other_non_numerical'] = []
@@ -155,7 +158,6 @@ class PropertyGenerator:
             generated_property = self.generate_numerical_property(tag_property)
         else:
             if any('colour' in t.key for t in tag_property.tags):
-                print(tag_property)
                 generated_property = self.generate_color_property(tag_property)
             else:
                 generated_property = self.generate_non_numerical_property(tag_property)

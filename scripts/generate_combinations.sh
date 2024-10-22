@@ -94,7 +94,31 @@ VERSION=v17
 #--prob_of_non_roman_areas 0.2 \
 #--samples 2000
 
-# create color property
+## create color property
+#python -m datageneration.generate_combination_table \
+#--geolocations_file_path datageneration/data/countries+states+cities.json \
+#--non_roman_vocab_file_path datageneration/data/area_non_roman_vocab.json \
+#--tag_combination_path datageneration/data/tag_combinations_${VERSION}.jsonl \
+#--tag_prop_examples_path datageneration/data/prop_examples_${VERSION}.jsonl \
+#--color_bundle_path datageneration/data/colour_bundles.csv \
+#--output_file datageneration/results/${VERSION}/samples_case_contain_colors.jsonl \
+#--write_output \
+#--max_distance_digits 5 \
+#--max_number_of_entities_in_prompt 3 \
+#--max_number_of_props_in_entity 3 \
+#--prob_of_entities_with_props 0.7 \
+#--prob_of_two_word_areas 0.5 \
+#--prob_generating_contain_rel 1.0 \
+#--ratio_within_radius_within 0.4 \
+#--prob_of_numerical_properties 0.0 \
+#--prob_of_color_properties 1.0 \
+#--prob_of_other_non_numerical_properties 0.0 \
+#--prob_of_popular_non_numerical_properties 0.0 \
+#--prob_adding_brand_names_as_entity 0.05 \
+#--prob_of_non_roman_areas 0.2 \
+#--samples 200
+
+# create rare properties
 python -m datageneration.generate_combination_table \
 --geolocations_file_path datageneration/data/countries+states+cities.json \
 --non_roman_vocab_file_path datageneration/data/area_non_roman_vocab.json \
@@ -111,7 +135,8 @@ python -m datageneration.generate_combination_table \
 --prob_generating_contain_rel 1.0 \
 --ratio_within_radius_within 0.4 \
 --prob_of_numerical_properties 0.0 \
---prob_of_color_properties 1.0 \
+--prob_of_color_properties 0.0 \
+--prob_of_rare_non_numerical_properties 1.0 \
 --prob_of_other_non_numerical_properties 0.0 \
 --prob_of_popular_non_numerical_properties 0.0 \
 --prob_adding_brand_names_as_entity 0.05 \
