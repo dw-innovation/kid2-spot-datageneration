@@ -100,8 +100,6 @@ class PropertyGenerator:
             tag_key = f'{tag.key}{tag.operator}{tag.value}'
             bundles_to_select.extend(self.color_bundles[tag_key])
         selected_color = np.random.choice(bundles_to_select, 1)[0]
-        print(tag_attribute.tags)
-        print(tag_attribute.descriptors)
         selected_descriptor = np.random.choice(tag_attribute.descriptors)
         return Property(name=selected_descriptor, operator='=', value=selected_color)
 

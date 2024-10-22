@@ -125,7 +125,7 @@ python -m datageneration.generate_combination_table \
 --tag_combination_path datageneration/data/tag_combinations_${VERSION}.jsonl \
 --tag_prop_examples_path datageneration/data/prop_examples_${VERSION}.jsonl \
 --color_bundle_path datageneration/data/colour_bundles.csv \
---output_file datageneration/results/${VERSION}/samples_case_contain_colors.jsonl \
+--output_file datageneration/results/${VERSION}/samples_case_contain_cuisine.jsonl \
 --write_output \
 --max_distance_digits 5 \
 --max_number_of_entities_in_prompt 3 \
@@ -141,4 +141,4 @@ python -m datageneration.generate_combination_table \
 --prob_of_popular_non_numerical_properties 0.0 \
 --prob_adding_brand_names_as_entity 0.05 \
 --prob_of_non_roman_areas 0.2 \
---samples 200
+--samples 10

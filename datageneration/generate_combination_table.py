@@ -174,6 +174,11 @@ class QueryCombinationGenerator(object):
                         selected_num_of_props = self.get_number_of_props(current_max_number_of_props)
                     else:
                         selected_num_of_props = current_max_number_of_props
+
+                    print('selected tag prompt')
+                    print(selected_tag_comb)
+                    print('candidate properties')
+                    print(candidate_properties)
                     properties = self.generate_properties(candidate_properties=candidate_properties,
                                                           num_of_props=selected_num_of_props)
                     selected_entities.append(
