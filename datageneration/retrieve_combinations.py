@@ -190,7 +190,7 @@ class CombinationRetriever(object):
 
         return all_osm_tags_and_properties
 
-    def request_property_examples(self, property_key: str, num_examples: int) -> List[str]:
+    def request_property_examples(self, property_key: str, num_examples: int, count_limit: int = -1) -> List[str]:
         """
         It is a helper function for generate_property_examples. Retrieve examples of property keys. For example: cuisine -> italian, turkish, etc.
 
@@ -211,8 +211,13 @@ class CombinationRetriever(object):
             if len(examples) == 0:
                 return fetched_examples
             for example in examples:
-                example = example['value']
-                for _example in example.split(';'):
+                example_value = example['value']
+                if count_limit !=-1:
+                    example_count = example['count']
+                    if example_count < count_limit:
+                        continue
+
+                for _example in example_value.split(';'):
                     if len(fetched_examples) > num_examples - 1:
                         return fetched_examples
 
@@ -253,7 +258,11 @@ class CombinationRetriever(object):
                 curr_num_examples = num_examples
 
             if all_tags['core/prop'] != 'core' and '***example***' in curr_tag:
-                examples = self.request_property_examples(all_tags['key'], num_examples=curr_num_examples)
+                if all_tags['key'] in ['roof:colour', 'building:colour', 'colour']:
+                    examples = self.request_property_examples(all_tags['key'], num_examples=curr_num_examples, count_limit=10000)
+
+                else:
+                    examples = self.request_property_examples(all_tags['key'], num_examples=curr_num_examples)
                 properties_and_their_examples.append(
                     TagPropertyExample(key=curr_tag, examples=examples))
         return properties_and_their_examples
@@ -267,13 +276,15 @@ class CombinationRetriever(object):
             tuple(bool, int): True and its index in self.tag_properties, False and its index -1 otherwise.
         '''
         exists = False
-
         for tag_prop_idx, tag_prop in enumerate(self.tag_properties):
             for tag_prop_tag in tag_prop.tags:
                 tag_prop_tag_value = tag_prop_tag.value
-                if tag_prop_tag_value in ['***example***', 'yes', '***numeric***']:
+                if tag_prop_tag_value in ['***any***', '***example***', 'yes', '***numeric***']:
                     tag_prop_tag_value = ''
                 if f'{tag_prop_tag.key}{tag_prop_tag.operator}{tag_prop_tag_value}' == other_tag:
+                    exists = True
+                    return (exists, tag_prop_idx)
+                elif f'{tag_prop_tag.key}{tag_prop_tag.operator}' == other_tag:
                     exists = True
                     return (exists, tag_prop_idx)
 

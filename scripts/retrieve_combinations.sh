@@ -1,4 +1,4 @@
-VERSION=v16
+VERSION=v17
 
 echo Generate Tag List With Properties
 python -m datageneration.retrieve_combinations \

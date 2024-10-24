@@ -12,7 +12,8 @@ class TestCombinationRetriever(unittest.TestCase):
     def setUp(self):
         self.retriever = CombinationRetriever(source='datageneration/tests/data/Primary_Keys_test10.xlsx',
                                               prop_limit=100,
-                                              min_together_count=1000)
+                                              min_together_count=1000,
+                                              add_non_roman_examples=False)
 
     def compare_tags(self, tested_tags, all_tags):
         exists = False
@@ -84,11 +85,16 @@ class TestCombinationRetriever(unittest.TestCase):
         assert 'lanes:psv>0' in processed_results
         assert 'building=water_tower' not in processed_results
         assert 'leisure=bowling_alley' not in processed_results
-    # #
+    #
     def test_generate_properties_examples(self):
         cuisine_examples = self.retriever.request_property_examples(property_key='cuisine', num_examples=50)
         assert len(cuisine_examples) == 50
         assert ';' not in cuisine_examples
+
+    def test_generate_properties_examples(self):
+        color_examples = self.retriever.request_property_examples(property_key='colour', num_examples=50, count_limit=10000)
+        assert len(color_examples) <= 50
+        assert ';' not in color_examples
 
 
 if __name__ == '__main__':

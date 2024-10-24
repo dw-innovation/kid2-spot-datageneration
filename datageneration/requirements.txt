@@ -11,3 +11,4 @@ python_dotenv==1.0.1
 jsonlines==4.0.0
 pyyaml==6.0.1
 num2words==0.5.13
+webcolors==24.8.0

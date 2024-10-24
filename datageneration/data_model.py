@@ -40,6 +40,10 @@ class TagProperty(BaseModel, frozen=True):
     tags: List[Tag]
 
 
+class ColorBundle(BaseModel):
+    descriptors: List[str] = Field(description="List of text names")
+    color_values: List[str]
+
 class TagCombination(BaseModel):
     cluster_id: int = Field(description="Cluster Id")
     is_area: bool = Field(description="Is this a area? True if it is, otherwise False")
