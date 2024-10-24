@@ -228,7 +228,7 @@ class QueryCombinationGenerator(object):
         trial_err = 0
         while(len(tag_properties)<num_of_props):
             if trial_err == trial_err_count:
-                continue
+                return tag_properties
             trial_err += 1
             if sum(all_property_category_probs_values) != 1:
                 remaining_prob = (1- sum(all_property_category_probs_values)) / len(all_property_category_probs_values)
@@ -248,6 +248,7 @@ class QueryCombinationGenerator(object):
             tag_properties_keys.append(tag_props_key)
             tag_property = self.property_generator.run(tag_property)
             tag_properties.append(tag_property)
+
         return tag_properties
 
     # todo make it independent from entities
