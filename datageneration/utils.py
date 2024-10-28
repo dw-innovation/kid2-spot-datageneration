@@ -115,6 +115,13 @@ def clean_up_query(query):
         area.pop('value', None)
     for entity in query["entities"]:
         entity.pop("is_area", None)
+        if entity["type"] == 'cluster':
+            emag = entity['maxDistance']['magnitude']
+            emet = entity['maxDistance']['metric']
+            entity['maxDistance'] = f'{emag} {emet}'
+        else:
+            entity.pop('maxDistance')
+            entity.pop('minPoints')
         if len(entity["properties"]) == 0:
             entity.pop('properties', None)
         else:

@@ -72,16 +72,19 @@ class Property(BaseModel):
     value: Optional[str] = None
 
 
+class Distance(BaseModel, frozen=True):
+    magnitude: str
+    metric: str
+
+
 class Entity(BaseModel):
     id: int
     is_area: bool
     name: str
     type: str = Field(default='nwr')
+    minPoints: Optional[int] = None
+    maxDistance: Optional[Distance] = None
     properties: Optional[List[Property]] = None
-
-class Distance(BaseModel, frozen=True):
-    magnitude: str
-    metric: str
 
 
 class Relation(BaseModel):

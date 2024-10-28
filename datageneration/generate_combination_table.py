@@ -12,7 +12,7 @@ from datageneration.data_model import TagPropertyExample, TagProperty, Property,
     LocPoint, Area
 from datageneration.property_generator import PropertyGenerator, fetch_color_bundle
 from datageneration.relation_generator import RelationGenerator
-from datageneration.utils import write_output
+from datageneration.utils import get_random_decimal_with_metric, write_output
 
 
 class QueryCombinationGenerator(object):
@@ -30,8 +30,8 @@ class QueryCombinationGenerator(object):
                  prob_of_other_non_numerical_properties: float,
                  prob_of_rare_non_numerical_properties: float,
                  prob_of_non_roman_areas: float,
-                 ratio_within_radius_within: float,
-                 color_bundle_path: str
+                 color_bundle_path: str,
+                 prob_of_cluster_entities: float
                  ):
 
         color_bundles = fetch_color_bundle(property_examples=property_examples,bundle_path=color_bundle_path)
@@ -41,13 +41,13 @@ class QueryCombinationGenerator(object):
         self.area_generator = AreaGenerator(geolocation_file=geolocation_file, non_roman_vocab_file=non_roman_vocab_file, prob_of_two_word_areas=prob_of_two_word_areas, prob_of_non_roman_areas=prob_of_non_roman_areas)
         self.prob_adding_brand_names_as_entity = prob_adding_brand_names_as_entity
         self.relation_generator = RelationGenerator(max_distance_digits=max_distance_digits,
-                                                    prob_generating_contain_rel=prob_generating_contain_rel,
-                                                    ratio_within_radius_within=ratio_within_radius_within)
+                                                    prob_generating_contain_rel=prob_generating_contain_rel)
         self.prob_of_numerical_properties = prob_of_numerical_properties
         self.prob_of_color_properties = prob_of_color_properties
         self.prob_of_popular_non_numerical_properties = prob_of_popular_non_numerical_properties
         self.prob_of_other_non_numerical_properties = prob_of_other_non_numerical_properties
         self.prob_of_rare_non_numerical_properties = prob_of_rare_non_numerical_properties
+        self.prob_of_cluster_entities = prob_of_cluster_entities
         self.all_properties_with_probs = {
             "numerical": self.prob_of_numerical_properties,
             "colour": self.prob_of_color_properties,
@@ -120,6 +120,19 @@ class QueryCombinationGenerator(object):
 
         return selected_num_of_props
 
+    def add_cluster_entities(self, selected_entities):
+        for id, entity in enumerate(selected_entities):
+            add_cluster = np.random.choice([True, False], p=[self.prob_of_cluster_entities,
+                                                                     1 - self.prob_of_cluster_entities])
+            if add_cluster:
+                minPoints = np.random.choice(np.arange(20))
+                maxDistance = get_random_decimal_with_metric(5)
+                selected_entities[id] = Entity(id=selected_entities[id].id, is_area=selected_entities[id].is_area,
+                                                name=selected_entities[id].name, type='cluster',
+                                                minPoints=minPoints, maxDistance=maxDistance, properties=[])
+
+        return selected_entities
+
     def generate_entities(self, max_number_of_entities_in_prompt: int, max_number_of_props_in_entity: int,
                           prob_of_entities_with_props: float) -> List[Entity]:
         """
@@ -175,10 +188,10 @@ class QueryCombinationGenerator(object):
                     else:
                         selected_num_of_props = current_max_number_of_props
 
-                    print('selected tag prompt')
-                    print(selected_tag_comb)
-                    print('candidate properties')
-                    print(candidate_properties)
+                    # print('selected tag prompt')
+                    # print(selected_tag_comb)
+                    # print('candidate properties')
+                    # print(candidate_properties)
                     properties = self.generate_properties(candidate_properties=candidate_properties,
                                                           num_of_props=selected_num_of_props)
                     selected_entities.append(
@@ -201,6 +214,8 @@ class QueryCombinationGenerator(object):
                 is_area = False
                 selected_entities.append(
                     Entity(id=len(selected_entities), is_area=is_area, name=entity_name, properties=[]))
+
+        selected_entities = self.add_cluster_entities(selected_entities)
 
         return selected_entities
 
@@ -360,17 +375,18 @@ if __name__ == '__main__':
     parser.add_argument('--prob_adding_brand_names_as_entity', type=float, default=0.5)
     parser.add_argument('--prob_generating_contain_rel', type=float, default=0.3)
     parser.add_argument('--prob_of_rare_non_numerical_properties', type=float, default=0.2)
-    parser.add_argument('--ratio_within_radius_within', type=float, default=0.3)
     parser.add_argument('--prob_of_numerical_properties', type=float, default=0.3)
     parser.add_argument('--prob_of_color_properties', type=float, default=0.0)
     parser.add_argument('--prob_of_popular_non_numerical_properties', type=float, default=0.2)
     parser.add_argument('--prob_of_other_non_numerical_properties', type=float, default=0.5)
+    parser.add_argument('--prob_of_cluster_entities', type=float, default=0.3)
 
     args = parser.parse_args()
 
     tag_combination_path = args.tag_combination_path
     tag_prop_examples_path = args.tag_prop_examples_path
     geolocations_file_path = args.geolocations_file_path
+    color_bundle_path = args.color_bundle_path
     non_roman_vocab_file_path = args.non_roman_vocab_file_path
     max_distance_digits = args.max_distance_digits
     num_samples = args.samples
@@ -382,13 +398,12 @@ if __name__ == '__main__':
     prob_generating_contain_rel = args.prob_generating_contain_rel
     prob_of_non_roman_areas = args.prob_of_non_roman_areas
     prob_adding_brand_names_as_entity = args.prob_adding_brand_names_as_entity
-    ratio_within_radius_within = args.ratio_within_radius_within
     prob_of_numerical_properties = args.prob_of_numerical_properties
     prob_of_color_properties = args.prob_of_color_properties
     prob_of_other_non_numerical_properties = args.prob_of_other_non_numerical_properties
     prob_of_popular_non_numerical_properties = args.prob_of_popular_non_numerical_properties
     prob_of_rare_non_numerical_properties = args.prob_of_rare_non_numerical_properties
-    color_bundle_path = args.color_bundle_path
+    prob_of_cluster_entities = args.prob_of_cluster_entities
 
     tag_combinations = pd.read_json(tag_combination_path, lines=True).to_dict('records')
     tag_combinations = [TagCombination(**tag_comb) for tag_comb in tag_combinations]
@@ -396,6 +411,7 @@ if __name__ == '__main__':
 
     query_comb_generator = QueryCombinationGenerator(geolocation_file=geolocations_file_path,
                                                      non_roman_vocab_file=non_roman_vocab_file_path,
+                                                     color_bundle_path=color_bundle_path,
                                                      tag_combinations=tag_combinations,
                                                      property_examples=property_examples,
                                                      max_distance_digits=args.max_distance_digits,
@@ -408,8 +424,7 @@ if __name__ == '__main__':
                                                      prob_of_popular_non_numerical_properties=prob_of_popular_non_numerical_properties,
                                                      prob_of_other_non_numerical_properties= prob_of_other_non_numerical_properties,
                                                      prob_of_rare_non_numerical_properties=prob_of_rare_non_numerical_properties,
-                                                     ratio_within_radius_within=ratio_within_radius_within,
-                                                     color_bundle_path=color_bundle_path)
+                                                     prob_of_cluster_entities=prob_of_cluster_entities)
 
     generated_combs = query_comb_generator.run(num_queries=num_samples,
                                                max_number_of_entities_in_prompt=max_number_of_entities_in_prompt,
