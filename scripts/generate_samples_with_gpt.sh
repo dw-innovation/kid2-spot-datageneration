@@ -66,5 +66,5 @@ python -m datageneration.gpt_data_generator \
 --prob_of_typos 0.4 \
 --max_dist_digits 5 \
 --save_yaml_csv \
---generate_prompts \
---generate_sentences
+--generate_prompts #\
+#--generate_sentences

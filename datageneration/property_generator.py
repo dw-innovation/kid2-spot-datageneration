@@ -18,11 +18,9 @@ def fetch_color_bundle(property_examples: List[TagPropertyExample], bundle_path:
         color_bundles.append(ColorBundle(descriptors = [x.strip() for x in color_bundle['Colour Descriptors'].split(',')],
                     color_values = [x.strip() for x in color_bundle['Colour Descriptors'].split(',')]))
 
-
     for color_example in color_examples:
         color_example_key = color_example['key']
         related_color_examples = color_example['examples']
-
 
         related_colors = []
         for related_color_example in related_color_examples:
