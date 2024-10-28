@@ -155,7 +155,6 @@ python -m datageneration.generate_combination_table \
 --prob_of_entities_with_props 0.6 \
 --prob_of_two_word_areas 0.5 \
 --prob_generating_contain_rel 0.4 \
---ratio_within_radius_within 0.4 \
 --prob_of_numerical_properties 0.2 \
 --prob_of_color_properties 0.2 \
 --prob_of_rare_non_numerical_properties 0.2 \
@@ -163,5 +162,5 @@ python -m datageneration.generate_combination_table \
 --prob_of_popular_non_numerical_properties 0.2 \
 --prob_adding_brand_names_as_entity 0.05 \
 --prob_of_non_roman_areas 0.2 \
---ratio_of_cluster_entities 0.5 \
+--prob_of_cluster_entities 0.5 \
 --samples 100
