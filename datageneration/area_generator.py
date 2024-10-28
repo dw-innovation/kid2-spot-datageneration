@@ -246,7 +246,7 @@ class AreaGenerator:
             return self.generate_region_area()
 
         elif selected_task == AREA_TASKS.REGION_AND_COUNTRY.value:
-            return self.generate_city_and_region_and_country_area()
+            return self.generate_region_and_country_area()
 
         elif selected_task == AREA_TASKS.CITY_AND_REGION_AND_COUNTRY.value:
             return self.generate_city_and_region_and_country_area()
