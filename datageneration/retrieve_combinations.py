@@ -276,6 +276,7 @@ class CombinationRetriever(object):
             tuple(bool, int): True and its index in self.tag_properties, False and its index -1 otherwise.
         '''
         exists = False
+        results = []
         for tag_prop_idx, tag_prop in enumerate(self.tag_properties):
             for tag_prop_tag in tag_prop.tags:
                 tag_prop_tag_value = tag_prop_tag.value
@@ -283,12 +284,16 @@ class CombinationRetriever(object):
                     tag_prop_tag_value = ''
                 if f'{tag_prop_tag.key}{tag_prop_tag.operator}{tag_prop_tag_value}' == other_tag:
                     exists = True
-                    return (exists, tag_prop_idx)
+                    results.append(tag_prop_idx)
+                    # return (exists, tag_prop_idx)
                 elif f'{tag_prop_tag.key}{tag_prop_tag.operator}' == other_tag:
                     exists = True
-                    return (exists, tag_prop_idx)
-
-        return (exists, -1)
+                    results.append(tag_prop_idx)
+                    # return (exists, tag_prop_idx)
+        if exists:
+            return (exists, results)
+        else:
+            return (exists, -1)
 
     def request_related_tag_properties(self, tag_key: str, tag_value: str, limit: int = 100) -> List[TagProperty]:
         combinations = request_tag_combinations(tag_key=tag_key, tag_value=tag_value)['data']
@@ -298,14 +303,15 @@ class CombinationRetriever(object):
                 return list(selected_properties)
 
             for seperator in SEPERATORS:
-                exist_property, prop_index = self.check_other_tag_in_properties(
+                exist_property, prop_indices = self.check_other_tag_in_properties(
                     other_tag=combination['other_key'] + seperator + combination['other_value'])
                 if exist_property:
                     break
 
             if exist_property:
-                fetched_tag_prop = self.tag_properties[prop_index]
-                selected_properties.append(fetched_tag_prop)
+                for prop_index in prop_indices:
+                    fetched_tag_prop = self.tag_properties[prop_index]
+                    selected_properties.append(fetched_tag_prop)
             # else:
             #     print(f'{combination} does not exist')
             #     if (combination['other_key'] in self.numeric_tags_properties_ids and
