@@ -15,11 +15,9 @@ class RELATION_TASKS(Enum):
     IN_AREA = 'in_area'
 
 class RelationGenerator:
-    def __init__(self, max_distance_digits: int, prob_generating_contain_rel: float,
-                 ratio_within_radius_within: float):
+    def __init__(self, max_distance_digits: int, prob_generating_contain_rel: float):
         self.MAX_DISTANCE_DIGITS = max_distance_digits
         self.prob_generating_contain_rel = prob_generating_contain_rel
-        self.ratio_within_radius_within = ratio_within_radius_within
         self.tasks = [relation_task.value for relation_task in RELATION_TASKS]
 
     def generate_individual_distances(self, entity_ids: List[int]) -> List[Relation]:

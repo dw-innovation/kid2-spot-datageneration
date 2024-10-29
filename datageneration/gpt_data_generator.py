@@ -175,7 +175,9 @@ class PromptHelper:
             "for an AI geolocation search tool that finds locations based on descriptions of "
             "objects and their spatial relations. Each object has one main descriptor and "
             "optionally additional properties. All properties must be put in a logical connection "
-            "to the object.\n"
+            "to the object. Objects can either be single instances, or clusters of multiple of one object "
+            "which are located in a specific distance radius (e.g. \"three houses next to/within 10m of "
+            "each other\").\n"
             "Mention the area, cover all entities and their respective properties, and describe "
             "the respective relations. Stick to the descriptions of entities and relations "
             "provided and don’t add anything. When describing names or brand (names), be creative in "
@@ -350,7 +352,6 @@ class PromptHelper:
         low = np.power(10, digits - 1)
         high = np.power(10, digits) - 1
 
-
         modified_magnitude = randint(low, high) * 100
 
         written_magnitude = num2words(modified_magnitude)
@@ -433,6 +434,7 @@ class PromptHelper:
         return (generated_prompts, positions)
 
 
+
 class GPTDataGenerator:
     def __init__(self, relative_spatial_terms: List[RelSpatial], personas: List[str],
                  styles: List[str],
@@ -451,9 +453,16 @@ class GPTDataGenerator:
         self.prob_distance_writing_no_whitespace = prob_distance_writing_no_whitespace
         self.max_dist_digits = max_dist_digits
 
+        self.phrases_desc = ["", "", "", "", "", "", "", " more or less", " approximately", " less than",
+                             " no more than", " no less than", " around", " at max", " about", " at least"]
+        self.phrases_away = ["away from", "from"]
+        self.phrases_dist = ["", "distance "]
+        self.phrases_dist_relspat = ["spatial relation", "distance"]
+        self.phrases_anoth = ["between each other", "to each other", "to another", "between the objects"]
+
         self.personas = personas
         self.styles = styles
-        self.prompt_helper = PromptHelper(relative_spatial_terms=relative_spatial_terms,
+        self.prompt_helper = PromptHelper(relative_spatial_terms=self.relative_spatial_terms,
                                           prob_usage_of_written_numbers=self.prob_usage_of_written_numbers,
                                           prob_distance_writing_with_full_metric=self.prob_distance_writing_with_full_metric,
                                           prob_distance_writing_no_whitespace=self.prob_distance_writing_no_whitespace)
@@ -467,6 +476,40 @@ class GPTDataGenerator:
             else:
                 updated_relations.append(relation)
         return relations.update(relations=updated_relations)
+
+    def edit_cluster_distance(self, entity):
+        use_relative_spatial_terms = np.random.choice([False, True], p=[
+            1.0 - self.prob_usage_of_relative_spatial_terms, self.prob_usage_of_relative_spatial_terms])
+        use_written_distance = np.random.choice([False, True], p=[
+            1.0 - self.prob_usage_of_written_numbers, self.prob_usage_of_written_numbers])
+        # In case both relative term and written word are selected, randomly only select one of them
+        if use_relative_spatial_terms and use_written_distance:
+            if random.choice([True, False]):
+                use_relative_spatial_terms = False
+            else:
+                use_written_distance = False
+        if use_relative_spatial_terms:
+            selected_relative_spatial = np.random.choice(self.relative_spatial_terms)
+
+            # select randomly descriptor of relative special
+            descriptors_of_relative_spatial_terms = selected_relative_spatial.values
+            np.random.shuffle(descriptors_of_relative_spatial_terms)
+            selected_relative_spatial_term = descriptors_of_relative_spatial_terms[0]
+
+            type = 'relspat'
+            entity_value = selected_relative_spatial.distance
+            written_value = selected_relative_spatial_term
+        elif use_written_distance:
+            type = 'written'
+            entity_value, written_value = self.prompt_helper.generate_written_word_distance(
+                distance=entity.maxDistance, max_digits=self.max_dist_digits)
+            written_value = written_value.magnitude + " " + written_value.metric
+        else:
+            type = 'none'
+            entity_value = entity.maxDistance
+            written_value = self.prompt_helper.rewrite_distance(entity.maxDistance)
+
+        return entity_value, written_value, type
 
     def generate_prompt(self, loc_point: LocPoint, persona: str, style: str) -> str:
         '''
@@ -490,7 +533,25 @@ class GPTDataGenerator:
 
         for entity_id, entity in enumerate(entities):
             entity_name = normalize_entity_name(entity.name)
-            core_prompt = core_prompt + "- Obj. " + str(entity_id) + ": " + entity_name
+            if entity.type == 'nwr':
+                core_prompt = core_prompt + "- Obj. " + str(entity_id) + ": " + entity_name
+            elif entity.type == 'cluster':
+                entity_value, written_value, type = self.edit_cluster_distance(entity)
+                entity.maxDistance = entity_value
+
+                if type == 'relspat':
+                    phrase_dist_relspat = np.random.choice(self.phrases_dist_relspat)
+                    phrase_anoth = np.random.choice(self.phrases_anoth)
+                    core_prompt = (core_prompt + "- Obj. " + str(entity_id) + ": " + str(entity.minPoints) + " x " +
+                                   entity_name + ", use this phrase to describe the " + phrase_dist_relspat + " " +
+                                   phrase_anoth + ": " + written_value)
+                else:
+                    selected_phrases_desc = np.random.choice(self.phrases_desc)
+                    phrases_dist = np.random.choice(self.phrases_dist)
+                    phrase_anoth = np.random.choice(self.phrases_anoth)
+                    core_prompt = (core_prompt + "- Obj. " + str(entity_id) + ": " + str(entity.minPoints) + " x " +
+                                   entity_name + "," + selected_phrases_desc + " " + written_value + " " +
+                                   phrases_dist + phrase_anoth)
             if len(entity.properties) > 0:
                 core_prompt += " | Properties -> "
                 core_prompt = self.prompt_helper.add_property_prompt(core_prompt=core_prompt,
