@@ -118,13 +118,28 @@
 #--out_file_path $OUT_FILE_PATH \
 #--out_file_path_sum $OUT_FILE_PATH_SUM
 
-echo llama3 v16.3 Results
+#echo llama3 v16.3 Results
+#
+#GOLD_FILE_PATH=benchmarking/data/gold_annotations_18082024.xlsx
+#PRED_FILE_PATH=benchmarking/results/spot_llama3_training_ds_v16_3.jsonl
+#GOLD_SHEET_NAME=gold_annotations_18082024
+#OUT_FILE_PATH=benchmarking/results/spot_llama3_training_ds_v16_3_18082024_eval.xlsx
+#OUT_FILE_PATH_SUM=benchmarking/results/spot_llama3_training_ds_v16_3_8082024_eval-summary.xlsx
+#
+#python -m benchmarking.evaluate_results \
+#--gold_file_path $GOLD_FILE_PATH \
+#--pred_file_path $PRED_FILE_PATH \
+#--gold_sheet_name $GOLD_SHEET_NAME \
+#--out_file_path $OUT_FILE_PATH \
+#--out_file_path_sum $OUT_FILE_PATH_SUM
 
-GOLD_FILE_PATH=benchmarking/data/gold_annotations_18082024.xlsx
-PRED_FILE_PATH=benchmarking/results/spot_llama3_training_ds_v16_3.jsonl
-GOLD_SHEET_NAME=gold_annotations_18082024
-OUT_FILE_PATH=benchmarking/results/spot_llama3_training_ds_v16_3_18082024_eval.xlsx
-OUT_FILE_PATH_SUM=benchmarking/results/spot_llama3_training_ds_v16_3_8082024_eval-summary.xlsx
+echo llama3 spot_Meta-Llama-3.1-8B_ep10_training_ds_v17-1-2 Results
+
+GOLD_FILE_PATH=benchmarking/data/gold_annotations_05112024.xlsx
+PRED_FILE_PATH=benchmarking/results/spot_Meta-Llama-3.1-8B_ep10_training_ds_v17-1-2.jsonl
+GOLD_SHEET_NAME=gold_annotations_05112024
+OUT_FILE_PATH=benchmarking/results/spot_Meta-Llama-3.1-8B_ep10_training_ds_v17-1-2_05112024_eval.xlsx
+OUT_FILE_PATH_SUM=benchmarking/results/spot_Meta-Llama-3.1-8B_ep10_training_ds_v17-1-2_05112024_eval-summary.xlsx
 
 python -m benchmarking.evaluate_results \
 --gold_file_path $GOLD_FILE_PATH \
@@ -132,3 +147,25 @@ python -m benchmarking.evaluate_results \
 --gold_sheet_name $GOLD_SHEET_NAME \
 --out_file_path $OUT_FILE_PATH \
 --out_file_path_sum $OUT_FILE_PATH_SUM
+
+
+#MODEL='llama-3-8b' # llama-3-8b # Meta-Llama-3.1-8B
+#VERSION=v16_3-17_1-2  #v16_3-17_1-2
+#DATE=15112024
+#EPOCHS=10
+#PARAMETER_VERSION=5
+#echo Llama3 ds_${VERSION} Results, ${DATE}
+#
+#GOLD_FILE_PATH=benchmarking/data/gold_annotations_05112024.xlsx
+#PRED_FILE_PATH=benchmarking/results/spot_${MODEL}_ep${EPOCHS}_training_ds_${VERSION}_param-${PARAMETER_VERSION}.jsonl
+#echo $PRED_FILE_PATH
+#GOLD_SHEET_NAME=gold_annotations_05112024
+#OUT_FILE_PATH=benchmarking/results/spot_${MODEL}_${EPOCHS}_training_ds_${VERSION}_param-${PARAMETER_VERSION}_${DATE}_eval.xlsx
+#OUT_FILE_PATH_SUM=benchmarking/results/spot_${MODEL}_${EPOCHS}_training_ds_${VERSION}_param-${PARAMETER_VERSION}_${DATE}_eval-summary.xlsx
+#
+#python -m benchmarking.evaluate_results \
+#--gold_file_path $GOLD_FILE_PATH \
+#--pred_file_path $PRED_FILE_PATH \
+#--gold_sheet_name $GOLD_SHEET_NAME \
+#--out_file_path $OUT_FILE_PATH \
+#--out_file_path_sum $OUT_FILE_PATH_SUM
