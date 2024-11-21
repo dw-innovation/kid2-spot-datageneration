@@ -165,8 +165,8 @@ class EntityAnalyzer:
         Check if two lists of entities are identical. The lists are first sorted via their names, to make sure the order
         does not affect the results.
 
-        :param entities1: The first entity list to compare.
-        :param entities2: The second entity list to compare.
+        :param entities1: The first entity list to compare (ref_data).
+        :param entities2: The second entity list to compare (generated data).
         :return: Boolean whether the two entity lists are the same.
         """
         total_ents = max(len(entities1), len(entities2))
@@ -231,10 +231,17 @@ def prepare_relation(data) -> ResultDataType:
     relations = copy.deepcopy(data["relations"])
     prepped_relation = copy.deepcopy(data["relations"])
     for id in range(len(data["relations"])):
-        prepped_relation[id]["source"] = \
-            [ent["name"].lower() for ent in data["entities"] if ent["id"] == relations[id]["source"]][0]
-        prepped_relation[id]["target"] = \
-            [ent["name"].lower() for ent in data["entities"] if ent["id"] == relations[id]["target"]][0]
+        srcs = [ent["name"].lower() for ent in data["entities"] if ent["id"] == relations[id]["source"]]
+        if len(srcs) > 0:
+            prepped_relation[id]["source"] = srcs[0]
+        else:
+            prepped_relation[id]["source"] = "-1"
+        trgts = [ent["name"].lower() for ent in data["entities"] if ent["id"] == relations[id]["target"]]
+        if len(trgts) > 0:
+            prepped_relation[id]["target"] = trgts[0]
+        else:
+            prepped_relation[id]["target"] = "-1"
+
     return prepped_relation
 
 
@@ -245,8 +252,8 @@ def compare_relations(relations1, relations2) -> ResultDataType:
     Contains relations (where the order matters) are compared as lists. Other relations (where the order of source
     and target does not matter) is compared as a list of frozensets.
 
-    :param relations1: The first relations list to compare.
-    :param relations2: The second relations list to compare.
+    :param relations1: The first relations list to compare (ref_rel).
+    :param relations2: The second relations list to compare (gen_rel).
     :return: Boolean whether the two relations lists are the same.
     """
     total_relations = max(len(relations1), len(relations2))
@@ -261,6 +268,7 @@ def compare_relations(relations1, relations2) -> ResultDataType:
         elif relations1[id]["type"] == "dist" or relations1[id]["type"] == "distance":
             r1.add(frozenset({relations1[id]["source"], relations1[id]["target"], relations1[id]["value"]}))
     for id in range(len(relations2)):
+        # print(relations2[id])
         if relations2[id]["type"] == "contains":
             c2.append([relations2[id]["source"], relations2[id]["target"]])
         elif relations2[id]["type"] == "dist" or relations2[id]["type"] == "distance":
