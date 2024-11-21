@@ -136,10 +136,10 @@
 echo llama3 spot_Meta-Llama-3.1-8B_ep10_training_ds_v17-1-2 Results
 
 GOLD_FILE_PATH=benchmarking/data/gold_annotations_05112024.xlsx
-PRED_FILE_PATH=benchmarking/results/spot_Meta-Llama-3.1-8B_ep10_training_ds_v17-1-2.jsonl
+PRED_FILE_PATH=benchmarking/results/spot_llama-3-8b_ep10_training_ds_v16_3-17_1-2.jsonl
 GOLD_SHEET_NAME=gold_annotations_05112024
-OUT_FILE_PATH=benchmarking/results/spot_Meta-Llama-3.1-8B_ep10_training_ds_v17-1-2_05112024_eval.xlsx
-OUT_FILE_PATH_SUM=benchmarking/results/spot_Meta-Llama-3.1-8B_ep10_training_ds_v17-1-2_05112024_eval-summary.xlsx
+OUT_FILE_PATH=benchmarking/results/spot_llama-3-8b_ep10_training_ds_v16_3-17_1-2_05112024_eval.xlsx
+OUT_FILE_PATH_SUM=benchmarking/results/spot_llama-3-8b_ep10_training_ds_v16_3-17_1-2_05112024_eval-summary.xlsx
 
 python -m benchmarking.evaluate_results \
 --gold_file_path $GOLD_FILE_PATH \

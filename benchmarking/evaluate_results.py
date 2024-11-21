@@ -179,7 +179,7 @@ class EntityAnalyzer:
                     break
                 if ent1['name'].lower() == ent2['name'].lower() and ent1['type'] == ent2['type']:
                     if compare_props and 'properties' in ent1:
-                        prop_matches = property_analyzer.compare_properties(ent1.get('properties', []),
+                        prop_matches = self.property_analyzer.compare_properties(ent1.get('properties', []),
                                                                                           ent2.get('properties', []))
                         percentage_properties_same = prop_matches / len(ent1.get('properties', []))
                         if percentage_properties_same in [1.0, -1.0]:
@@ -288,6 +288,14 @@ def compare_relations(relations1, relations2) -> ResultDataType:
 
     return matches / total_relations
 
+def normalize_name_brands(data):
+    for entity in data.get('entities', []):
+        if 'properties' in entity:
+            for prop in entity['properties']:
+                if 'brand' in prop.get('name', ''):
+                    prop['name'] = 'name'
+    return data
+
 
 def compare_yaml(area_analyzer: AreaAnalyzer, entity_analyzer: EntityAnalyzer, property_analyzer: PropertyAnalyzer,
                  yaml_true_string,
@@ -331,8 +339,12 @@ def compare_yaml(area_analyzer: AreaAnalyzer, entity_analyzer: EntityAnalyzer, p
             num_relations_on_gen_data = -1.0
 
         is_area_match = area_analyzer.compare_areas_light(ref_data['area'], generated_data['area'])
+        ref_data = normalize_name_brands(ref_data)
+        generated_data = normalize_name_brands(generated_data)
+
         percentage_entities_exactly_same = entity_analyzer.compare_entities(ref_data['entities'],
                                                                             generated_data['entities'])
+
 
         if percentage_entities_exactly_same == 1.0:
             are_entities_exactly_same = ResultDataType.TRUE
@@ -352,8 +364,10 @@ def compare_yaml(area_analyzer: AreaAnalyzer, entity_analyzer: EntityAnalyzer, p
             for pred_entity in generated_data['entities']:
                 if 'properties' in pred_entity:
                     predicted_entities_with_properties[pred_entity['name']] = pred_entity['properties']
+
             percentage_properties_same = property_analyzer.percentage_properties_same(
                 ref_entities=ref_entities_with_properties, prop_entities=predicted_entities_with_properties)
+
         if percentage_properties_same == 1.0:
             are_properties_same = ResultDataType.TRUE
         elif percentage_properties_same == -1.0:
