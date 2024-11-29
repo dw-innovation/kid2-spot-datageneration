@@ -16,6 +16,7 @@ class ResultDataType(enum.Enum):
     TRUE = 'TRUE'
     FALSE = 'FALSE'
     NOT_APPLICABLE = 'NOT_APPLICABLE'
+    # PARTIAL_TRUE = 'PARTIALLY_TRUE'
 
 
 class Result(BaseModel, frozen=True):
@@ -58,6 +59,8 @@ class Result(BaseModel, frozen=True):
         description="Percentage of corectly identified entities over the total ents",
         default=0.0)
 
+    # are_entities_partially_same: ResultDataType = Field(description = 'Partially some entities match with the reference data')
+
     def __getitem__(self, item):
         return getattr(self, item)
 
@@ -88,10 +91,15 @@ class AreaAnalyzer:
             if test_area['type'] == "bbox":
                 return ResultDataType.FALSE
             ref_area['value'] = ref_area['value'].lower()
-            test_area['value'] = test_area['value'].lower()
+            if 'value' in test_area:
+                test_area['value'] = test_area['value'].lower()
+            else:
+                test_area['value'] = test_area['name'].lower()
 
         else:
             # generations sometimes omit the value
+            print(ref_area)
+            print(test_area)
             if ref_area['type'] == test_area['type']:
                 return ResultDataType.TRUE
 
@@ -172,11 +180,21 @@ class EntityAnalyzer:
         total_ents = max(len(entities1), len(entities2))
         matches = 0
 
+
+        print("===Comparision===")
+        print('entities 2')
+        print(entities2)
+
+        print('entities 1')
+        print(entities1)
+
         entities2_copy = copy.deepcopy(entities2)
         for ent1 in entities1:
             for id, ent2 in enumerate(entities2_copy):
                 if 'name' not in ent2:
                     break
+                if isinstance(ent2['name'], list):
+                    ent2['name'] = ent2['name'][0]
                 if ent1['name'].lower() == ent2['name'].lower() and ent1['type'] == ent2['type']:
                     if compare_props and 'properties' in ent1:
                         prop_matches = self.property_analyzer.compare_properties(ent1.get('properties', []),
@@ -190,6 +208,9 @@ class EntityAnalyzer:
                         entities2_copy.pop(id)
                         matches += 1
                         break
+
+        print("matches!!!")
+        print(matches)
 
         return matches / total_ents
 
@@ -256,6 +277,8 @@ def compare_relations(relations1, relations2) -> ResultDataType:
     :param relations2: The second relations list to compare (gen_rel).
     :return: Boolean whether the two relations lists are the same.
     """
+    if not relations2:
+        return 0
     total_relations = max(len(relations1), len(relations2))
     matches = 0
     r1 = set()
@@ -324,7 +347,7 @@ def compare_yaml(area_analyzer: AreaAnalyzer, entity_analyzer: EntityAnalyzer, p
     num_entities_on_gen_data: int = 0
     num_relations_on_ref_data: int = 0
     num_relations_on_gen_data: int = 0
-
+    are_entities_partially_same = ResultDataType.FALSE
 
     if generated_data:
         num_entities_on_ref_data = len(ref_data['entities'])
@@ -345,9 +368,12 @@ def compare_yaml(area_analyzer: AreaAnalyzer, entity_analyzer: EntityAnalyzer, p
         percentage_entities_exactly_same = entity_analyzer.compare_entities(ref_data['entities'],
                                                                             generated_data['entities'])
 
-
         if percentage_entities_exactly_same == 1.0:
             are_entities_exactly_same = ResultDataType.TRUE
+        elif percentage_properties_same == 0.0:
+            are_entities_exactly_same = ResultDataType.FALSE
+        # elif percentage_entities_exactly_same!=0.0:
+        #     are_entities_partially_same = ResultDataType.TRUE
 
         percentage_entities_same_exclude_props = entity_analyzer.compare_entities(ref_data['entities'],
                                                                     generated_data['entities'], False)
@@ -408,6 +434,7 @@ def compare_yaml(area_analyzer: AreaAnalyzer, entity_analyzer: EntityAnalyzer, p
                   num_relations_on_ref_data=num_relations_on_ref_data,
                   num_relations_on_gen_data=num_relations_on_gen_data,
                   are_entities_exactly_same=are_entities_exactly_same,
+                  # are_entities_partially_same = are_entities_partially_same,
                   percentage_entities_exactly_same=percentage_entities_exactly_same,
                   are_entities_same_exclude_props=are_entities_same_exclude_props,
                   percentage_entities_same_exclude_props=percentage_entities_same_exclude_props,
@@ -449,10 +476,14 @@ if __name__ == '__main__':
 
     results = []
     for prediction, gold_label in tqdm(zip(predictions, gold_labels), total=len(gold_labels)):
-        prediction['sentence'] = prediction['sentence'].lower()
-        gold_label['sentence'] = gold_label['sentence'].lower()
+        prediction['sentence'] = prediction['sentence'].strip().lower()
+        gold_label['sentence'] = gold_label['sentence'].strip().lower()
+
         assert prediction['sentence'] == gold_label['sentence']
+
+
         yaml_pred_string = prediction['model_result']
+
         yaml_true_string = gold_label['YAML']
         result= {'sentence': prediction['sentence']}
         comparision_result = compare_yaml(area_analyzer=area_analyzer,
@@ -480,6 +511,8 @@ if __name__ == '__main__':
 
     results = pd.DataFrame(results)
 
+    # print(results.columns)
+
     evaluation_scores = {}
 
     # Results with binary type
@@ -487,6 +520,7 @@ if __name__ == '__main__':
                         'is_parsable_yaml',
                         'is_area_match',
                         'are_entities_exactly_same',
+                        # 'are_entities_partially_same',
                         'percentage_entities_exactly_same',
                         'are_entities_same_exclude_props',
                         'percentage_entities_same_exclude_props',
@@ -529,6 +563,8 @@ if __name__ == '__main__':
         return value
 
     results = results.map(convert_custom_type)
+
+    print(evaluation_scores)
 
     with pd.ExcelWriter(out_file_path) as writer:
         results.to_excel(writer)
