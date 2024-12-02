@@ -484,6 +484,9 @@ if __name__ == '__main__':
 
         yaml_pred_string = prediction['model_result']
 
+        print(yaml_pred_string)
+
+
         yaml_true_string = gold_label['YAML']
         result= {'sentence': prediction['sentence']}
         comparision_result = compare_yaml(area_analyzer=area_analyzer,
