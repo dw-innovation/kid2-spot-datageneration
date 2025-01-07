@@ -298,11 +298,16 @@ def prepare_relation(data) -> ResultDataType:
             prepped_relation[id]["source"] = srcs[0]
         else:
             prepped_relation[id]["source"] = "-1"
+
         trgts = [ent["name"].lower() for ent in data["entities"] if ent["id"] == relations[id]["target"]]
         if len(trgts) > 0:
             prepped_relation[id]["target"] = trgts[0]
         else:
             prepped_relation[id]["target"] = "-1"
+
+        if relations[id]["type"] == "distance":
+            if relations[id]["value"]:
+                prepped_relation[id]["value"] = relations[id]["value"].replace(",", ".")
 
     return prepped_relation
 

@@ -319,13 +319,13 @@
 #--out_file_path $OUT_FILE_PATH \
 #--out_file_path_sum $OUT_FILE_PATH_SUM
 
-FNAME=spot_llama-3-8b_ep10_training_ds_v17-1-2_3_param-6
+FNAME=spot_llama-3-8b_ep10_training_ds_v16_3-17_1-2
 KEY_TABLE_PATH=datageneration/data/Spot_primary_keys_bundles.xlsx
 GOLD_FILE_PATH=benchmarking/data/gold_annotations_05112024.xlsx
 PRED_FILE_PATH=benchmarking/results/${FNAME}.jsonl
 GOLD_SHEET_NAME=gold_annotations_05112024
 OUT_FILE_PATH=benchmarking/results/${FNAME}_eval.xlsx
-OUT_FILE_PATH_SUM=benchmarking/results/${FNAME}_05112024_eval-summary.xlsx
+OUT_FILE_PATH_SUM=benchmarking/results/${FNAME}_eval-summary.xlsx
 
 python -m benchmarking.evaluate_results  \
 --key_table_path $KEY_TABLE_PATH \
