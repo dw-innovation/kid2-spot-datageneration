@@ -10,6 +10,7 @@ from collections import Counter
 
 from benchmarking.utils import write_output
 from benchmarking.yaml_parser import validate_and_fix_yaml
+from benchmarking.utils import load_key_table
 
 
 class ResultDataType(enum.Enum):
@@ -98,8 +99,8 @@ class AreaAnalyzer:
 
         else:
             # generations sometimes omit the value
-            print(ref_area)
-            print(test_area)
+            # print(ref_area)
+            # print(test_area)
             if ref_area['type'] == test_area['type']:
                 return ResultDataType.TRUE
 
@@ -181,12 +182,12 @@ class EntityAnalyzer:
         matches = 0
 
 
-        print("===Comparision===")
-        print('entities 2')
-        print(entities2)
-
-        print('entities 1')
-        print(entities1)
+        # print("===Comparision===")
+        # print('entities 2')
+        # print(entities2)
+        #
+        # print('entities 1')
+        # print(entities1)
 
         entities2_copy = copy.deepcopy(entities2)
         for ent1 in entities1:
@@ -209,8 +210,9 @@ class EntityAnalyzer:
                         matches += 1
                         break
 
-        print("matches!!!")
-        print(matches)
+
+        # print("matches!!!")
+        # print(matches)
 
         return matches / total_ents
 
@@ -239,6 +241,45 @@ def is_parsable_yaml(yaml_string) -> ResultDataType:
             pass
     return is_parsable, parsed_yaml
 
+def check_equivalent_entities(descriptors, ref, gen):
+    """
+    In case the reference and the generated entities + properties have descriptors that differ, but come from the
+    same bundle, this script replaces the generated entity/property descriptor with that of the reference to ensure it
+    will be treated as equal for the rest of the script.
+
+    :param descriptors: A map of descriptors where each descriptor maps to the corresponding bundle descriptor list.
+    :param ref: The reference entity from the ground truth data.
+    :param gen: The generated entity to be evaluated.
+    :return: gen_copy - The copy with the corrected entity values.
+    """
+    gen_copy = copy.deepcopy(gen)
+    for r in ref:
+        for id, g in enumerate(gen_copy):
+            if 'name' not in g:
+                break
+            if isinstance(g['name'], list):
+                g['name'] = g['name'][0]
+
+            if r['name'] in descriptors:
+                equivalent_descriptors = descriptors.get(r['name'])
+            else:
+                continue
+            if g['name']:
+                if g['name'] in equivalent_descriptors:
+                    g['name'] = r['name']
+
+            if 'properties' in r and 'properties' in g:
+                props_r = property_analyzer.convert_values_to_string(r.get('properties', []))
+                props_g = property_analyzer.convert_values_to_string(g.get('properties', []))
+                for pr in props_r:
+                    if pr['name'] not in descriptors:
+                        continue
+                    equivalent_properties = descriptors.get(pr['name'])
+                    for id, pg in enumerate(props_g):
+                        if pg['name'] in equivalent_properties:
+                            props_g[id]['name'] = pr['name']
+
+    return gen_copy
 
 def prepare_relation(data) -> ResultDataType:
     """
@@ -311,6 +352,8 @@ def compare_relations(relations1, relations2) -> ResultDataType:
 
     return matches / total_relations
 
+
+
 def normalize_name_brands(data):
     for entity in data.get('entities', []):
         if 'properties' in entity:
@@ -320,9 +363,8 @@ def normalize_name_brands(data):
     return data
 
 
-def compare_yaml(area_analyzer: AreaAnalyzer, entity_analyzer: EntityAnalyzer, property_analyzer: PropertyAnalyzer,
-                 yaml_true_string,
-                 yaml_pred_string) -> Result:
+def compare_yaml(key_table_path: str, area_analyzer: AreaAnalyzer, entity_analyzer: EntityAnalyzer,
+                 property_analyzer: PropertyAnalyzer, yaml_true_string, yaml_pred_string) -> Result:
     """
     Compare two YAML structures represented as strings. This is done by comparing areas, entities and relations
     separately.
@@ -364,6 +406,10 @@ def compare_yaml(area_analyzer: AreaAnalyzer, entity_analyzer: EntityAnalyzer, p
         is_area_match = area_analyzer.compare_areas_light(ref_data['area'], generated_data['area'])
         ref_data = normalize_name_brands(ref_data)
         generated_data = normalize_name_brands(generated_data)
+
+        descriptors = load_key_table(key_table_path)
+        generated_data['entities'] = check_equivalent_entities(descriptors, ref_data['entities'],
+                                                               generated_data['entities'])
 
         percentage_entities_exactly_same = entity_analyzer.compare_entities(ref_data['entities'],
                                                                             generated_data['entities'])
@@ -446,6 +492,7 @@ def compare_yaml(area_analyzer: AreaAnalyzer, entity_analyzer: EntityAnalyzer, p
 
 if __name__ == '__main__':
     parser = ArgumentParser()
+    parser.add_argument('--key_table_path', type=str, required=True)
     parser.add_argument('--gold_file_path', type=str, required=True)
     parser.add_argument('--gold_sheet_name', type=str, required=True)
     parser.add_argument('--pred_file_path', type=str, required=True)
@@ -454,6 +501,7 @@ if __name__ == '__main__':
     # parser.add_argument('--geolocations_file_path', help='Path to a file containing cities, countries, etc.')
     args = parser.parse_args()
     # geolocations_file_path = args.geolocations_file_path
+    key_table_path = args.key_table_path
     out_file_path = args.out_file_path
     out_file_path_sum = args.out_file_path_sum
     pred_file_path = args.pred_file_path
@@ -484,12 +532,13 @@ if __name__ == '__main__':
 
         yaml_pred_string = prediction['model_result']
 
-        print(yaml_pred_string)
+        # print(yaml_pred_string)
 
 
         yaml_true_string = gold_label['YAML']
         result= {'sentence': prediction['sentence']}
-        comparision_result = compare_yaml(area_analyzer=area_analyzer,
+        comparision_result = compare_yaml(key_table_path=key_table_path,
+                              area_analyzer=area_analyzer,
                               entity_analyzer=entity_analyzer,
                               property_analyzer=property_analyzer,
                               yaml_true_string=yaml_true_string,
