@@ -1,4 +1,4 @@
-import copy
+import os
 import csv
 import itertools
 import json
@@ -63,20 +63,28 @@ def add_yaml_to_filename(output_file):
 
 
 def write_output(generated_combs, output_file):
+    dir_path = os.path.dirname(output_file)
+    if dir_path and not os.path.exists(dir_path):
+        os.makedirs(dir_path, exist_ok=True)
+
     with open(output_file, "w", encoding="utf-8") as out_file:
-        for generated_comb in generated_combs:
-            json.dump(generated_comb.model_dump(mode="json"), out_file, ensure_ascii=False)
-            out_file.write('\n')
+            for generated_comb in generated_combs:
+                json.dump(generated_comb.model_dump(mode="json"), out_file, ensure_ascii=False)
+                out_file.write('\n')
 
 
 def write_dict_output(generated_combs, output_file, bool_add_yaml=True):
     if bool_add_yaml:
         output_file = add_yaml_to_filename(output_file)
 
+    dir_path = os.path.dirname(output_file)
+    if dir_path and not os.path.exists(dir_path):
+        os.makedirs(dir_path, exist_ok=True)
+
     with open(output_file, "w", encoding="utf-8") as out_file:
-        for generated_comb in generated_combs:
-            json.dump(generated_comb, out_file, ensure_ascii=False)
-            out_file.write('\n')
+            for generated_comb in generated_combs:
+                json.dump(generated_comb, out_file, ensure_ascii=False)
+                out_file.write('\n')
 
 
 def write_output_csv(generated_combs, output_file, bool_add_yaml=True):
