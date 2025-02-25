@@ -1,4 +1,4 @@
-VERSION=v17_3
+VERSION=v17_ClusterTest
 
 #python -m datageneration.gpt_data_generator \
 #--relative_spatial_terms_path datageneration/data/relative_spatial_terms.csv \

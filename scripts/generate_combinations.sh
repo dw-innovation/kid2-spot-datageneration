@@ -1,5 +1,5 @@
 VERSION=v17
-SUFFIX=_3
+SUFFIX=_ClusterTest
 
 ## create non-roman samples with prob 1.0, increase prob_of_entities_with_props from 0.2 to 0.5
 #python -m datageneration.generate_combination_table \
@@ -187,5 +187,5 @@ python -m datageneration.generate_combination_table \
 --prob_of_popular_non_numerical_properties 0.1 \
 --prob_adding_brand_names_as_entity 0.025 \
 --prob_of_non_roman_areas 0.3 \
---prob_of_cluster_entities 0.0 \
---samples 5000
+--prob_of_cluster_entities 1.0 \
+--samples 50
