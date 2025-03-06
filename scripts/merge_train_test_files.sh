@@ -10,8 +10,13 @@
 #--input_files datageneration/results/v17/train_v17.tsv,datageneration/results/v17/dev_v17.tsv,datageneration/results/v17_3/train_v17_3.tsv,datageneration/results/v17_3/dev_v17_3.tsv \
 #--output_folder datageneration/results/v17_3
 
+#python -m datageneration.merge_train_test_files \
+#--input_files datageneration/results/v17/train_v17-1-2.tsv,datageneration/results/v17/dev_v17-1-2.tsv,datageneration/results/v17_3/train_v17_3.tsv,datageneration/results/v17_3/dev_v17_3.tsv \
+#--output_folder datageneration/results/v17_3
+
+
 python -m datageneration.merge_train_test_files \
 --input_files datageneration/results/v17/train_v17-1-2.tsv,datageneration/results/v17/dev_v17-1-2.tsv,datageneration/results/v17_3/train_v17_3.tsv,datageneration/results/v17_3/dev_v17_3.tsv \
---output_folder datageneration/results/v17_3
+--output_folder datageneration/results/v17_4
 
 
