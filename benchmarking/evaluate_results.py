@@ -468,7 +468,14 @@ if __name__ == '__main__':
 
     gold_file_path = args.gold_file_path
     gold_sheet_name = args.gold_sheet_name
-    gold_labels = pd.read_excel(gold_file_path, sheet_name=gold_sheet_name).to_dict(orient='records')
+    gold_labels = pd.read_excel(gold_file_path, sheet_name=gold_sheet_name)
+
+    print('Number of clusters')
+    print(gold_labels[gold_labels['cluster']==1]['cluster'].count())
+
+    sys.exit(0)
+
+    gold_labels = gold_labels.to_dict(orient='records')
 
     area_analyzer = AreaAnalyzer()
     property_analyzer = PropertyAnalyzer()
