@@ -1,4 +1,3 @@
-import copy
 import enum
 import numpy as np
 import pandas as pd
@@ -6,10 +5,12 @@ import yaml
 from argparse import ArgumentParser
 from pydantic import BaseModel, Field
 from tqdm import tqdm
+from typing import Dict
 from collections import Counter
 
 from benchmarking.utils import write_output
 from benchmarking.yaml_parser import validate_and_fix_yaml
+from benchmarking.entity_analyzer import EntityAnalyzer, PropertyAnalyzer
 
 
 class ResultDataType(enum.Enum):
@@ -59,6 +60,7 @@ class Result(BaseModel, frozen=True):
         description="Percentage of corectly identified entities over the total ents",
         default=0.0)
 
+    percentage_correct_entity_type: float = Field(descrtiption = 'Average number of the entity type match', default=0.0)
     # are_entities_partially_same: ResultDataType = Field(description = 'Partially some entities match with the reference data')
 
     def __getitem__(self, item):
@@ -98,127 +100,12 @@ class AreaAnalyzer:
 
         else:
             # generations sometimes omit the value
-            print(ref_area)
-            print(test_area)
             if ref_area['type'] == test_area['type']:
                 return ResultDataType.TRUE
 
         # todo: relaxing encoding issue
 
         return self.compare_areas_strict(ref_area=ref_area, test_area=test_area)
-
-
-class PropertyAnalyzer:
-    def __init__(self):
-        pass
-
-    def convert_values_to_string(self, data):
-        for item in data:
-            item["name"] = item["name"].lower()
-            if 'value' not in item:
-                continue
-            if isinstance(item['value'], (int, float)):
-                item['value'] = str(item['value'])
-            else:
-                item['value'] = item['value'].lower()
-
-        return data
-
-    def compare_properties(self, props1, props2) -> int:
-        """
-        Check if two lists of properties are identical. The lists are first sorted via their names, to make sure the order
-        does not affect the results.
-
-        :param props1: The first property list to compare.
-        :param props2: The second property list to compare.
-        :return: Boolean whether the two property lists are the same.
-        """
-        matches = 0
-        props1 = self.convert_values_to_string(props1)
-        props2_copy = self.convert_values_to_string(copy.deepcopy(props2))
-        for p1 in props1:
-            for id, p2 in enumerate(props2_copy):
-                if p1 == p2:
-                    props2_copy.pop(id)
-                    matches += 1
-                    break
-
-        return matches
-
-    def percentage_properties_same(self, ref_entities, prop_entities) -> float:
-        total_props = 0
-        correctly_identified_properties = 0
-        for ent, props in ref_entities.items():
-
-            if ent not in prop_entities:
-                total_props += len(props)
-                continue
-            else:
-                total_props += max(len(props), len(prop_entities[ent]))
-
-            correctly_identified_properties += self.compare_properties(props1=props, props2=prop_entities[ent])
-
-        if total_props > 0:
-            return correctly_identified_properties / total_props
-        else:
-            return -1.0
-
-
-class EntityAnalyzer:
-    def __init__(self, property_analyzer: PropertyAnalyzer):
-        self.property_analyzer = property_analyzer
-
-    def compare_entities(self, entities1, entities2, compare_props=True) -> ResultDataType:
-        """
-        Check if two lists of entities are identical. The lists are first sorted via their names, to make sure the order
-        does not affect the results.
-
-        :param entities1: The first entity list to compare (ref_data).
-        :param entities2: The second entity list to compare (generated data).
-        :return: Boolean whether the two entity lists are the same.
-        """
-        total_ents = max(len(entities1), len(entities2))
-        matches = 0
-
-
-        print("===Comparision===")
-        print('entities 2')
-        print(entities2)
-
-        print('entities 1')
-        print(entities1)
-
-        entities2_copy = copy.deepcopy(entities2)
-        for ent1 in entities1:
-            for id, ent2 in enumerate(entities2_copy):
-                if 'name' not in ent2:
-                    break
-                if isinstance(ent2['name'], list):
-                    ent2['name'] = ent2['name'][0]
-                if ent1['name'].lower() == ent2['name'].lower() and ent1['type'] == ent2['type']:
-                    if compare_props and 'properties' in ent1:
-                        prop_matches = self.property_analyzer.compare_properties(ent1.get('properties', []),
-                                                                                          ent2.get('properties', []))
-                        percentage_properties_same = prop_matches / len(ent1.get('properties', []))
-                        if percentage_properties_same in [1.0, -1.0]:
-                            entities2_copy.pop(id)
-                            matches += 1
-                            break
-                    else:
-                        entities2_copy.pop(id)
-                        matches += 1
-                        break
-
-        print("matches!!!")
-        print(matches)
-
-        return matches / total_ents
-
-    def sort_entities(self, entities1, entities2):
-        entities1_sorted = sorted(entities1, key=lambda x: x['name'].lower())
-        entities2_sorted = sorted(entities2, key=lambda x: x['name'].lower())
-        return entities1_sorted, entities2_sorted
-
 
 def is_parsable_yaml(yaml_string) -> ResultDataType:
     """
@@ -266,36 +153,40 @@ def prepare_relation(data) -> ResultDataType:
     return prepped_relation
 
 
-def compare_relations(relations1, relations2) -> ResultDataType:
+def compare_relations(reference_relations, predicted_relations) -> ResultDataType:
     """
     Check if two lists of relations are identical. There are two different ways how the comparison is done, based on
     whether the order of source and target is relevant or not (only the case in "contains" relations).
     Contains relations (where the order matters) are compared as lists. Other relations (where the order of source
     and target does not matter) is compared as a list of frozensets.
 
-    :param relations1: The first relations list to compare (ref_rel).
-    :param relations2: The second relations list to compare (gen_rel).
+    :param reference_relations: The first relations list to compare (ref_rel).
+    :param predicted_relations: The second relations list to compare (gen_rel).
     :return: Boolean whether the two relations lists are the same.
     """
-    if not relations2:
+    if not predicted_relations:
         return 0
-    total_relations = max(len(relations1), len(relations2))
+    total_relations = max(len(reference_relations), len(predicted_relations))
     matches = 0
     r1 = set()
     r2 = set()
     c1 = list()
     c2 = list()
-    for id in range(len(relations1)):
-        if relations1[id]["type"] == "contains":
-            c1.append([relations1[id]["source"], relations1[id]["target"]])
-        elif relations1[id]["type"] == "dist" or relations1[id]["type"] == "distance":
-            r1.add(frozenset({relations1[id]["source"], relations1[id]["target"], relations1[id]["value"]}))
-    for id in range(len(relations2)):
+    for id in range(len(reference_relations)):
+        if reference_relations[id]["type"] == "contains":
+            c1.append([reference_relations[id]["source"], reference_relations[id]["target"]])
+        elif reference_relations[id]["type"] == "dist" or reference_relations[id]["type"] == "distance":
+            # print('reference_relations!')
+            # print(reference_relations[id])
+            r1.add(frozenset({reference_relations[id]["source"], reference_relations[id]["target"], reference_relations[id]["value"]}))
+    for id in range(len(predicted_relations)):
         # print(relations2[id])
-        if relations2[id]["type"] == "contains":
-            c2.append([relations2[id]["source"], relations2[id]["target"]])
-        elif relations2[id]["type"] == "dist" or relations2[id]["type"] == "distance":
-            r2.add(frozenset({relations2[id]["source"], relations2[id]["target"], relations2[id]["value"]}))
+        if predicted_relations[id]["type"] == "contains":
+            c2.append([predicted_relations[id]["source"], predicted_relations[id]["target"]])
+        elif predicted_relations[id]["type"] == "dist" or predicted_relations[id]["type"] == "distance":
+            # print('predicted_relations!')
+            # print(predicted_relations[id])
+            r2.add(frozenset({predicted_relations[id]["source"], predicted_relations[id]["target"], predicted_relations[id]["value"]}))
 
     r1 = Counter(r1)
     r2 = Counter(r2)
@@ -347,6 +238,7 @@ def compare_yaml(area_analyzer: AreaAnalyzer, entity_analyzer: EntityAnalyzer, p
     num_entities_on_gen_data: int = 0
     num_relations_on_ref_data: int = 0
     num_relations_on_gen_data: int = 0
+    percentage_correct_entity_type = []
     are_entities_partially_same = ResultDataType.FALSE
 
     if generated_data:
@@ -365,18 +257,30 @@ def compare_yaml(area_analyzer: AreaAnalyzer, entity_analyzer: EntityAnalyzer, p
         ref_data = normalize_name_brands(ref_data)
         generated_data = normalize_name_brands(generated_data)
 
-        percentage_entities_exactly_same = entity_analyzer.compare_entities(ref_data['entities'],
-                                                                            generated_data['entities'])
+        results_ent_analyzer = entity_analyzer.compare_entities(ref_data['entities'],
+                                                           generated_data['entities'])
 
-        if percentage_entities_exactly_same == 1.0:
+        percentage_matched_ents = results_ent_analyzer['matched_ents']
+        percentage_correct_ents = results_ent_analyzer['percentage_correct_entity_type']
+
+        if percentage_correct_ents == 2:
+            print('problematic text')
+            print(ref_data['entities'])
+            print(generated_data['entities'])
+
+        percentage_correct_entity_type.append(percentage_correct_ents)
+
+        if percentage_matched_ents == 1.0:
             are_entities_exactly_same = ResultDataType.TRUE
         elif percentage_properties_same == 0.0:
             are_entities_exactly_same = ResultDataType.FALSE
         # elif percentage_entities_exactly_same!=0.0:
         #     are_entities_partially_same = ResultDataType.TRUE
 
-        percentage_entities_same_exclude_props = entity_analyzer.compare_entities(ref_data['entities'],
+        results_ent_analyzer_wo_props = entity_analyzer.compare_entities(ref_data['entities'],
                                                                     generated_data['entities'], False)
+        percentage_entities_same_exclude_props = results_ent_analyzer_wo_props['matched_ents']
+
         if percentage_entities_same_exclude_props == 1.0:
             are_entities_same_exclude_props = ResultDataType.TRUE
 
@@ -424,6 +328,8 @@ def compare_yaml(area_analyzer: AreaAnalyzer, entity_analyzer: EntityAnalyzer, p
              are_relations_exactly_same == ResultDataType.NOT_APPLICABLE)):
         is_perfect_match = ResultDataType.TRUE
 
+    percentage_correct_entity_type = np.mean(np.asarray(percentage_correct_entity_type))
+    print(percentage_correct_entity_type)
     return Result(yaml_pred_string=yaml_pred_string,
                   yaml_true_string=yaml_true_string,
                   is_perfect_match=is_perfect_match,
@@ -435,13 +341,15 @@ def compare_yaml(area_analyzer: AreaAnalyzer, entity_analyzer: EntityAnalyzer, p
                   num_relations_on_gen_data=num_relations_on_gen_data,
                   are_entities_exactly_same=are_entities_exactly_same,
                   # are_entities_partially_same = are_entities_partially_same,
-                  percentage_entities_exactly_same=percentage_entities_exactly_same,
+                  percentage_entities_exactly_same=percentage_matched_ents,
                   are_entities_same_exclude_props=are_entities_same_exclude_props,
                   percentage_entities_same_exclude_props=percentage_entities_same_exclude_props,
+                  percentage_correct_entity_type=percentage_correct_entity_type,
                   are_properties_same=are_properties_same,
                   percentage_properties_same=percentage_properties_same,
                   are_relations_exactly_same=are_relations_exactly_same,
-                  percentage_relations_same=percentage_relations_same)
+                  percentage_relations_same=percentage_relations_same,
+                  )
 
 
 if __name__ == '__main__':
@@ -470,10 +378,8 @@ if __name__ == '__main__':
     gold_sheet_name = args.gold_sheet_name
     gold_labels = pd.read_excel(gold_file_path, sheet_name=gold_sheet_name)
 
-    print('Number of clusters')
-    print(gold_labels[gold_labels['cluster']==1]['cluster'].count())
-
-    sys.exit(0)
+    print(f'Number of clusters')
+    print(len(gold_labels[gold_labels['cluster']==1]))
 
     gold_labels = gold_labels.to_dict(orient='records')
 
@@ -521,6 +427,9 @@ if __name__ == '__main__':
 
     results = pd.DataFrame(results)
 
+    print('results!!!')
+    print(results['percentage_correct_entity_type'])
+
     # print(results.columns)
 
     evaluation_scores = {}
@@ -532,8 +441,8 @@ if __name__ == '__main__':
                         'are_entities_exactly_same',
                         # 'are_entities_partially_same',
                         'percentage_entities_exactly_same',
+                        'percentage_correct_entity_type',
                         'are_entities_same_exclude_props',
-                        'percentage_entities_same_exclude_props',
                         'are_properties_same',
                         'percentage_properties_same',
                         'are_relations_exactly_same',
@@ -542,6 +451,7 @@ if __name__ == '__main__':
 
         if result_type in ['percentage_entities_exactly_same',
                         'percentage_entities_same_exclude_props',
+                        'percentage_correct_entity_type',
                         'percentage_properties_same',
                         'percentage_relations_same']:
             na_samples = results[results[result_type] == -1]

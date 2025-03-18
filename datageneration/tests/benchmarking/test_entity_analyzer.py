@@ -15,11 +15,11 @@ class TestEvaluation(unittest.TestCase):
         entity_analyzer = EntityAnalyzer()
 
         predicted_result = entity_analyzer.compare_entities(
-            entities1=[{'id': 0, 'type': 'nwr', 'name': 'elementary schools'},
-                       {'id': 1, 'type': 'nwr', 'name': 'library'}, {'id': 2, 'type': 'nwr', 'name': 'driving school'}],
-            entities2=[{'id': 0, 'is_area': True, 'name': 'elementary schools', 'type': 'nwr'},
-                       {'id': 1, 'is_area': False, 'name': 'library', 'type': 'nwr'},
-                       {'id': 2, 'is_area': False, 'name': 'driving school', 'properties': [{'name': 'door'}],
+            reference_entities=[{'id': 0, 'type': 'nwr', 'name': 'elementary schools'},
+                                {'id': 1, 'type': 'nwr', 'name': 'library'}, {'id': 2, 'type': 'nwr', 'name': 'driving school'}],
+            predicted_entities=[{'id': 0, 'is_area': True, 'name': 'elementary schools', 'type': 'nwr'},
+                                {'id': 1, 'is_area': False, 'name': 'library', 'type': 'nwr'},
+                                {'id': 2, 'is_area': False, 'name': 'driving school', 'properties': [{'name': 'door'}],
                         'type': 'nwr'}])
         self.assertEquals(predicted_result, ResultDataType.FALSE)
 
