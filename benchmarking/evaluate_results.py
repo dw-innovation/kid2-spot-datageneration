@@ -11,6 +11,7 @@ from collections import Counter
 from benchmarking.utils import write_output
 from benchmarking.yaml_parser import validate_and_fix_yaml
 from benchmarking.utils import load_key_table
+from benchmarking.entity_analyzer import EntityAnalyzer, PropertyAnalyzer
 
 
 class ResultDataType(enum.Enum):
@@ -166,60 +167,60 @@ class PropertyAnalyzer:
             return -1.0
 
 
-class EntityAnalyzer:
-    def __init__(self, property_analyzer: PropertyAnalyzer):
-        self.property_analyzer = property_analyzer
-
-    def compare_entities(self, entities1, entities2, compare_props=True) -> ResultDataType:
-        """
-        Check if two lists of entities are identical. The lists are first sorted via their names, to make sure the order
-        does not affect the results.
-
-        :param entities1: The first entity list to compare (ref_data).
-        :param entities2: The second entity list to compare (generated data).
-        :return: Boolean whether the two entity lists are the same.
-        """
-        total_ents = max(len(entities1), len(entities2))
-        matches = 0
-
-
-        print("===Comparision===")
-        print('entities 2')
-        print(entities2)
-
-        print('entities 1')
-        print(entities1)
-
-        entities2_copy = copy.deepcopy(entities2)
-        for ent1 in entities1:
-            for id, ent2 in enumerate(entities2_copy):
-                if 'name' not in ent2:
-                    break
-                if isinstance(ent2['name'], list):
-                    ent2['name'] = ent2['name'][0]
-                if ent1['name'].lower() == ent2['name'].lower() and ent1['type'] == ent2['type']:
-                    if compare_props and 'properties' in ent1:
-                        prop_matches = self.property_analyzer.compare_properties(ent1.get('properties', []),
-                                                                                          ent2.get('properties', []))
-                        percentage_properties_same = prop_matches / len(ent1.get('properties', []))
-                        if percentage_properties_same in [1.0, -1.0]:
-                            entities2_copy.pop(id)
-                            matches += 1
-                            break
-                    else:
-                        entities2_copy.pop(id)
-                        matches += 1
-                        break
-
-        print("matches!!!")
-        print(matches)
-
-        return matches / total_ents
-
-    def sort_entities(self, entities1, entities2):
-        entities1_sorted = sorted(entities1, key=lambda x: x['name'].lower())
-        entities2_sorted = sorted(entities2, key=lambda x: x['name'].lower())
-        return entities1_sorted, entities2_sorted
+# class EntityAnalyzer:
+#     def __init__(self, property_analyzer: PropertyAnalyzer):
+#         self.property_analyzer = property_analyzer
+#
+#     def compare_entities(self, entities1, entities2, compare_props=True) -> ResultDataType:
+#         """
+#         Check if two lists of entities are identical. The lists are first sorted via their names, to make sure the order
+#         does not affect the results.
+#
+#         :param entities1: The first entity list to compare (ref_data).
+#         :param entities2: The second entity list to compare (generated data).
+#         :return: Boolean whether the two entity lists are the same.
+#         """
+#         total_ents = max(len(entities1), len(entities2))
+#         matches = 0
+#
+#
+#         print("===Comparision===")
+#         print('entities 2')
+#         print(entities2)
+#
+#         print('entities 1')
+#         print(entities1)
+#
+#         entities2_copy = copy.deepcopy(entities2)
+#         for ent1 in entities1:
+#             for id, ent2 in enumerate(entities2_copy):
+#                 if 'name' not in ent2:
+#                     break
+#                 if isinstance(ent2['name'], list):
+#                     ent2['name'] = ent2['name'][0]
+#                 if ent1['name'].lower() == ent2['name'].lower() and ent1['type'] == ent2['type']:
+#                     if compare_props and 'properties' in ent1:
+#                         prop_matches = self.property_analyzer.compare_properties(ent1.get('properties', []),
+#                                                                                           ent2.get('properties', []))
+#                         percentage_properties_same = prop_matches / len(ent1.get('properties', []))
+#                         if percentage_properties_same in [1.0, -1.0]:
+#                             entities2_copy.pop(id)
+#                             matches += 1
+#                             break
+#                     else:
+#                         entities2_copy.pop(id)
+#                         matches += 1
+#                         break
+#
+#         print("matches!!!")
+#         print(matches)
+#
+#         return matches / total_ents
+#
+#     def sort_entities(self, entities1, entities2):
+#         entities1_sorted = sorted(entities1, key=lambda x: x['name'].lower())
+#         entities2_sorted = sorted(entities2, key=lambda x: x['name'].lower())
+#         return entities1_sorted, entities2_sorted
 
 
 def is_parsable_yaml(yaml_string) -> ResultDataType:
