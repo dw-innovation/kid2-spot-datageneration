@@ -1,11 +1,54 @@
+import copy
 import json
 import os
+import pandas as pd
 import numpy as np
 from rapidfuzz import process, fuzz
 from sklearn.metrics.pairwise import cosine_similarity
 from sentence_transformers import SentenceTransformer
+from datageneration.utils import split_descriptors
 
 model = SentenceTransformer("all-MiniLM-L6-v2")
+
+def check_equivalent_entities(descriptors, ref, gen):
+    """
+    In case the reference and the generated entities + properties have descriptors that differ, but come from the
+    same bundle, this script replaces the generated entity/property descriptor with that of the reference to ensure it
+    will be treated as equal for the rest of the script.
+
+    :param descriptors: A map of descriptors where each descriptor maps to the corresponding bundle descriptor list.
+    :param ref: The reference entity from the ground truth data.
+    :param gen: The generated entity to be evaluated.
+    :return: gen_copy - The copy with the corrected entity values.
+    """
+    gen_copy = copy.deepcopy(gen)
+    for r in ref:
+        for id, g in enumerate(gen_copy):
+            if 'name' not in g:
+                break
+            if isinstance(g['name'], list):
+                g['name'] = g['name'][0]
+
+            if r['name'] in descriptors:
+                equivalent_descriptors = descriptors.get(r['name'])
+            else:
+                continue
+            if g['name']:
+                if g['name'] in equivalent_descriptors:
+                    g['name'] = r['name']
+
+            if 'properties' in r and 'properties' in g:
+                props_r = property_analyzer.convert_values_to_string(r.get('properties', []))
+                props_g = property_analyzer.convert_values_to_string(g.get('properties', []))
+                for pr in props_r:
+                    if pr['name'] not in descriptors:
+                        continue
+                    equivalent_properties = descriptors.get(pr['name'])
+                    for id, pg in enumerate(props_g):
+                        if pg['name'] in equivalent_properties:
+                            props_g[id]['name'] = pr['name']
+
+    return gen_copy
 
 def write_output(generated_combs, output_file):
     """
@@ -80,3 +123,19 @@ def load_key_table(path):
             descriptors[desc] = descriptors_lst
 
     return descriptors
+
+
+def normalize(obj):
+    if isinstance(obj, dict):
+        return {k: normalize(v) for k, v in sorted(obj.items()) if k != "id"}  # Exclude 'id' key
+    elif isinstance(obj, list):
+        return sorted((normalize(item) for item in obj), key=lambda x: repr(x))
+    return obj
+
+def are_dicts_equal(dict1, dict2):
+    # Normalize both dictionaries and compare
+    print('dict 1')
+    print(dict1)
+    print('dict 2')
+    print(dict2)
+    return normalize(dict1) == normalize(dict2)

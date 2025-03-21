@@ -1,5 +1,5 @@
 import unittest
-from benchmarking.evaluate_results import AreaAnalyzer, PropertyAnalyzer, EntityAnalyzer, compare_yaml, ResultDataType
+from benchmarking.evaluate_results import AreaAnalyzer, PropertyAnalyzer, EntityandPropertyAnalyzer, compare_yaml, ResultDataType
 
 '''Run python -m unittest benchmarking.tests.test_benchmarking'''
 
@@ -7,7 +7,7 @@ class TestBenchmarking(unittest.TestCase):
     def setUp(self):
         self.area_analyzer = AreaAnalyzer()
         self.property_analyzer = PropertyAnalyzer()
-        self.entity_analyzer = EntityAnalyzer(property_analyzer=self.property_analyzer)
+        self.entity_analyzer = EntityandPropertyAnalyzer(property_analyzer=self.property_analyzer)
 
 
     def test_compare_yaml(self):

@@ -2,7 +2,7 @@ import pandas as pd
 import unittest
 from typing import List
 
-from benchmarking.evaluate_results import EntityAnalyzer, ResultDataType
+from benchmarking.evaluate_results import EntityandPropertyAnalyzer, ResultDataType
 
 '''Run python -m unittest datageneration.tests.benchmarking.test_entity_analyzer'''
 
@@ -12,7 +12,7 @@ class TestEvaluation(unittest.TestCase):
         pass
 
     def test_pipeline(self):
-        entity_analyzer = EntityAnalyzer()
+        entity_analyzer = EntityandPropertyAnalyzer()
 
         predicted_result = entity_analyzer.compare_entities(
             reference_entities=[{'id': 0, 'type': 'nwr', 'name': 'elementary schools'},
