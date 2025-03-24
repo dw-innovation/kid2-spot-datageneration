@@ -101,8 +101,8 @@ class AreaAnalyzer:
 
         else:
             # generations sometimes omit the value
-            print(ref_area)
-            print(test_area)
+            # print(ref_area)
+            # print(test_area)
             if ref_area['type'] == test_area['type']:
                 return ResultDataType.TRUE
 
@@ -406,34 +406,63 @@ if __name__ == '__main__':
 
     results = pd.DataFrame(results)
 
-    print(results.columns)
-
     evaluation_scores = {}
+
+    print('===Entity/Property Evaluation===')
+    total_ref_entities = results['total_ref_entities'].sum()
+    evaluation_scores["entity_match_perfect_acc"] = results['num_entity_match_perfect'].sum() / total_ref_entities
+    evaluation_scores['entity_match_weak_acc'] = results['num_entity_match_weak'].sum() / total_ref_entities
+    evaluation_scores['correct_entity_type_acc'] = results['num_correct_entity_type'].sum() / total_ref_entities
+    num_missing_entity = results['num_missing_entity'].sum()
+    num_hallucinated_entity = results['num_hallucinated_entity'].sum()
+
+    total_clusters = results['total_clusters'].sum()
+    evaluation_scores['cluster_distance_acc'] = results['num_correct_cluster_distance'].sum() / total_clusters
+    evaluation_scores['cluster_points_acc'] = results['num_correct_cluster_points'].sum() / total_clusters
+
+    total_properties = results['total_properties'].sum()
+    evaluation_scores['correct_properties_perfect_acc'] = results['num_correct_properties_perfect'].sum() / total_properties
+    evaluation_scores['correct_properties_weak_acc'] = results['num_correct_properties_weak'].sum() / total_properties
+    evaluation_scores['num_hallucinated_properties'] = results['num_hallucinated_properties'].sum()
+    evaluation_scores['num_missing_properties'] = results['num_missing_properties'].sum()
+
+
+    total_height_property = results['total_height_property'].sum()
+    evaluation_scores['correct_height_metric'] = results['num_correct_height_metric'].sum() / total_height_property
+    evaluation_scores['correct_height_distance'] = results['num_correct_height_distance'].sum() / total_height_property
+
+    for eval_type, eval_value in evaluation_scores.items():
+        print(f'==={eval_type}===')
+        print(eval_value)
 
     # Results with binary type
     for result_type in ['is_perfect_match',
                         'is_parsable_yaml',
                         'is_area_match',
-                        'are_entities_exactly_same',
+                        # 'entity/prop eval',
+                        # 'are_entities_exactly_same',
                         # 'are_entities_partially_same',
-                        'percentage_entities_exactly_same',
-                        'percentage_correct_entity_type',
-                        'are_entities_same_exclude_props',
-                        'percentage_entities_same_exclude_props',
-                        'are_properties_same',
-                        'percentage_properties_same',
+                        # 'percentage_entities_exactly_same',
+                        # 'percentage_correct_entity_type',
+                        # 'are_entities_same_exclude_props',
+                        # 'percentage_entities_same_exclude_props',
+                        # 'are_properties_same',
+                        # 'percentage_properties_same',
                         'are_relations_exactly_same',
                         'percentage_relations_same']:
-        print(f"===Results for {result_type}===")
 
-        if result_type in ['percentage_entities_exactly_same',
-                        'percentage_entities_same_exclude_props',
-                        'percentage_correct_entity_type',
-                        'percentage_properties_same',
+        print(f"===Results for {result_type}===")
+        if result_type in [
+                        # 'percentage_entities_exactly_same',
+                        # 'percentage_entities_same_exclude_props',
+                        # 'percentage_correct_entity_type',
+                        # 'percentage_properties_same',
                         'percentage_relations_same']:
             na_samples = results[results[result_type] == -1]
             valid_results = results[results[result_type] != -1]
             acc = np.mean(valid_results[result_type].to_numpy())
+
+
         else:
             na_samples = results[results[result_type] == ResultDataType.NOT_APPLICABLE]
             true_preds = results[results[result_type] == ResultDataType.TRUE]

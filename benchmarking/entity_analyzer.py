@@ -54,7 +54,7 @@ class EntityAndPropertyAnalyzer:
         """
         full_paired_entities, paired_entities, unpaired_entities = self.pair_objects(predicted_objs=predicted_entities, reference_objs=reference_entities)
         total_ref_entities = len(reference_entities)
-        total_predicted_entities = len(predicted_entities)
+        # total_predicted_entities = len(predicted_entities)
         num_entity_match_perfect = 0
         num_correct_entity_type = 0 # entity type check nrw/cluster
         total_clusters = 0
@@ -93,8 +93,8 @@ class EntityAndPropertyAnalyzer:
                     num_correct_cluster_distance+=1
 
             if 'properties' in ref_ent:
-                total_properties+=1
                 ref_properties = ref_ent.get('properties')
+                total_properties+= len(ref_properties)
                 ent_properties = predicted_ent.get('properties', None)
 
                 full_paired_props, paired_props, unpaired_props = self.pair_objects(
@@ -102,21 +102,23 @@ class EntityAndPropertyAnalyzer:
 
                 if not full_paired_props:
                     num_missing_properties += len(unpaired_props['reference'])
-                    continue
+                else:
+                    for (ref_prop, ent_prop) in full_paired_props:
+                        if are_dicts_equal(ref_prop, ent_prop):
+                            num_correct_properties_perfect += 1
 
-                for (ref_prop, ent_prop) in full_paired_props:
-                    if are_dicts_equal(ref_prop, ent_prop):
-                        num_correct_properties_perfect += 1
+                        if 'height' == ref_prop['name']:
+                            total_height_property += 1
+                            ref_height_value, ref_height_metric = self.compose_height_value(ref_prop['value'])
+                            pred_height_value, pred_height_metric = self.compose_height_value(ent_prop['value'])
 
-                    if 'height' == ref_prop['name']:
-                        total_height_property += 1
-                        ref_height_value, ref_height_metric = self.compose_height_value(ref_prop['value'])
-                        pred_height_value, pred_height_metric = self.compose_height_value(ent_prop['value'])
+                            print(ref_height_value)
+                            print(pred_height_value)
 
-                        if ref_height_value == pred_height_value:
-                            num_correct_height_distance+=1
-                        if ref_height_metric == pred_height_metric:
-                            num_correct_height_metric+=1
+                            if ref_height_value == pred_height_value:
+                                num_correct_height_distance+=1
+                            if ref_height_metric == pred_height_metric:
+                                num_correct_height_metric+=1
 
 
                 # hallucinated prop
@@ -124,7 +126,8 @@ class EntityAndPropertyAnalyzer:
                 # missing prop
                 num_missing_properties += len(unpaired_props['reference'])
 
-                num_correct_properties_weak+=len(paired_props)
+                if paired_props:
+                    num_correct_properties_weak+=len(paired_props)
 
             if ref_ent['type'] == predicted_ent['type']:
                 num_correct_entity_type+=1
@@ -132,7 +135,6 @@ class EntityAndPropertyAnalyzer:
         return dict(
             total_clusters=total_clusters,
             total_properties=total_properties,
-            total_predicted_entities = total_predicted_entities,
             total_ref_entities = total_ref_entities,
             num_entity_match_perfect = num_entity_match_perfect,
             num_entity_match_weak = num_entity_weak_match,

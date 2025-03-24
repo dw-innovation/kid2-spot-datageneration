@@ -133,9 +133,4 @@ def normalize(obj):
     return obj
 
 def are_dicts_equal(dict1, dict2):
-    # Normalize both dictionaries and compare
-    print('dict 1')
-    print(dict1)
-    print('dict 2')
-    print(dict2)
     return normalize(dict1) == normalize(dict2)

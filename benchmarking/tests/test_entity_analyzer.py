@@ -7,8 +7,6 @@ class TestBenchmarking(unittest.TestCase):
     def setUp(self):
         self.area_analyzer = AreaAnalyzer()
         self.entity_analyzer = EntityAndPropertyAnalyzer()
-
-
     def test_compare_entity(self):
         entity_1 =[{'name': 'shipdock', 'id': 'entity1', 'type': 'structure'}, {'name': 'storage tank', 'id': 'entity2', 'type': 'infrastructure'}]
         entity_2 =[{'id': 0, 'type': 'nwr', 'name': 'shipdock'}, {'id': 1, 'type': 'nwr', 'name': 'storage tank'}]
@@ -44,3 +42,11 @@ class TestBenchmarking(unittest.TestCase):
 
         assert len(unpaired_entities['reference']) == 0
         assert len(unpaired_entities['prediction']) == 0
+
+    def test_properties(self):
+        entity_1 = [{'id': 0, 'type': 'nwr', 'name': 'car shop', 'properties': [{'name': 'floors', 'operator': '=', 'value': 2}, {'name': 'name', 'operator': '~', 'value': 'Master Farma'}]}, {'id': 1, 'type': 'nwr', 'name': 'bus stop'}, {'id': 2, 'type': 'nwr', 'name': 'aqueduct'}]
+        entity_2 = [{'id': 0, 'name': 'car shop', 'properties': [{'name': 'name', 'operator': '~', 'value': 'master farma'}, {'name': 'floors', 'operator': '=', 'value': '2'}], 'type': 'nwr'}, {'id': 1, 'name': 'bus stop', 'type': 'nwr'}, {'id': 2, 'name': 'aqueduct', 'type': 'nwr'}]
+
+        results = self.entity_analyzer.compare_entities(entity_1, entity_2)
+
+        assert results['total_properties'] >= results['num_correct_properties_weak']
