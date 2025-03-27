@@ -139,6 +139,9 @@ class EntityAndPropertyAnalyzer:
                 if ref_ent['type'] == predicted_ent['type']:
                     num_correct_entity_type+=1
 
+        else:
+            num_missing_properties = total_properties
+            num_missing_entity += total_ref_entities
 
         return dict(
             total_clusters=total_clusters,

@@ -268,7 +268,7 @@
 #--out_file_path $OUT_FILE_PATH \
 #--out_file_path_sum $OUT_FILE_PATH_SUM
 
-FNAME=spot_llama-3-8b_ep10_training_ds_v16_3-17_1-2_param-4_prompt-v2
+FNAME=gold_predictions_gpt-4o_cot_fewshot_1_2
 KEY_TABLE_PATH=datageneration/data/Spot_primary_keys_bundles.xlsx
 GOLD_FILE_PATH=benchmarking/data/gold_annotations_05112024.xlsx
 PRED_FILE_PATH=benchmarking/results/${FNAME}.jsonl
