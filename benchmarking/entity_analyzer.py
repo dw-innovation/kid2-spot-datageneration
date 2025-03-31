@@ -54,7 +54,6 @@ class EntityAndPropertyAnalyzer:
         """
         full_paired_entities, paired_entities, unpaired_entities = self.pair_objects(predicted_objs=predicted_entities, reference_objs=reference_entities)
         total_ref_entities = len(reference_entities)
-        # total_predicted_entities = len(predicted_entities)
         num_entity_match_perfect = 0
         num_correct_entity_type = 0 # entity type check nrw/cluster
         total_properties = 0
@@ -161,7 +160,7 @@ class EntityAndPropertyAnalyzer:
             num_missing_entity=num_missing_entity,
             num_correct_height_metric = num_correct_height_metric,
             num_correct_height_distance = num_correct_height_distance
-        )
+        ), full_paired_entities
 
     def sort_entities(self, entities1, entities2):
         entities1_sorted = sorted(entities1, key=lambda x: x['name'].lower())

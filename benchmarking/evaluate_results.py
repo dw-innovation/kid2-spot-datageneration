@@ -12,6 +12,7 @@ from benchmarking.utils import write_output
 from benchmarking.yaml_parser import validate_and_fix_yaml
 from benchmarking.utils import load_key_table, check_equivalent_entities
 from benchmarking.entity_analyzer import EntityAndPropertyAnalyzer
+from benchmarking.relation_analyzer import RelationAnalyzer
 from typing import Dict
 
 class ResultDataType(enum.Enum):
@@ -214,7 +215,8 @@ def normalize_name_brands(data):
     return data
 
 
-def compare_yaml(key_table_path: str, area_analyzer: AreaAnalyzer, entity_and_prop_analyzer: EntityAndPropertyAnalyzer, yaml_true_string, yaml_pred_string) -> Dict:
+def compare_yaml(key_table_path: str, area_analyzer: AreaAnalyzer, entity_and_prop_analyzer: EntityAndPropertyAnalyzer, relation_analyzer: RelationAnalyzer, yaml_true_string, yaml_pred_string,
+                 gold_sentence:str) -> Dict:
     """
     Compare two YAML structures represented as strings. This is done by comparing areas, entities and relations
     separately.
@@ -289,39 +291,8 @@ def compare_yaml(key_table_path: str, area_analyzer: AreaAnalyzer, entity_and_pr
     if generated_data:
         gen_entities = generated_data.get('entities', None)
 
-    results_ents_props = entity_and_prop_analyzer.compare_entities(ref_entities,gen_entities)
-
-    # if percentage_entities_exactly_same == 1.0:
-    #     are_entities_exactly_same = ResultDataType.TRUE
-    # elif percentage_properties_same == 0.0:
-    #     are_entities_exactly_same = ResultDataType.FALSE
-    # # elif percentage_entities_exactly_same!=0.0:
-    # #     are_entities_partially_same = ResultDataType.TRUE
-    #
-    # if percentage_entities_same_exclude_props == 1.0:
-    #     are_entities_same_exclude_props = ResultDataType.TRUE
-    #
-    # ref_entities_with_properties = {}
-    # for ref_entity in ref_data['entities']:
-    #     if 'properties' in ref_entity:
-    #         ref_entities_with_properties[ref_entity['name']] = ref_entity['properties']
-    #
-    # if len(ref_entities_with_properties) > 0:
-    #     predicted_entities_with_properties = {}
-    #     for pred_entity in generated_data['entities']:
-    #         if 'properties' in pred_entity:
-    #             predicted_entities_with_properties[pred_entity['name']] = pred_entity['properties']
-    #
-    #     percentage_properties_same = property_analyzer.percentage_properties_same(
-    #         ref_entities=ref_entities_with_properties, prop_entities=predicted_entities_with_properties)
-
-    # if percentage_properties_same == 1.0:
-    #     are_properties_same = ResultDataType.TRUE
-    # elif percentage_properties_same == -1.0:
-    #     are_properties_same = ResultDataType.NOT_APPLICABLE
-    # else:
-    #     are_properties_same = ResultDataType.FALSE
-
+    results_ents_props, full_paired_entities = entity_and_prop_analyzer.compare_entities(ref_entities,gen_entities)
+    results_relations = relation_analyzer.compare_relations(ref_data, generated_data, full_paired_entities, gold_sentence)
 
     # todo: recheck this!!
     if 'relations' not in ref_data:
@@ -337,6 +308,12 @@ def compare_yaml(key_table_path: str, area_analyzer: AreaAnalyzer, entity_and_pr
             else:
                 ref_relations_prepared = prepare_relation(ref_data)
                 generated_relations_prepared = prepare_relation(generated_data)
+
+                print('ref relations prepared')
+                print(ref_relations_prepared)
+
+                print('gen relations prepared')
+                print(generated_relations_prepared)
                 percentage_relations_same = compare_relations(ref_relations_prepared, generated_relations_prepared)
                 if percentage_relations_same == 1.0:
                     are_relations_exactly_same = ResultDataType.TRUE
@@ -392,6 +369,7 @@ if __name__ == '__main__':
 
     area_analyzer = AreaAnalyzer()
     entity_and_prop_analyzer = EntityAndPropertyAnalyzer()
+    relation_analyzer = RelationAnalyzer()
 
     results = []
     for prediction, gold_label in tqdm(zip(predictions, gold_labels), total=len(gold_labels)):
@@ -405,11 +383,15 @@ if __name__ == '__main__':
         yaml_true_string = gold_label['YAML']
 
         result= {'sentence': prediction['sentence']}
-        comparision_result = compare_yaml(key_table_path=key_table_path,
-                              area_analyzer=area_analyzer,
-                              entity_and_prop_analyzer=entity_and_prop_analyzer,
-                              yaml_true_string=yaml_true_string,
-                              yaml_pred_string=yaml_pred_string)
+        comparision_result = compare_yaml(
+            key_table_path=key_table_path,
+            area_analyzer=area_analyzer,
+            relation_analyzer=relation_analyzer,
+            entity_and_prop_analyzer=entity_and_prop_analyzer,
+            yaml_true_string=yaml_true_string,
+            yaml_pred_string=yaml_pred_string,
+            gold_sentence=gold_label['sentence']
+        )
 
         result = result | comparision_result
         meta_vals = {key: gold_label[key] for key in meta_fields}
