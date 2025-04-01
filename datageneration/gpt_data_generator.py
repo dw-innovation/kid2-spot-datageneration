@@ -18,7 +18,9 @@ from datageneration.data_model import (RelSpatial, LocPoint, Area, Entity, Prope
 from datageneration.utils import (add_yaml_to_filename, write_output, write_dict_output, write_output_csv,
                                   translate_queries_to_yaml)
 
-load_dotenv()
+load_dotenv(override=True)
+print(os.environ["OPENAI_API_KEY"])
+print(os.environ["OPENAI_ORG"])
 
 # imports
 import random
@@ -171,22 +173,51 @@ class PromptHelper:
         self.prob_distance_writing_with_full_metric = prob_distance_writing_with_full_metric
         self.relative_spatial_terms = relative_spatial_terms
         self.beginning_template = (
-            "Generate one or more sentences simulating a user using a natural language interface "
-            "for an AI geolocation search tool that finds locations based on descriptions of "
-            "objects and their spatial relations. Each object has one main descriptor and "
-            "optionally additional properties. All properties must be put in a logical connection "
-            "to the object. Objects can either be single instances, or clusters of multiple of one object "
-            "which are located in a specific distance radius (e.g. \"three houses next to/within 10m of "
-            "each other\").\n"
-            "Mention the area, cover all entities and their respective properties, and describe "
-            "the respective relations. Stick to the descriptions of entities and relations "
-            "provided and don’t add anything. When describing names or brand (names), be creative in "
-            "your phrasing (examples being a \"book store of brand Thalia\" vs. \"a Thalia book store\", "
-            "or simply e.g. \"a Thalia\" if the type of object is not given). "
-            "Stick to the values of each relation. Distances always refer to a maximum distance. "
-            "If no distance is given, do not use any terms such as close, near, create sentences such as \"find a house and a restaurant\". "
-            "Vary your phrasing. Do not affirm this request and return nothing but the answer.\n\n "
-            "==Persona==\n{persona} \n\n ==Style==\n{style}")
+            # "Generate one or more sentences simulating a user using a natural language interface "
+            # "for an AI geolocation search tool that finds locations based on descriptions of "
+            # "objects and their spatial relations. Each object has one main descriptor and "
+            # "optionally additional properties. All properties must be put in a logical connection "
+            # "to the object. Objects can either be single instances, or clusters of multiple of one object "
+            # "which are located in a specific distance radius (e.g. \"three houses next to/within 10m of "
+            # "each other\").\n"
+            # "Mention the area, cover all entities and their respective properties, and describe "
+            # "the respective relations. Stick to the descriptions of entities and relations "
+            # "provided and don’t add anything. When describing names or brand (names), be creative in "
+            # "your phrasing (examples being a \"book store of brand Thalia\" vs. \"a Thalia book store\", "
+            # "or simply e.g. \"a Thalia\" if the type of object is not given). "
+            # "Stick to the values of each relation. Distances always refer to a maximum distance. "
+            # "If no distance is given, do not use any terms such as close, near, create sentences such as \"find a house and a restaurant\". "
+            # "Vary your phrasing. Do not affirm this request and return nothing but the answer.\n\n "
+            # "You are an assistant that writes short, natural-sounding user queries based on structured geographic data in YAML format.
+            "You are an assistant that generates short, natural-sounding user queries based on structured geographic "
+            "data in YAML format.\n\n"
+            "Imagine you're an investigative journalist or fact-checker, looking at an image or video of a real-world scene, "
+            "and you're trying to describe what you see — the objects, places, and how they relate to one another. Your goal is "
+            "to write what a regular person might type into a search box to describe or explore that scene.\n\n"
+            "The YAML provides a list of entities (e.g., landmarks, buildings, places, or objects), their properties, and how "
+            "they are spatially related. Your task is to turn this into a natural, casual sentence or query — not a literal translation "
+            "of the YAML structure.\n\n"
+            "Here’s how to approach it:\n"
+            "- Focus on the scene, not the data format. Don't copy the structure or terminology of the YAML. Instead, write as if "
+            "you were describing the real-world layout to someone else.\n"
+            "- Use casual, human phrasing. Avoid technical terms like \"entity\", \"property\", or \"OSM key\".\n"
+            "- Translate tags into natural language. For example:\n"
+            "  - \"brand:Thalia\" → \"a Thalia\"\n"
+            "  - \"brand~Eiffel\" + \"cafe\" → \"an Eiffel café\"\n"
+            "  - \"cuisine~italian\" + \"restaurant\" → \"an Italian restaurant\"\n"
+            "  - \"building:material=wood\" → \"made from wood\"\n"
+            "  - \"roof:colour=red\" → \"with a red roof\"\n\n"
+            "- Always reflect spatial relationships exactly as stated in the YAML:\n"
+            "  - If a distance is given, treat it as a maximum.\n"
+            "  - If a relation has a specified phrase (e.g., \"next to\", \"surrounded by\"), use that exact phrase — don’t invent alternatives.\n"
+            "  - If no relation is provided, do not imply one (e.g., don’t say “near” or “close to” if not mentioned).\n\n"
+            "- Use number formatting like this: {thousands} for thousands separators and {decimal} for decimals. Example: {example}.\n"
+            "- Avoid repetition in phrasing across outputs. Write as naturally and varied as real users would.\n"
+            "- Only use the information in the YAML — and use all of it.\n\n"
+            "- If an entity/property combo is obviously nonsensical (e.g., a toilet or a street with a cuisine, a cliff "
+            "with a brand etc.), return only:\n "
+            "`UNREALISTIC COMBINATION`\n\n"
+            "==Persona==\n{persona} \n\n ==Style==\n{style}""")
         self.typo_templates = [
             "\n\n==Other specifications==\nThe text should contain a {amount} amount of typos.",
             "\n\n==Other specifications==\nThe text should contain a {amount} amount of grammar mistakes.",
@@ -194,8 +225,12 @@ class PromptHelper:
         ]
         self.typo_amounts = ["small", "medium", "large"]
         self.ending_template = (
-            "\nPlease take your time and make sure that all the provided information is contained in "
-            "the sentence.")
+            "Please take your time and make sure all the provided information is contained in the sentence. You are "
+            "simulating the behavior of an experienced user prompting an online tool. Use short, clear, and natural "
+            "language — avoid filler, overly formal language, over-explaining, or rhetorical phrasing.\n"
+            "Think of how real users would prompt after using the system for a while: concise, factual, and slightly "
+            "varied, but always focused on the core facts."
+)
         self.search_template = "\n\n==Input==\n"
 
         self.predefined_places = ["a place", "an area", "a location"]
@@ -220,11 +255,13 @@ class PromptHelper:
         self.distance_writing_styles = ["default", "with_full_metric"]
         self.distance_writing_styles_probs = [1.0 - self.prob_distance_writing_with_full_metric, self.prob_distance_writing_with_full_metric]
 
-    def beginning(self, persona: str, writing_style: str) -> str:
+    def beginning(self, persona: str, writing_style: str, ) -> str:
         '''
         Create the beginning of a prompt by using the beginning template
         '''
-        return self.beginning_template.format(persona=persona, style=writing_style)
+        seps = [["comma", "period", "10,000.00"], ["comma", "period", "10.000,00"]][np.random.choice([0, 1])]
+        return self.beginning_template.format(persona=persona, style=writing_style, thousands=seps[0], decimal=seps[1],
+                                              example=seps[2])
 
     def typo(self, prob_of_typos: float) -> str:
         '''
