@@ -112,7 +112,7 @@ class QueryCombinationGenerator(object):
         :param max_number_of_props_in_entity: The maximum allowed number of properties per entity
         :return: The selected number of properties
         """
-        decay_rate = 0.3
+        decay_rate = 0.6
         prop_nums = np.arange(1, max_number_of_props_in_entity + 1)
         probabilities = np.exp(-decay_rate * prop_nums)
         probabilities /= np.sum(probabilities)
@@ -257,9 +257,8 @@ class QueryCombinationGenerator(object):
             selected_index = candidate_indices[0]
             tag_property = selected_category_properties[selected_index]
             tag_props_key = ' '.join(tag_property.descriptors)
-            # if tag_props_key in tag_properties_keys and tag_props_key not in ['cuisine', 'sport']:
-                # we keep cuisine, sport because facilities can serve multiple cuisine, and offer different sport activities
-                # continue
+            if tag_props_key in tag_properties_keys:
+                continue
             tag_properties_keys.append(tag_props_key)
             tag_property = self.property_generator.run(tag_property)
             tag_properties.append(tag_property)

@@ -162,7 +162,7 @@ class RelationGenerator:
         if num_entities == 1:
             viable_tasks.pop(0)
 
-        decay_rate = 0.5
+        decay_rate = 0.7
         task_nums = np.arange(1, len(viable_tasks) + 1)
         probabilities = np.exp(-decay_rate * task_nums)
         probabilities /= np.sum(probabilities)
