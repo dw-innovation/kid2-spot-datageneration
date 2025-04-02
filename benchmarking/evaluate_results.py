@@ -215,8 +215,7 @@ def normalize_name_brands(data):
     return data
 
 
-def compare_yaml(key_table_path: str, area_analyzer: AreaAnalyzer, entity_and_prop_analyzer: EntityAndPropertyAnalyzer, relation_analyzer: RelationAnalyzer, yaml_true_string, yaml_pred_string,
-                 gold_sentence:str) -> Dict:
+def compare_yaml(key_table_path: str, area_analyzer: AreaAnalyzer, entity_and_prop_analyzer: EntityAndPropertyAnalyzer, relation_analyzer: RelationAnalyzer, yaml_true_string, yaml_pred_string) -> Dict:
     """
     Compare two YAML structures represented as strings. This is done by comparing areas, entities and relations
     separately.
@@ -239,19 +238,19 @@ def compare_yaml(key_table_path: str, area_analyzer: AreaAnalyzer, entity_and_pr
 
     is_perfect_match = ResultDataType.FALSE
     is_area_match = ResultDataType.FALSE
-    # are_entities_exactly_same = ResultDataType.FALSE
-    # percentage_entities_exactly_same = -1.0
-    # are_entities_same_exclude_props = ResultDataType.FALSE
-    # percentage_entities_same_exclude_props = -1.0
-    are_relations_exactly_same = ResultDataType.NOT_APPLICABLE
-    percentage_relations_same = -1.0
-    # are_properties_same = ResultDataType.NOT_APPLICABLE
-    # percentage_properties_same = -1.0
-    # num_entities_on_ref_data: int = 0
-    # num_entities_on_gen_data: int = 0
-    num_relations_on_ref_data: int = 0
-    num_relations_on_gen_data: int = 0
-    are_entities_partially_same = ResultDataType.FALSE
+    # # are_entities_exactly_same = ResultDataType.FALSE
+    # # percentage_entities_exactly_same = -1.0
+    # # are_entities_same_exclude_props = ResultDataType.FALSE
+    # # percentage_entities_same_exclude_props = -1.0
+    # are_relations_exactly_same = ResultDataType.NOT_APPLICABLE
+    # percentage_relations_same = -1.0
+    # # are_properties_same = ResultDataType.NOT_APPLICABLE
+    # # percentage_properties_same = -1.0
+    # # num_entities_on_ref_data: int = 0
+    # # num_entities_on_gen_data: int = 0
+    # num_relations_on_ref_data: int = 0
+    # num_relations_on_gen_data: int = 0
+    # are_entities_partially_same = ResultDataType.FALSE
 
     # if generated_data:
     # num_entities_on_ref_data = len(ref_data['entities'])
@@ -292,37 +291,38 @@ def compare_yaml(key_table_path: str, area_analyzer: AreaAnalyzer, entity_and_pr
         gen_entities = generated_data.get('entities', None)
 
     results_ents_props, full_paired_entities = entity_and_prop_analyzer.compare_entities(ref_entities,gen_entities)
-    results_relations = relation_analyzer.compare_relations(ref_data, generated_data, full_paired_entities, gold_sentence)
+    results_relations = relation_analyzer.compare_relations(ref_data, generated_data)
+
+    print(results_relations)
 
     # todo: recheck this!!
-    if 'relations' not in ref_data:
-        are_relations_exactly_same = ResultDataType.NOT_APPLICABLE
-
-    else:
-        if not generated_data:
-            are_relations_exactly_same = ResultDataType.FALSE
-        else:
-            if 'relations' not in generated_data:
-                are_relations_exactly_same = ResultDataType.FALSE
-
-            else:
-                ref_relations_prepared = prepare_relation(ref_data)
-                generated_relations_prepared = prepare_relation(generated_data)
-
-                print('ref relations prepared')
-                print(ref_relations_prepared)
-
-                print('gen relations prepared')
-                print(generated_relations_prepared)
-                percentage_relations_same = compare_relations(ref_relations_prepared, generated_relations_prepared)
-                if percentage_relations_same == 1.0:
-                    are_relations_exactly_same = ResultDataType.TRUE
-                else:
-                    are_relations_exactly_same = ResultDataType.FALSE
+    # if 'relations' not in ref_data:
+    #     are_relations_exactly_same = ResultDataType.NOT_APPLICABLE
+    #
+    # else:
+    # if not generated_data:
+    #     are_relations_exactly_same = ResultDataType.FALSE
+    # else:
+    #     if 'relations' not in generated_data:
+    #         are_relations_exactly_same = ResultDataType.FALSE
+    #
+    #     else:
+    #         ref_relations_prepared = prepare_relation(ref_data)
+    #         generated_relations_prepared = prepare_relation(generated_data)
+    #
+    #         print('ref relations prepared')
+    #         print(ref_relations_prepared)
+    #
+    #         print('gen relations prepared')
+    #         print(generated_relations_prepared)
+    #         percentage_relations_same = compare_relations(ref_relations_prepared, generated_relations_prepared)
+    #         if percentage_relations_same == 1.0:
+    #             are_relations_exactly_same = ResultDataType.TRUE
+    #         else:
+    #             are_relations_exactly_same = ResultDataType.FALSE
 
     if (is_area_match == ResultDataType.TRUE and results_ents_props['num_entity_match_perfect']
-        and (are_relations_exactly_same == ResultDataType.TRUE or
-             are_relations_exactly_same == ResultDataType.NOT_APPLICABLE)):
+        and (results_relations['total_rels'] == results_relations['total_dist_rels'] + results_relations['total_contains_rels'])):
         is_perfect_match = ResultDataType.TRUE
 
     # todo refactor this
@@ -331,11 +331,12 @@ def compare_yaml(key_table_path: str, area_analyzer: AreaAnalyzer, entity_and_pr
                   is_perfect_match=is_perfect_match,
                   is_parsable_yaml=_is_parsable_yaml,
                   is_area_match=is_area_match,
-                  num_relations_on_ref_data=num_relations_on_ref_data,
-                  num_relations_on_gen_data=num_relations_on_gen_data,
-                  are_relations_exactly_same=are_relations_exactly_same,
-                  percentage_relations_same=percentage_relations_same)
-    all_results = remaining_results | results_ents_props
+                  # num_relations_on_ref_data=num_relations_on_ref_data,
+                  # num_relations_on_gen_data=num_relations_on_gen_data,
+                  # are_relations_exactly_same=are_relations_exactly_same,
+                  # percentage_relations_same=percentage_relations_same
+                             )
+    all_results = remaining_results | results_ents_props | results_relations
     return all_results
 
 
@@ -365,7 +366,10 @@ if __name__ == '__main__':
 
     gold_file_path = args.gold_file_path
     gold_sheet_name = args.gold_sheet_name
-    gold_labels = pd.read_excel(gold_file_path, sheet_name=gold_sheet_name).to_dict(orient='records')
+    gold_ds = pd.read_excel(gold_file_path, sheet_name=gold_sheet_name)
+    # for sent in gold_ds['sentence'].tolist():
+    #     print(sent)
+    gold_labels = gold_ds.to_dict(orient='records')
 
     area_analyzer = AreaAnalyzer()
     entity_and_prop_analyzer = EntityAndPropertyAnalyzer()
@@ -376,8 +380,9 @@ if __name__ == '__main__':
         prediction['sentence'] = prediction['sentence'].strip().lower()
         gold_label['sentence'] = gold_label['sentence'].strip().lower()
 
+        print(prediction['sentence'])
+        print(gold_label['sentence'])
         assert prediction['sentence'] == gold_label['sentence']
-
 
         yaml_pred_string = prediction['model_result']
         yaml_true_string = gold_label['YAML']
@@ -389,8 +394,7 @@ if __name__ == '__main__':
             relation_analyzer=relation_analyzer,
             entity_and_prop_analyzer=entity_and_prop_analyzer,
             yaml_true_string=yaml_true_string,
-            yaml_pred_string=yaml_pred_string,
-            gold_sentence=gold_label['sentence']
+            yaml_pred_string=yaml_pred_string
         )
 
         result = result | comparision_result
@@ -414,12 +418,6 @@ if __name__ == '__main__':
     results = pd.DataFrame(results)
 
     evaluation_scores = {}
-
-    print('===Entity/Property Evaluation===')
-    print(results['total_ref_entities'])
-
-    print(results['num_entity_match_perfect'])
-
     total_ref_entities = results['total_ref_entities'].sum()
     evaluation_scores["entity_match_perfect_acc"] = results['num_entity_match_perfect'].sum() / total_ref_entities
     evaluation_scores['entity_match_weak_acc'] = results['num_entity_match_weak'].sum() / total_ref_entities
@@ -437,17 +435,33 @@ if __name__ == '__main__':
     evaluation_scores['num_hallucinated_properties'] = results['num_hallucinated_properties'].sum()
     evaluation_scores['num_missing_properties'] = results['num_missing_properties'].sum()
 
-
     total_height_property = results['total_height_property'].sum()
     evaluation_scores['correct_height_metric'] = results['num_correct_height_metric'].sum() / total_height_property
     evaluation_scores['correct_height_distance'] = results['num_correct_height_distance'].sum() / total_height_property
+
+    total_cuisine_property = results['total_cuisine_property'].sum()
+    evaluation_scores['correct_cuisine_property'] = results['num_cuisine_properties'].sum() / total_cuisine_property
+
+    total_dist_rels = results['total_dist_rels'].sum()
+    total_contains_rels = results['total_contains_rels'].sum()
+    total_relative_spatial_terms = results['total_relative_spatial_terms'].sum()
+
+    evaluation_scores['correct_predicted_dist_rels'] = results['num_predicted_dist_rels'].sum() / total_dist_rels
+    evaluation_scores['correct_dist_value'] = results['num_correct_dist_metric'].sum() / total_dist_rels
+    evaluation_scores['correct_dist_metric'] = results['num_correct_dist_value'].sum() / total_dist_rels
+    evaluation_scores['correct_predicted_contains_rels'] = results['num_predicted_contains_rels'].sum() / total_contains_rels
+    evaluation_scores['correct_relative_spatial_terms'] = results['num_predicted_relative_spatial_terms'].sum() / total_relative_spatial_terms
+
+    evaluation_scores['num_missed_rels'] = results['num_missed_rels'].sum()
+    evaluation_scores['num_hallucinated_rels'] = results['num_hallucinated_rels'].sum()
 
     for eval_type, eval_value in evaluation_scores.items():
         print(f'==={eval_type}===')
         print(eval_value)
 
     # Results with binary type
-    for result_type in ['is_perfect_match',
+    for result_type in [
+        # 'is_perfect_match',
                         'is_parsable_yaml',
                         'is_area_match',
                         # 'entity/prop eval',
@@ -459,32 +473,21 @@ if __name__ == '__main__':
                         # 'percentage_entities_same_exclude_props',
                         # 'are_properties_same',
                         # 'percentage_properties_same',
-                        'are_relations_exactly_same',
-                        'percentage_relations_same']:
+                        # 'are_relations_exactly_same',
+                        # 'percentage_relations_same'
+                        ]:
 
         print(f"===Results for {result_type}===")
-        if result_type in [
-                        # 'percentage_entities_exactly_same',
-                        # 'percentage_entities_same_exclude_props',
-                        # 'percentage_correct_entity_type',
-                        # 'percentage_properties_same',
-                        'percentage_relations_same']:
-            na_samples = results[results[result_type] == -1]
-            valid_results = results[results[result_type] != -1]
-            acc = np.mean(valid_results[result_type].to_numpy())
-
-
-        else:
-            na_samples = results[results[result_type] == ResultDataType.NOT_APPLICABLE]
-            true_preds = results[results[result_type] == ResultDataType.TRUE]
-            acc = len(true_preds) / (len(results) - len(na_samples))
+        na_samples = results[results[result_type] == ResultDataType.NOT_APPLICABLE]
+        true_preds = results[results[result_type] == ResultDataType.TRUE]
+        acc = len(true_preds) / (len(results) - len(na_samples))
 
         evaluation_scores[result_type + "_acc"] = acc
         print(f'  Accuracy of {result_type}: {acc}')
 
-        if result_type in ["are_relations_exactly_same", "are_properties_same"]:
-            evaluation_scores[result_type + "_NA"] = len(na_samples)
-            print(f"  Number of NA samples: {len(na_samples)}")
+        # if result_type in ["are_relations_exactly_same", "are_properties_same"]:
+        #     evaluation_scores[result_type + "_NA"] = len(na_samples)
+        #     print(f"  Number of NA samples: {len(na_samples)}")
 
     evaluation_scores = evaluation_scores | meta_results
 
@@ -500,9 +503,6 @@ if __name__ == '__main__':
         return value
 
     results = results.map(convert_custom_type)
-
-    print(evaluation_scores)
-
     with pd.ExcelWriter(out_file_path) as writer:
         results.to_excel(writer)
     with pd.ExcelWriter(out_file_path_sum) as writer:

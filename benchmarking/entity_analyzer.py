@@ -1,8 +1,11 @@
 import copy
 import re
+from autocorrect import Speller
 from typing import Dict
-from benchmarking.utils import find_pairs_semantic,are_dicts_equal
+from benchmarking.utils import find_pairs_semantic,are_dicts_equal, DIST_LOOKUP
 from sklearn.metrics.pairwise import cosine_similarity
+
+spell = Speller()
 
 class EntityAndPropertyAnalyzer:
     def __init__(self):
@@ -20,22 +23,30 @@ class EntityAndPropertyAnalyzer:
         predicted_entities_mapping = {}
 
         for reference_entity in reference_objs:
-            reference_entities_mapping[reference_entity['name']] = reference_entity
+            if 'brand:' in reference_entity['name']:
+                normalized_name = spell(reference_entity['name'].replace('brand:',''))
+            else:
+                normalized_name = spell(reference_entity['name'])
+            reference_entities_mapping[normalized_name] = reference_entity
 
         if not predicted_objs:
             return None, None, {'prediction': [], 'reference': list(reference_entities_mapping.keys())}
 
         for predicted_entity in predicted_objs:
-            predicted_entities_mapping[predicted_entity['name']] = predicted_entity
-
+            if 'brand:' in predicted_entity['name']:
+                normalized_name = spell(predicted_entity['name'].replace('brand:',''))
+            else:
+                normalized_name = spell(predicted_entity['name'])
+            predicted_entities_mapping[normalized_name] = predicted_entity
         paired_entities, unpaired_entities = find_pairs_semantic(reference_list=list(reference_entities_mapping.keys()), prediction_list=list(predicted_entities_mapping.keys()))
-
         full_paired_entities = [] # list of tuples
         for (ground_truth_name, predicted_entity_name) in paired_entities:
             full_paired_entities.append(
                 (reference_entities_mapping[ground_truth_name],predicted_entities_mapping[predicted_entity_name])
             )
 
+        print('unpaired entities')
+        print(unpaired_entities)
         return full_paired_entities, paired_entities, unpaired_entities
 
     def compose_height_value(self, height):
@@ -58,6 +69,7 @@ class EntityAndPropertyAnalyzer:
         num_correct_entity_type = 0 # entity type check nrw/cluster
         total_properties = 0
         total_height_property = 0
+        total_cuisine_property = 0
         num_correct_cluster_distance = 0
         num_correct_cluster_points = 0
         num_correct_properties_perfect = 0
@@ -66,6 +78,7 @@ class EntityAndPropertyAnalyzer:
         num_missing_properties = 0
         num_correct_height_metric = 0
         num_correct_height_distance = 0
+        num_cuisine_properties = 0
 
         num_entity_weak_match= len(paired_entities) if paired_entities else 0
         # hallucination check
@@ -85,6 +98,9 @@ class EntityAndPropertyAnalyzer:
                 for ref_property in ref_properties:
                     if 'height' == ref_property['name']:
                         total_height_property += 1
+
+                    if 'cuisine' == ref_property['name']:
+                        total_cuisine_property += 1
 
         if full_paired_entities:
             for (ref_ent, predicted_ent) in full_paired_entities:
@@ -125,6 +141,13 @@ class EntityAndPropertyAnalyzer:
                                     num_correct_height_distance+=1
                                 if ref_height_metric == pred_height_metric:
                                     num_correct_height_metric+=1
+                                else:
+                                    pred_height_metric = DIST_LOOKUP.get(pred_height_metric, None)
+                                    if ref_height_metric == pred_height_metric:
+                                        num_correct_height_metric += 1
+                            if 'cuisine' == ref_prop['name']:
+                                if ref_prop['value'] == ent_prop['value']:
+                                    num_cuisine_properties += 1
 
 
                     # hallucinated prop
@@ -145,6 +168,7 @@ class EntityAndPropertyAnalyzer:
         return dict(
             total_clusters=total_clusters,
             total_properties=total_properties,
+            total_cuisine_property=total_cuisine_property,
             total_ref_entities = total_ref_entities,
             num_entity_match_perfect = num_entity_match_perfect,
             num_entity_match_weak = num_entity_weak_match,
@@ -159,7 +183,8 @@ class EntityAndPropertyAnalyzer:
             num_missing_properties=num_missing_properties,
             num_missing_entity=num_missing_entity,
             num_correct_height_metric = num_correct_height_metric,
-            num_correct_height_distance = num_correct_height_distance
+            num_correct_height_distance = num_correct_height_distance,
+            num_cuisine_properties = num_cuisine_properties
         ), full_paired_entities
 
     def sort_entities(self, entities1, entities2):

@@ -10,6 +10,17 @@ from datageneration.utils import split_descriptors
 
 model = SentenceTransformer("all-MiniLM-L6-v2")
 
+DIST_LOOKUP = {
+    "centimeters": "cm",
+    "meters": "m",
+    "kilometers": "km",
+    "inches": "in",
+    "feet": "ft",
+    "yards": "yd",
+    "miles": "mi"
+}
+
+
 def check_equivalent_entities(descriptors, ref, gen):
     """
     In case the reference and the generated entities + properties have descriptors that differ, but come from the
@@ -123,7 +134,6 @@ def load_key_table(path):
             descriptors[desc] = descriptors_lst
 
     return descriptors
-
 
 def normalize(obj):
     if isinstance(obj, dict):

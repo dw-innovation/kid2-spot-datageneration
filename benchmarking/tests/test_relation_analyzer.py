@@ -14,7 +14,7 @@ class TestBenchmarking(unittest.TestCase):
                                                  'properties': [{'name': 'outdoor seating'}]},
                                                 {'id': 2, 'type': 'nwr', 'name': 'brand:Burger King'}],
 
-        'relations': [{'source': 0, 'target': 1, 'type': 'distance', 'value': '50 m'},
+        'relations': [{'source': 0, 'target': 1, 'type': 'distance', 'value': '50 m', 'spatial_term': 'next to'},
                        {'source': 1, 'target': 2, 'type': 'distance', 'value': '120 m'}]}
 
         gen_data = {'area': {'type': 'bbox', 'value': 'bbox'}, 'entities': [{'name': 'tram stop', 'id': '0', 'type': 'nwr',
@@ -27,29 +27,16 @@ class TestBenchmarking(unittest.TestCase):
                                                                   'properties': []}],
          'relations': [{'source': '0', 'target': '1', 'type': 'dist', 'value': 'next to'},
                        {'source': '1', 'target': '2', 'type': 'dist', 'value': '120 meters'}]}
-
-        full_paired_ent =  [({'id': 0, 'type': 'nwr', 'name': 'tram stop',
-           'properties': [{'name': 'name', 'operator': '~', 'value': 'center'}]},
-          {'name': 'tram stop', 'id': '0', 'type': 'nwr',
-           'properties': [{'name': 'name', 'operator': '~', 'value': 'center'}]}), (
-         {'id': 1, 'type': 'nwr', 'name': 'cafe', 'properties': [{'name': 'outdoor seating'}]},
-         {'name': 'cafe', 'id': '1', 'type': 'nwr',
-          'properties': [{'name': 'seating', 'operator': '=', 'value': 'outdoor'}]}), (
-         {'id': 2, 'type': 'nwr', 'name': 'brand:Burger King'},
-         {'name': 'burger king', 'id': '2', 'type': 'nwr', 'properties': []})]
-
-        results = self.relation_analyzer.compare_relations(reference_data=ref_data, generated_data=gen_data, full_paired_entities=full_paired_ent)
+        results = self.relation_analyzer.compare_relations(reference_data=ref_data, generated_data=gen_data)
 
         self.assertEqual(results['total_rels'], 2)
         self.assertEqual(results['total_dist_rels'], 2)
         self.assertEqual(results['num_correctly_predicted_ids'], 2)
         self.assertEqual(results['num_predicted_dist_rels'], 2)
         self.assertEqual(results['num_predicted_contains_rels'], 0)
-
-        print(results[
-            'num_correct_height_distance'
-              ])
-
-        print(results[
-            'num_correct_height_metric'
-              ])
+        self.assertEqual(results['num_correct_height_distance'], 1)
+        self.assertEqual(results['num_correct_height_metric'], 1)
+        self.assertEqual(results['total_relative_spatial_terms'],1)
+        self.assertEqual(results['num_predicted_relative_spatial_terms'],0)
+        self.assertEqual(results['num_predicted_relative_spatial_terms'],0)
+        self.assertEqual(results['num_predicted_relative_spatial_terms'],0)
