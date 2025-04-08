@@ -1,4 +1,4 @@
-VERSION=v17_newPrompt
+VERSION=v18_newPrompt
 
 #python -m datageneration.gpt_data_generator \
 #--relative_spatial_terms_path datageneration/data/relative_spatial_terms.csv \
@@ -76,6 +76,7 @@ python -m datageneration.gpt_data_generator \
 --output_gpt_generations datageneration/results/${VERSION}/gpt_generations_dataset_${VERSION}_10k.jsonl \
 --persona_path datageneration/prompts/personas.txt \
 --styles_path datageneration/prompts/styles.txt \
+--prob_no_cluster_distance 0.5 \
 --prob_usage_of_relative_spatial_terms 0.4 \
 --prob_usage_of_written_numbers 0.5 \
 --prob_distance_writing_no_whitespace 0.4 \

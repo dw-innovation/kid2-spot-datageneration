@@ -301,6 +301,6 @@ plt.show()
 
 # Top words printout
 print("\nTop 20 Words - Human:\n", human_stats["top_words"])
-print("\nTop 20 Words - Human w/o stopwords:\n", human_stats["top_words_no_stopwords"])
 print("\nTop 20 Words - Model:\n", model_stats["top_words"])
+print("\nTop 20 Words - Human w/o stopwords:\n", human_stats["top_words_no_stopwords"])
 print("\nTop 20 Words - Model w/o stopwords:\n", model_stats["top_words_no_stopwords"])
