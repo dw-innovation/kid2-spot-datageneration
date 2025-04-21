@@ -1,5 +1,5 @@
 VERSION=v18
-SUFFIX=_newPrompt
+SUFFIX=_fullDataset
 
 ## create non-roman samples with prob 1.0, increase prob_of_entities_with_props from 0.2 to 0.5
 #python -m datageneration.generate_combination_table \
@@ -188,4 +188,4 @@ python -m datageneration.generate_combination_table \
 --prob_adding_brand_names_as_entity 0.025 \
 --prob_of_non_roman_areas 0.3 \
 --prob_of_cluster_entities 0.3 \
---samples 500
+--samples 25000
