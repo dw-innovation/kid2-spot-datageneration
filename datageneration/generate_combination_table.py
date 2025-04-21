@@ -125,7 +125,7 @@ class QueryCombinationGenerator(object):
             add_cluster = np.random.choice([True, False], p=[self.prob_of_cluster_entities,
                                                                      1 - self.prob_of_cluster_entities])
             if add_cluster:
-                minPoints = np.random.choice(np.arange(20))
+                minPoints = np.random.choice(np.arange(2, 20))
                 maxDistance = get_random_decimal_with_metric(5)
                 selected_entities[id] = Entity(id=selected_entities[id].id, is_area=selected_entities[id].is_area,
                                                 name=selected_entities[id].name, type='cluster',
