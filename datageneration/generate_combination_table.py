@@ -31,7 +31,12 @@ class QueryCombinationGenerator(object):
                  prob_of_rare_non_numerical_properties: float,
                  prob_of_non_roman_areas: float,
                  color_bundle_path: str,
-                 prob_of_cluster_entities: float
+                 prob_of_cluster_entities: float,
+                 ent_peak: int,
+                 ent_decay_rate_right: float,
+                 ent_decay_rate_left: float,
+                 prob_decay_rate: float,
+                 rel_decay_rate: float
                  ):
 
         color_bundles = fetch_color_bundle(property_examples=property_examples,bundle_path=color_bundle_path)
@@ -40,8 +45,6 @@ class QueryCombinationGenerator(object):
 
         self.area_generator = AreaGenerator(geolocation_file=geolocation_file, non_roman_vocab_file=non_roman_vocab_file, prob_of_two_word_areas=prob_of_two_word_areas, prob_of_non_roman_areas=prob_of_non_roman_areas)
         self.prob_adding_brand_names_as_entity = prob_adding_brand_names_as_entity
-        self.relation_generator = RelationGenerator(max_distance_digits=max_distance_digits,
-                                                    prob_generating_contain_rel=prob_generating_contain_rel)
         self.prob_of_numerical_properties = prob_of_numerical_properties
         self.prob_of_color_properties = prob_of_color_properties
         self.prob_of_popular_non_numerical_properties = prob_of_popular_non_numerical_properties
@@ -55,6 +58,14 @@ class QueryCombinationGenerator(object):
             "popular_non_numerical": self.prob_of_popular_non_numerical_properties,
             "other_non_numerical": self.prob_of_other_non_numerical_properties,
         }
+        self.ent_peak = ent_peak
+        self.ent_decay_rate_right = ent_decay_rate_right
+        self.ent_decay_rate_left = ent_decay_rate_left
+        self.prob_decay_rate = prob_decay_rate
+        self.rel_decay_rate = rel_decay_rate
+        self.relation_generator = RelationGenerator(max_distance_digits=max_distance_digits,
+                                                    prob_generating_contain_rel=prob_generating_contain_rel,
+                                                    rel_decay_rate=self.rel_decay_rate)
 
     def categorize_entities_based_on_their_props(self, tag_combinations: List[TagCombination]) -> Dict:
         categorized_entities = {
@@ -88,14 +99,14 @@ class QueryCombinationGenerator(object):
         :param max_number_of_entities_in_prompt: The maximum allowed number of entities per query
         :return: The selected number of entities
         """
-        peak_value = 3  # Number of entity with the highest probability
-        decay_rate_right = 0.7
-        decay_rate_left = 0.5 #0.3
+        # peak_value = 2  # Number of entity with the highest probability
+        # decay_rate_right = 0.7
+        # decay_rate_left = 0.5 #0.3
         entity_nums = np.arange(1, max_number_of_entities_in_prompt + 1)
         probabilities = np.zeros(max_number_of_entities_in_prompt)
-        probabilities[peak_value - 1] = 1
-        probabilities[peak_value:] = np.exp(-decay_rate_right * (entity_nums[peak_value:] - peak_value))
-        probabilities[:peak_value] = np.exp(-decay_rate_left * (peak_value - entity_nums[:peak_value]))
+        probabilities[self.ent_peak - 1] = 1
+        probabilities[self.ent_peak:] = np.exp(-self.ent_decay_rate_right * (entity_nums[self.ent_peak:] - self.ent_peak))
+        probabilities[:self.ent_peak] = np.exp(-self.ent_decay_rate_left * (self.ent_peak - entity_nums[:self.ent_peak]))
         probabilities /= np.sum(probabilities)
         number_of_entities_in_prompt = np.random.choice(entity_nums, p=probabilities)
 
@@ -112,9 +123,9 @@ class QueryCombinationGenerator(object):
         :param max_number_of_props_in_entity: The maximum allowed number of properties per entity
         :return: The selected number of properties
         """
-        decay_rate = 0.6
+        # decay_rate = 0.6
         prop_nums = np.arange(1, max_number_of_props_in_entity + 1)
-        probabilities = np.exp(-decay_rate * prop_nums)
+        probabilities = np.exp(-self.prob_decay_rate * prop_nums)
         probabilities /= np.sum(probabilities)
         selected_num_of_props = np.random.choice(prop_nums, p=probabilities)
 
@@ -379,6 +390,11 @@ if __name__ == '__main__':
     parser.add_argument('--prob_of_popular_non_numerical_properties', type=float, default=0.2)
     parser.add_argument('--prob_of_other_non_numerical_properties', type=float, default=0.5)
     parser.add_argument('--prob_of_cluster_entities', type=float, default=0.3)
+    parser.add_argument('--ent_peak', type=int, default=3)
+    parser.add_argument('--ent_decay_rate_right', type=float, default=0.7)
+    parser.add_argument('--ent_decay_rate_left', type=float, default=0.5)
+    parser.add_argument('--prob_decay_rate', type=float, default=0.6)
+    parser.add_argument('--rel_decay_rate', type=float, default=0.7)
 
     args = parser.parse_args()
 
@@ -403,6 +419,11 @@ if __name__ == '__main__':
     prob_of_popular_non_numerical_properties = args.prob_of_popular_non_numerical_properties
     prob_of_rare_non_numerical_properties = args.prob_of_rare_non_numerical_properties
     prob_of_cluster_entities = args.prob_of_cluster_entities
+    ent_peak = args.ent_peak
+    ent_decay_rate_right = args.ent_decay_rate_right
+    ent_decay_rate_left = args.ent_decay_rate_left
+    prob_decay_rate = args.prob_decay_rate
+    rel_decay_rate = args.rel_decay_rate
 
     tag_combinations = pd.read_json(tag_combination_path, lines=True).to_dict('records')
     tag_combinations = [TagCombination(**tag_comb) for tag_comb in tag_combinations]
@@ -423,7 +444,12 @@ if __name__ == '__main__':
                                                      prob_of_popular_non_numerical_properties=prob_of_popular_non_numerical_properties,
                                                      prob_of_other_non_numerical_properties= prob_of_other_non_numerical_properties,
                                                      prob_of_rare_non_numerical_properties=prob_of_rare_non_numerical_properties,
-                                                     prob_of_cluster_entities=prob_of_cluster_entities)
+                                                     prob_of_cluster_entities=prob_of_cluster_entities,
+                                                     ent_peak=ent_peak,
+                                                     ent_decay_rate_right=ent_decay_rate_right,
+                                                     ent_decay_rate_left=ent_decay_rate_left,
+                                                     prob_decay_rate=prob_decay_rate,
+                                                     rel_decay_rate=rel_decay_rate)
 
     generated_combs = query_comb_generator.run(num_queries=num_samples,
                                                max_number_of_entities_in_prompt=max_number_of_entities_in_prompt,
