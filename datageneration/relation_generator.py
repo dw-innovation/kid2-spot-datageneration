@@ -15,10 +15,11 @@ class RELATION_TASKS(Enum):
     IN_AREA = 'in_area'
 
 class RelationGenerator:
-    def __init__(self, max_distance_digits: int, prob_generating_contain_rel: float):
+    def __init__(self, max_distance_digits: int, prob_generating_contain_rel: float, rel_decay_rate:float):
         self.MAX_DISTANCE_DIGITS = max_distance_digits
         self.prob_generating_contain_rel = prob_generating_contain_rel
         self.tasks = [relation_task.value for relation_task in RELATION_TASKS]
+        self.rel_decay_rate = rel_decay_rate
 
     def generate_individual_distances(self, entity_ids: List[int]) -> List[Relation]:
         entity_ids = np.sort(entity_ids)
@@ -182,9 +183,9 @@ class RelationGenerator:
         if num_entities == 1:
             viable_tasks.pop(0)
 
-        decay_rate = 0.7
+        # decay_rate = 0.7
         task_nums = np.arange(1, len(viable_tasks) + 1)
-        probabilities = np.exp(-decay_rate * task_nums)
+        probabilities = np.exp(-self.rel_decay_rate * task_nums)
         probabilities /= np.sum(probabilities)
         selected_task = np.random.choice(viable_tasks, p=probabilities)
 
