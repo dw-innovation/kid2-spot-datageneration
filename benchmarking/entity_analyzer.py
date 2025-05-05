@@ -286,8 +286,8 @@ class EntityAndPropertyAnalyzer:
         if (total_clusters == num_correct_cluster_points) and \
                 (total_clusters == num_correct_cluster_distance) and \
                 (total_properties == num_correct_properties_perfect) and \
-                num_hallucinated_entity > 0 and \
-                num_hallucinated_properties > 0 and \
+                num_hallucinated_entity == 0 and \
+                num_hallucinated_properties == 0 and \
                 total_ref_entities == num_entity_match_perfect:
             perfect_result= True
 

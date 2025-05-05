@@ -196,7 +196,8 @@ class RelationAnalyzer:
         num_correct_rel_type = num_correct_contains_rels+num_correct_dist_edges
 
         if (num_correct_rel_type == total_rels) and \
-                (total_rels==num_correct_dist_rels+num_correct_contains_rels):
+                (total_dist_rels==num_correct_dist_rels) and \
+                (total_contains_rels==num_correct_contains_rels):
             perfect_result = True
 
         return dict(total_rels = total_rels,
