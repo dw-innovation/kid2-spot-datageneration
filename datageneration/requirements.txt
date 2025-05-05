@@ -14,3 +14,4 @@ num2words==0.5.13
 webcolors==24.8.0
 autocorrect==2.6.1
 sentence-transformers
+thefuzz[speedup]==0.22.1

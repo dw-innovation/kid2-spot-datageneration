@@ -1,15 +1,97 @@
 import copy
 import re
+from thefuzz import fuzz
 from autocorrect import Speller
 from typing import Dict
-from benchmarking.utils import find_pairs_semantic,are_dicts_equal, DIST_LOOKUP
+from benchmarking.utils import find_pairs_semantic, are_dicts_equal, DIST_LOOKUP, normalize
 from sklearn.metrics.pairwise import cosine_similarity
 
 spell = Speller()
 
 class EntityAndPropertyAnalyzer:
-    def __init__(self):
-        pass
+    def __init__(self, descriptors):
+        self.descriptors = descriptors
+        self.color_descriptors = self.descriptors['color']
+        self.color_descriptors.sort()
+
+    def convert_values_to_string(self, data):
+        for item in data:
+            item["name"] = item["name"].lower()
+            if 'value' not in item:
+                continue
+            if isinstance(item['value'], (int, float)):
+                item['value'] = str(item['value'])
+            else:
+                item['value'] = item['value'].lower()
+
+        return data
+
+    def check_equivalent_entities(self, descriptors, ref, gen):
+        """
+        DEPRECEATED -- integrated into the pair_objects
+        In case the reference and the generated entities + properties have descriptors that differ, but come from the
+        same bundle, this script replaces the generated entity/property descriptor with that of the reference to ensure it
+        will be treated as equal for the rest of the script.
+
+        :param descriptors: A map of descriptors where each descriptor maps to the corresponding bundle descriptor list.
+        :param ref: The reference entity from the ground truth data.
+        :param gen: The generated entity to be evaluated.
+        :return: gen_copy - The copy with the corrected entity values.
+        """
+        gen_copy = copy.deepcopy(gen)
+        for r in ref:
+            for id, g in enumerate(gen_copy):
+                if 'name' not in g:
+                    break
+                if isinstance(g['name'], list):
+                    g['name'] = g['name'][0]
+
+                if r['name'] in descriptors:
+                    equivalent_descriptors = descriptors.get(r['name'])
+                else:
+                    continue
+                if g['name']:
+                    if g['name'] in equivalent_descriptors:
+                        g['name'] = r['name']
+
+                if 'properties' in r and 'properties' in g:
+                    props_r = self.convert_values_to_string(r.get('properties', []))
+                    props_g = self.convert_values_to_string(g.get('properties', []))
+                    for pr in props_r:
+                        if pr['name'] not in descriptors:
+                            continue
+                        equivalent_properties = descriptors.get(pr['name'])
+                        for id, pg in enumerate(props_g):
+                            if pg['name'] in equivalent_properties:
+                                props_g[id]['name'] = pr['name']
+
+        return gen_copy
+
+    def normalization_with_descriptors(self, obj_name):
+        obj_name = obj_name.lower()
+        if obj_name not in self.descriptors:
+            normalized_name = self.fuzzy_search(obj_name)
+            if normalized_name == obj_name:
+                corrected_name = spell(obj_name)
+                normalized_name = self.fuzzy_search(corrected_name)
+        else:
+            normalized_name = self.descriptors[obj_name]
+        return normalized_name
+
+    def fuzzy_search(self, corrected_name):
+        best_match = None
+        highest_score = 0
+        for descriptor in self.descriptors:
+            score = fuzz.partial_ratio(descriptor.lower(), corrected_name)
+
+            if score > highest_score:
+                highest_score = score
+                best_match = descriptor
+        if highest_score >= 90:
+            normalized_name = self.descriptors[best_match]
+        else:
+            normalized_name = corrected_name
+        return normalized_name
 
     def pair_objects(self, predicted_objs, reference_objs):
         '''
@@ -19,37 +101,55 @@ class EntityAndPropertyAnalyzer:
         :return: paired entities, unpaired entities
         '''
         # create a dictionary of reference entities and predicted entities, names will be the keys
-        reference_entities_mapping = {}
-        predicted_entities_mapping = {}
+        reference_obj_mapping = {}
+        predicted_obj_mapping = {}
 
-        for reference_entity in reference_objs:
-            if 'brand:' in reference_entity['name']:
-                normalized_name = spell(reference_entity['name'].replace('brand:',''))
-            else:
-                normalized_name = spell(reference_entity['name'])
-            reference_entities_mapping[normalized_name] = reference_entity
+        for reference_obj in reference_objs:
+            reference_obj['name'] = reference_obj['name']
+            normalized_name = reference_obj['name']
+            if 'color' in normalized_name or 'colour' in normalized_name:
+                normalized_name = 'color'
+            normalized_name = normalized_name.replace('brand:', '')
+            # todo: fuzzy match
+            normalized_name = self.normalization_with_descriptors(normalized_name)
+            if isinstance(normalized_name, list):
+                normalized_name = normalized_name[0]
+            if 'value' in reference_obj:
+                if isinstance(reference_obj['value'], str):
+                    reference_obj['value'] = reference_obj['value'].lower()
+
+            reference_obj_mapping[normalized_name] = reference_obj
+            reference_obj['normalized_name'] = normalized_name
 
         if not predicted_objs:
-            return None, None, {'prediction': [], 'reference': list(reference_entities_mapping.keys())}
+            return None, None, {'prediction': [], 'reference': list(reference_obj_mapping.keys())}
 
-        for predicted_entity in predicted_objs:
-            if 'brand:' in predicted_entity['name']:
-                normalized_name = spell(predicted_entity['name'].replace('brand:',''))
-            else:
-                normalized_name = spell(predicted_entity['name'])
-            predicted_entities_mapping[normalized_name] = predicted_entity
-        paired_entities, unpaired_entities = find_pairs_semantic(reference_list=list(reference_entities_mapping.keys()), prediction_list=list(predicted_entities_mapping.keys()))
+        for predicted_obj in predicted_objs:
+            if isinstance(predicted_obj['name'], int):
+                predicted_obj['name'] = str(predicted_obj['name'])
+            normalized_name = predicted_obj['name']
+            if 'color' in normalized_name or 'colour' in normalized_name:
+                normalized_name = 'color'
+            normalized_name = normalized_name.replace('brand:', '')
+            normalized_name = self.normalization_with_descriptors(normalized_name)
+            if isinstance(normalized_name, list):
+                normalized_name = normalized_name[0]
+            if 'value' in predicted_obj:
+                if isinstance(predicted_obj['value'], str):
+                    predicted_obj['value'] = predicted_obj['value'].lower()
+            predicted_obj_mapping[normalized_name] = predicted_obj
+            predicted_obj['normalized_name'] = normalized_name
+
+        paired_objs, unpaired_objs = find_pairs_semantic(reference_list=list(reference_obj_mapping.keys()), prediction_list=list(predicted_obj_mapping.keys()))
         full_paired_entities = [] # list of tuples
-        for (ground_truth_name, predicted_entity_name) in paired_entities:
+        for (ground_truth_name, predicted_obj_name) in paired_objs:
             full_paired_entities.append(
-                (reference_entities_mapping[ground_truth_name],predicted_entities_mapping[predicted_entity_name])
+                (reference_obj_mapping[ground_truth_name],predicted_obj_mapping[predicted_obj_name])
             )
-
-        print('unpaired entities')
-        print(unpaired_entities)
-        return full_paired_entities, paired_entities, unpaired_entities
+        return full_paired_entities, paired_objs, unpaired_objs
 
     def compose_height_value(self, height):
+        height = str(height)
         height_value = re.findall(r'\d+', height)[0]
         height_metric = height.replace(height_value,'')
         return height_value, height_metric
@@ -70,6 +170,7 @@ class EntityAndPropertyAnalyzer:
         total_properties = 0
         total_height_property = 0
         total_cuisine_property = 0
+        total_color_property= 0
         num_correct_cluster_distance = 0
         num_correct_cluster_points = 0
         num_correct_properties_perfect = 0
@@ -78,7 +179,10 @@ class EntityAndPropertyAnalyzer:
         num_missing_properties = 0
         num_correct_height_metric = 0
         num_correct_height_distance = 0
-        num_cuisine_properties = 0
+        num_correct_height = 0
+        num_correct_cuisine_properties = 0
+        num_correct_color = 0
+        perfect_result = False
 
         num_entity_weak_match= len(paired_entities) if paired_entities else 0
         # hallucination check
@@ -102,6 +206,9 @@ class EntityAndPropertyAnalyzer:
                     if 'cuisine' == ref_property['name']:
                         total_cuisine_property += 1
 
+                    if 'color' in ref_property['name'] or 'colour' in ref_property['name'] or ref_property['name'] in self.color_descriptors:
+                        total_color_property += 1
+
         if full_paired_entities:
             for (ref_ent, predicted_ent) in full_paired_entities:
                 if are_dicts_equal(ref_ent, predicted_ent):
@@ -122,7 +229,6 @@ class EntityAndPropertyAnalyzer:
                 if 'properties' in ref_ent:
                     ref_properties = ref_ent.get('properties')
                     ent_properties = predicted_ent.get('properties', None)
-
                     full_paired_props, paired_props, unpaired_props = self.pair_objects(
                         predicted_objs=ent_properties, reference_objs=ref_properties)
 
@@ -134,9 +240,10 @@ class EntityAndPropertyAnalyzer:
                                 num_correct_properties_perfect += 1
 
                             if 'height' == ref_prop['name']:
+                                if ref_prop['value'] == ent_prop['value']:
+                                    num_correct_height+=1
                                 ref_height_value, ref_height_metric = self.compose_height_value(ref_prop['value'])
                                 pred_height_value, pred_height_metric = self.compose_height_value(ent_prop['value'])
-
                                 if ref_height_value == pred_height_value:
                                     num_correct_height_distance+=1
                                 if ref_height_metric == pred_height_metric:
@@ -146,8 +253,19 @@ class EntityAndPropertyAnalyzer:
                                     if ref_height_metric == pred_height_metric:
                                         num_correct_height_metric += 1
                             if 'cuisine' == ref_prop['name']:
-                                if ref_prop['value'] == ent_prop['value']:
-                                    num_cuisine_properties += 1
+                                if 'value' not in ent_prop:
+                                    print(f'Mismatch between the props: {ref_prop} and {ent_prop}')
+                                else:
+                                    if ref_prop['value'] == ent_prop['value']:
+                                        num_correct_cuisine_properties += 1
+
+                            if 'color' in ent_prop['name'] or 'colour' in ent_prop['name']:
+                                if ent_prop['value'] == ref_prop['value']:
+                                    num_correct_color+=1
+                            else:
+                                if ent_prop['name'] in self.color_descriptors:
+                                    if ent_prop['value'] == ref_prop['value']:
+                                        num_correct_color += 1
 
 
                     # hallucinated prop
@@ -165,7 +283,16 @@ class EntityAndPropertyAnalyzer:
             num_missing_properties = total_properties
             num_missing_entity += total_ref_entities
 
+        if (total_clusters == num_correct_cluster_points) and \
+                (total_clusters == num_correct_cluster_distance) and \
+                (total_properties == num_correct_properties_perfect) and \
+                num_hallucinated_entity > 0 and \
+                num_hallucinated_properties > 0 and \
+                total_ref_entities == num_entity_match_perfect:
+            perfect_result= True
+
         return dict(
+            total_color_property = total_color_property,
             total_clusters=total_clusters,
             total_properties=total_properties,
             total_cuisine_property=total_cuisine_property,
@@ -182,9 +309,12 @@ class EntityAndPropertyAnalyzer:
             num_hallucinated_entity = num_hallucinated_entity,
             num_missing_properties=num_missing_properties,
             num_missing_entity=num_missing_entity,
+            num_correct_height=num_correct_height,
             num_correct_height_metric = num_correct_height_metric,
             num_correct_height_distance = num_correct_height_distance,
-            num_cuisine_properties = num_cuisine_properties
+            num_correct_cuisine_properties = num_correct_cuisine_properties,
+            num_correct_color = num_correct_color,
+            perfect_result = perfect_result
         ), full_paired_entities
 
     def sort_entities(self, entities1, entities2):

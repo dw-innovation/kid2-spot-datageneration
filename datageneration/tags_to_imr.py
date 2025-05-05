@@ -110,7 +110,9 @@ if __name__ == '__main__':
     for row in tqdm(primary_key_table.to_dict(orient='records'), total=len(primary_key_table)):
         descriptors_str = row['descriptors']
         tags_str = row['tags']
-
+        if isinstance(descriptors_str, float):
+            print(tags_str)
+            continue
         desriptors = split_descriptors(descriptors_str)
         tags = json.loads(json.dumps(transform_tags_to_imr(tags_str), default=tag_serializer))
 

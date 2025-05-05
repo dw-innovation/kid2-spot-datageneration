@@ -8,35 +8,18 @@ class TestBenchmarking(unittest.TestCase):
         self.relation_analyzer = RelationAnalyzer()
 
     def test_compare_relation(self):
-        ref_data = {'area': {'type': 'bbox'}, 'entities': [{'id': 0, 'type': 'nwr', 'name': 'tram stop',
-                                                 'properties': [{'name': 'name', 'operator': '~', 'value': 'center'}]},
-                                                {'id': 1, 'type': 'nwr', 'name': 'cafe',
-                                                 'properties': [{'name': 'outdoor seating'}]},
-                                                {'id': 2, 'type': 'nwr', 'name': 'brand:Burger King'}],
-
-        'relations': [{'source': 0, 'target': 1, 'type': 'distance', 'value': '50 m', 'spatial_term': 'next to'},
-                       {'source': 1, 'target': 2, 'type': 'distance', 'value': '120 m'}]}
-
-        gen_data = {'area': {'type': 'bbox', 'value': 'bbox'}, 'entities': [{'name': 'tram stop', 'id': '0', 'type': 'nwr',
-                                                                  'properties': [{'name': 'name', 'operator': '~',
-                                                                                  'value': 'center'}]},
-                                                                 {'name': 'cafe', 'id': '1', 'type': 'nwr',
-                                                                  'properties': [{'name': 'seating', 'operator': '=',
-                                                                                  'value': 'outdoor'}]},
-                                                                 {'name': 'burger king', 'id': '2', 'type': 'nwr',
-                                                                  'properties': []}],
-         'relations': [{'source': '0', 'target': '1', 'type': 'dist', 'value': 'next to'},
-                       {'source': '1', 'target': '2', 'type': 'dist', 'value': '120 meters'}]}
-        results = self.relation_analyzer.compare_relations(reference_data=ref_data, generated_data=gen_data)
-
-        self.assertEqual(results['total_rels'], 2)
-        self.assertEqual(results['total_dist_rels'], 2)
-        self.assertEqual(results['num_correctly_predicted_ids'], 2)
-        self.assertEqual(results['num_predicted_dist_rels'], 2)
-        self.assertEqual(results['num_predicted_contains_rels'], 0)
-        self.assertEqual(results['num_correct_height_distance'], 1)
-        self.assertEqual(results['num_correct_height_metric'], 1)
+        ref_data = {'area': {'type': 'bbox'}, 'entities': [{'id': 0, 'type': 'cluster', 'name': 'tall building', 'minPoints': 2, 'maxDistance': '300 m', 'normalized_name': 'high-rise building'}, {'id': 1, 'type': 'nwr', 'name': 'river', 'normalized_name': 'canal'}, {'id': 2, 'type': 'nwr', 'name': 'house', 'properties': [{'name': 'color', 'operator': '=', 'value': 'yellow', 'normalized_name': 'building color'}], 'normalized_name': 'linked house'}], 'relations': [{'type': 'distance', 'source': 0, 'target': 1, 'value': '50 m', 'spatial_term': 'near'}, {'type': 'contains', 'source': 1, 'target': 2}]}
+        gen_data = {'area': {'type': 'bbox'}, 'entities': [{'id': 0, 'name': 'tall building', 'type': 'nwr', 'normalized_name': 'high-rise building'}, {'id': 1, 'name': 'river', 'properties': [{'name': 'house colour', 'operator': '=', 'value': 'yellow'}], 'type': 'nwr', 'normalized_name': 'canal'}], 'relations': [{'source': 0, 'target': 1, 'type': 'distance', 'value': '300 m'}]}
+        full_paired_ent = [({'id': 0, 'type': 'cluster', 'name': 'tall building', 'minPoints': 2, 'maxDistance': '300 m', 'normalized_name': 'high-rise building'}, {'id': 0, 'name': 'tall building', 'type': 'nwr', 'normalized_name': 'high-rise building'}), ({'id': 1, 'type': 'nwr', 'name': 'river', 'normalized_name': 'canal'}, {'id': 1, 'name': 'river', 'properties': [{'name': 'house colour', 'operator': '=', 'value': 'yellow'}], 'type': 'nwr', 'normalized_name': 'canal'}), ({'id': 2, 'type': 'nwr', 'name': 'house', 'properties': [{'name': 'color', 'operator': '=', 'value': 'yellow', 'normalized_name': 'building color'}], 'normalized_name': 'linked house'}, {'id': 0, 'name': 'tall building', 'type': 'nwr', 'normalized_name': 'high-rise building'})]
+        results = self.relation_analyzer.compare_relations(reference_data=ref_data, generated_data=gen_data, full_paired_entities=full_paired_ent)
+        self.assertEqual(results['total_dist_rels'], 1)
+        self.assertEqual(results['total_contains_rels'], 1)
+        self.assertEqual(results['num_correct_dist_rels'], 0)
+        self.assertEqual(results['num_correct_contains_rels'], 0)
+        self.assertEqual(results['num_correct_dist_edges'], 1)
+        self.assertEqual(results['num_correct_dist_value'], 0)
+        self.assertEqual(results['num_correct_dist_metric'], 1)
+        self.assertEqual(results['num_correct_dist'], 0)
+        self.assertEqual(results['num_correct_rel_type'], 1)
         self.assertEqual(results['total_relative_spatial_terms'],1)
-        self.assertEqual(results['num_predicted_relative_spatial_terms'],0)
-        self.assertEqual(results['num_predicted_relative_spatial_terms'],0)
-        self.assertEqual(results['num_predicted_relative_spatial_terms'],0)
+        self.assertEqual(results['num_correct_relative_spatial_terms'],0)

@@ -8,7 +8,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 from sentence_transformers import SentenceTransformer
 from datageneration.utils import split_descriptors
 
-model = SentenceTransformer("all-MiniLM-L6-v2")
+model = SentenceTransformer("cross-encoder/nli-deberta-v3-base")
 
 DIST_LOOKUP = {
     "centimeters": "cm",
@@ -19,47 +19,6 @@ DIST_LOOKUP = {
     "yards": "yd",
     "miles": "mi"
 }
-
-
-def check_equivalent_entities(descriptors, ref, gen):
-    """
-    In case the reference and the generated entities + properties have descriptors that differ, but come from the
-    same bundle, this script replaces the generated entity/property descriptor with that of the reference to ensure it
-    will be treated as equal for the rest of the script.
-
-    :param descriptors: A map of descriptors where each descriptor maps to the corresponding bundle descriptor list.
-    :param ref: The reference entity from the ground truth data.
-    :param gen: The generated entity to be evaluated.
-    :return: gen_copy - The copy with the corrected entity values.
-    """
-    gen_copy = copy.deepcopy(gen)
-    for r in ref:
-        for id, g in enumerate(gen_copy):
-            if 'name' not in g:
-                break
-            if isinstance(g['name'], list):
-                g['name'] = g['name'][0]
-
-            if r['name'] in descriptors:
-                equivalent_descriptors = descriptors.get(r['name'])
-            else:
-                continue
-            if g['name']:
-                if g['name'] in equivalent_descriptors:
-                    g['name'] = r['name']
-
-            if 'properties' in r and 'properties' in g:
-                props_r = property_analyzer.convert_values_to_string(r.get('properties', []))
-                props_g = property_analyzer.convert_values_to_string(g.get('properties', []))
-                for pr in props_r:
-                    if pr['name'] not in descriptors:
-                        continue
-                    equivalent_properties = descriptors.get(pr['name'])
-                    for id, pg in enumerate(props_g):
-                        if pg['name'] in equivalent_properties:
-                            props_g[id]['name'] = pr['name']
-
-    return gen_copy
 
 def write_output(generated_combs, output_file):
     """
@@ -91,8 +50,13 @@ def find_pairs_fuzzy(list1, list2, threshold=80):
 
 
 def find_pairs_semantic(reference_list, prediction_list, threshold=0.7):
+    print('==reference list==')
+    print(reference_list)
+
+    print('==prediction list==')
+    print(prediction_list)
     paired = []
-    unpaired = {"reference": [], "prediction": prediction_list.copy()}
+    unpaired = {"reference": reference_list.copy(), "prediction": prediction_list.copy()}
 
     # Compute embeddings
     embeddings1 = model.encode(reference_list, convert_to_numpy=True)
@@ -109,11 +73,15 @@ def find_pairs_semantic(reference_list, prediction_list, threshold=0.7):
         if best_score >= threshold:
             matched_item = prediction_list[best_match_idx]
             paired.append((reference_list[i], matched_item))
-            unpaired["prediction"].remove(matched_item)  # Remove matched item from unpaired list
+            if matched_item in unpaired['prediction']:
+                unpaired["prediction"].remove(matched_item)  # Remove matched item from unpaired list
+            if matched_item in unpaired['reference']:
+                unpaired['reference'].remove(matched_item)
         else:
             unpaired["reference"].append(reference_list[i])
 
     return paired, unpaired
+
 def load_key_table(path):
     """
     Loads the primary key table and transforms it into a map where each individual descriptor maps to a list of all
@@ -132,7 +100,6 @@ def load_key_table(path):
 
         for desc in descriptors_lst:
             descriptors[desc] = descriptors_lst
-
     return descriptors
 
 def normalize(obj):
