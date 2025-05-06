@@ -18,6 +18,8 @@ SCHEMA = {
 
 
 def validate_and_fix_yaml(yaml_text):
+    yaml_text = yaml_text.replace('</s>', '')
+    yaml_text = yaml_text.replace('<|endoftext|>','')
     try:
         result = yaml.safe_load(yaml_text)
         # validate(instance=result, schema=SCHEMA)
