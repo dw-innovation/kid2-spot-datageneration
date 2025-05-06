@@ -15,18 +15,39 @@ class RELATION_TASKS(Enum):
     IN_AREA = 'in_area'
 
 class RelationGenerator:
-    def __init__(self, max_distance_digits: int, prob_generating_contain_rel: float):
+    def __init__(self, max_distance_digits: int, prob_generating_contain_rel: float, rel_decay_rate:float):
         self.MAX_DISTANCE_DIGITS = max_distance_digits
         self.prob_generating_contain_rel = prob_generating_contain_rel
         self.tasks = [relation_task.value for relation_task in RELATION_TASKS]
+        self.rel_decay_rate = rel_decay_rate
 
     def generate_individual_distances(self, entity_ids: List[int]) -> List[Relation]:
-        # np.random.shuffle(entity_ids)
+        entity_ids = np.sort(entity_ids)
         relations = []
-        for t_no in range(len(entity_ids)-1):
+        current_target_index = 1
+        source = entity_ids[0]
+
+        while current_target_index < len(entity_ids):
+            target = entity_ids[current_target_index]
+
             relations.append(
-                Relation(type=RELATION_TYPE, source=entity_ids[t_no], target=entity_ids[t_no+1],
-                         value=get_random_decimal_with_metric(self.MAX_DISTANCE_DIGITS)))
+                Relation(
+                    type=RELATION_TYPE,
+                    source=source,
+                    target=target,
+                    value=get_random_decimal_with_metric(self.MAX_DISTANCE_DIGITS)
+                )
+            )
+
+            # Update possible sources (any higher source number that has been a target is eligible)
+            current_possible_sources = np.arange(source + 1, target + 1)
+
+            # Decide whether to change the source or keep it
+            if np.random.choice([True, False]):
+                source = int(np.random.choice(current_possible_sources))
+
+            current_target_index += 1
+
         return relations
 
     def generate_within_radius(self, num_entities: int) -> List[Relation]:
@@ -162,9 +183,9 @@ class RelationGenerator:
         if num_entities == 1:
             viable_tasks.pop(0)
 
-        decay_rate = 0.5
+        # decay_rate = 0.7
         task_nums = np.arange(1, len(viable_tasks) + 1)
-        probabilities = np.exp(-decay_rate * task_nums)
+        probabilities = np.exp(-self.rel_decay_rate * task_nums)
         probabilities /= np.sum(probabilities)
         selected_task = np.random.choice(viable_tasks, p=probabilities)
 
