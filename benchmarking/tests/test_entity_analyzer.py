@@ -10,6 +10,9 @@ class TestBenchmarking(unittest.TestCase):
         descriptors = load_key_table(path='datageneration/data/Spot_primary_keys_bundles.xlsx')
         self.entity_analyzer = EntityAndPropertyAnalyzer(descriptors=descriptors)
 
+    def test_perfect_match(self):
+        pass
+
     def test_compare_entity(self):
         entity_1 =[{'name': 'shipdock', 'id': 'entity1', 'type': 'structure'}, {'name': 'storage tank', 'id': 'entity2', 'type': 'infrastructure'}]
         entity_2 =[{'id': 0, 'type': 'nwr', 'name': 'shipdock'}, {'id': 1, 'type': 'nwr', 'name': 'storage tank'}]

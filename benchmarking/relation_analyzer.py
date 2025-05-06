@@ -39,6 +39,12 @@ class RelationAnalyzer:
         :param relations2: The second relations list to compare (gen_rel).
         :return: Boolean whether the two relations lists are the same.
         """
+        print('==reference data==')
+        print(reference_data)
+        print('==generated data==')
+        print(generated_data)
+        print('==full_paired entities')
+        print(full_paired_entities)
         total_rels = 0
         total_dist_rels = 0
         total_contains_rels = 0
@@ -57,7 +63,11 @@ class RelationAnalyzer:
         gen_rels = generated_data.get('relations', None)
 
         if not ref_rels:
-            return dict(total_dist_rels=total_dist_rels,
+            if not gen_rels:
+                perfect_result = True
+            return dict(
+                        total_rels = total_rels,
+                        total_dist_rels=total_dist_rels,
                         total_contains_rels=total_contains_rels,
                         num_correct_dist_rels=num_correct_dist_rels,
                         num_correct_dist_edges=num_correct_dist_edges,
@@ -68,7 +78,7 @@ class RelationAnalyzer:
                         num_correct_dist_value=num_correct_dist_value,
                         num_correct_dist=num_correct_dist,
                         num_correct_rel_type=num_correct_rel_type,
-                        perfect_result=perfect_result)
+                        relation_perfect_result=perfect_result)
 
         if ref_rels:
             total_rels = len(ref_rels)
@@ -90,7 +100,8 @@ class RelationAnalyzer:
             ref_id_to_text_map[str(ref_ent['id'])] = ref_ent['normalized_name']
             gen_id_to_text_map[str(gen_ent['id'])] = gen_ent['normalized_name']
         if not gen_rels:
-            return dict(total_dist_rels=total_dist_rels,
+            return dict(total_rels = total_rels,
+                        total_dist_rels=total_dist_rels,
                         total_contains_rels=total_contains_rels,
                         num_correct_dist_rels=num_correct_dist_rels,
                         num_correct_dist_edges=num_correct_dist_edges,
@@ -101,7 +112,7 @@ class RelationAnalyzer:
                         num_correct_dist_value=num_correct_dist_value,
                         num_correct_dist=num_correct_dist,
                         num_correct_rel_type=num_correct_rel_type,
-                        perfect_result=perfect_result)
+                        relation_perfect_result=perfect_result)
 
         for ref_rel in ref_rels:
             ref_rel_src_id = str(ref_rel['source'])
@@ -212,4 +223,4 @@ class RelationAnalyzer:
                     num_correct_dist_value=num_correct_dist_value,
                     num_correct_dist=num_correct_dist,
                     num_correct_rel_type=num_correct_rel_type,
-                    perfect_result=perfect_result)
+                    relation_perfect_result=perfect_result)

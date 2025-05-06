@@ -163,6 +163,11 @@ class EntityAndPropertyAnalyzer:
         :param predicted_entities: The second entity list to compare (generated data).
         :return: Boolean whether the two entity lists are the same.
         """
+        print('==reference entities')
+        print(reference_entities)
+
+        print('==predicted entities')
+        print(predicted_entities)
         full_paired_entities, paired_entities, unpaired_entities = self.pair_objects(predicted_objs=predicted_entities, reference_objs=reference_entities)
         total_ref_entities = len(reference_entities)
         num_entity_match_perfect = 0
@@ -314,7 +319,7 @@ class EntityAndPropertyAnalyzer:
             num_correct_height_distance = num_correct_height_distance,
             num_correct_cuisine_properties = num_correct_cuisine_properties,
             num_correct_color = num_correct_color,
-            perfect_result = perfect_result
+            ent_prop_perfect_result = perfect_result
         ), full_paired_entities
 
     def sort_entities(self, entities1, entities2):

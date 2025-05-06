@@ -17,6 +17,7 @@ class TestBenchmarking(unittest.TestCase):
         assert results['num_correct_bbox'] == 1
         assert results['num_correct_name_area'] == 0
         assert results['num_correct_area_type'] == 1
+        assert results['area_perfect_result'] == 1
 
         ref_area = {'type': 'area', 'value': 'Olt County'}
         gen_area = {'type': 'area', 'value': 'olt county'}

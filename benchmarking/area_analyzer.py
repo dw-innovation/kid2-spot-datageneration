@@ -3,6 +3,12 @@ class AreaAnalyzer:
         pass
 
     def compare_area(self, ref_area, gen_area):
+        print('==ref_area==')
+        print(ref_area)
+
+        print('==gen_area==')
+        print(gen_area)
+
         num_correct_bbox = 0
         num_correct_name_area = 0
         num_correct_area_type = 0
@@ -33,10 +39,10 @@ class AreaAnalyzer:
                     # todo: compare country names
                     pass
 
-        if (total_name_area == (num_correct_name_area+num_correct_bbox)) and \
+        if (total_area == (num_correct_name_area+num_correct_bbox)) and \
                 (total_bbox==num_correct_bbox) and \
                 (total_name_area==num_correct_name_area) and \
-                (total_name_area == num_correct_area_type):
+                (total_area == num_correct_area_type):
             perfect_result = True
 
         return dict(
@@ -46,7 +52,7 @@ class AreaAnalyzer:
             num_correct_bbox = num_correct_bbox,
             num_correct_name_area = num_correct_name_area,
             num_correct_area_type = num_correct_area_type,
-            perfect_result = perfect_result
+            area_perfect_result = perfect_result
         )
 
     # def compare_areas_strict(self, ref_area, test_area) -> ResultDataType:
