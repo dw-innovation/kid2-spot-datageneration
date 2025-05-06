@@ -88,33 +88,33 @@ MODEL = os.getenv('MODEL', 'gpt-4o')
 TEMPERATURE = float(os.getenv('TEMPERATURE', 0.7))
 MAX_TOKENS = int(os.getenv('MAX_TOKENS', 4096))
 
-# CLIENT = OpenAI(
-#     api_key=os.environ["OPENAI_API_KEY"], organization=os.environ["OPENAI_ORG"]
-# )
 CLIENT = OpenAI(
-    api_key=os.getenv("LLM_API_KEY"),
-    base_url="https://llm-hub.dw.com/openai"
+    api_key=os.environ["OPENAI_API_KEY"], organization=os.environ["OPENAI_ORG"]
 )
+# CLIENT = OpenAI(
+#     api_key=os.getenv("LLM_API_KEY"),
+#     base_url="https://llm-hub.dw.com/openai"
+# )
 
-# def request_openai(prompt):
-#     response = chatcompletions_with_backoff(
-#         model=MODEL,  # "gpt-4",
-#         temperature=TEMPERATURE,
-#         max_tokens=MAX_TOKENS,
-#         messages=[
-#             {"role": "user", "content": prompt}
-#         ]
-#     )
-#     text = response.choices[0].message.content
-#     return text
 def request_openai(prompt):
-    response = CLIENT.chat.completions.create(
-        model="azure-gpt-4o",  # Must match deployment name, not OpenAI model name
-        messages=[{"role": "user", "content": prompt}],
+    response = chatcompletions_with_backoff(
+        model=MODEL,  # "gpt-4",
         temperature=TEMPERATURE,
         max_tokens=MAX_TOKENS,
+        messages=[
+            {"role": "user", "content": prompt}
+        ]
     )
-    return response.choices[0].message.content
+    text = response.choices[0].message.content
+    return text
+# def request_openai(prompt):
+#     response = CLIENT.chat.completions.create(
+#         model="azure-gpt-4o",  # Must match deployment name, not OpenAI model name
+#         messages=[{"role": "user", "content": prompt}],
+#         temperature=TEMPERATURE,
+#         max_tokens=MAX_TOKENS,
+#     )
+#     return response.choices[0].message.content
 
 def is_number(s):
     if not s:

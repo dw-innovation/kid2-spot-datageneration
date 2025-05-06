@@ -1,4 +1,4 @@
-VERSION=v18_fullDataset
+VERSION=v18_fullDataset_part2
 
 #python -m datageneration.gpt_data_generator \
 #--relative_spatial_terms_path datageneration/data/relative_spatial_terms.csv \
@@ -78,10 +78,10 @@ python -m datageneration.gpt_data_generator \
 --styles_path datageneration/prompts/styles.txt \
 --prob_no_cluster_distance 0.5 \
 --prob_usage_of_relative_spatial_terms 0.4 \
---prob_usage_of_written_numbers 0.5 \
+--prob_usage_of_written_numbers 0.3 \
 --prob_distance_writing_no_whitespace 0.4 \
 --prob_distance_writing_with_full_metric 0.5 \
---prob_of_typos 0.4 \
+--prob_of_typos 0.3 \
 --max_dist_digits 5 \
 --save_yaml_csv \
 --generate_prompts \

@@ -31,7 +31,7 @@ if __name__ == '__main__':
     processed_samples_df = []
     for idx, sample in samples_df.iterrows():
         sentence = sample["sentence"]
-        if '''sorry''' in sentence.lower():
+        if '''sorry''' in sentence.lower() or "UNREALISTIC COMBINATION" in sentence.upper():
             continue
         if isinstance(sentence, float):
             continue

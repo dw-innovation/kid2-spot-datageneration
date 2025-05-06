@@ -1,5 +1,5 @@
 VERSION=v18
-SUFFIX=_test
+SUFFIX=_fullDataset_part2
 
 ## create non-roman samples with prob 1.0, increase prob_of_entities_with_props from 0.2 to 0.5
 #python -m datageneration.generate_combination_table \
@@ -177,14 +177,14 @@ python -m datageneration.generate_combination_table \
 --max_distance_digits 5 \
 --max_number_of_entities_in_prompt 3 \
 --max_number_of_props_in_entity 3 \
---prob_of_entities_with_props 0.35 \
+--prob_of_entities_with_props 0.55 \
 --prob_of_two_word_areas 0.5 \
 --prob_generating_contain_rel 0.4 \
 --prob_of_numerical_properties 0.2 \
 --prob_of_color_properties 0.2 \
---prob_of_rare_non_numerical_properties 0.5 \
---prob_of_other_non_numerical_properties 0.0 \
---prob_of_popular_non_numerical_properties 0.1 \
+--prob_of_rare_non_numerical_properties 0.2 \
+--prob_of_other_non_numerical_properties 0.2 \
+--prob_of_popular_non_numerical_properties 0.2 \
 --prob_adding_brand_names_as_entity 0.025 \
 --prob_of_non_roman_areas 0.3 \
 --prob_of_cluster_entities 0.3 \
@@ -193,4 +193,4 @@ python -m datageneration.generate_combination_table \
 --ent_decay_rate_left 0.5 \
 --prob_decay_rate 0.6 \
 --rel_decay_rate 0.7 \
---samples 25000
+--samples 50000
