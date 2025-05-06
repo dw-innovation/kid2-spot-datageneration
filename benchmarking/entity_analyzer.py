@@ -163,11 +163,6 @@ class EntityAndPropertyAnalyzer:
         :param predicted_entities: The second entity list to compare (generated data).
         :return: Boolean whether the two entity lists are the same.
         """
-        print('==reference entities')
-        print(reference_entities)
-
-        print('==predicted entities')
-        print(predicted_entities)
         full_paired_entities, paired_entities, unpaired_entities = self.pair_objects(predicted_objs=predicted_entities, reference_objs=reference_entities)
         total_ref_entities = len(reference_entities)
         num_entity_match_perfect = 0
@@ -187,7 +182,8 @@ class EntityAndPropertyAnalyzer:
         num_correct_height = 0
         num_correct_cuisine_properties = 0
         num_correct_color = 0
-        perfect_result = False
+        entity_perfect_result = False
+        props_perfect_result = False
 
         num_entity_weak_match= len(paired_entities) if paired_entities else 0
         # hallucination check
@@ -290,11 +286,12 @@ class EntityAndPropertyAnalyzer:
 
         if (total_clusters == num_correct_cluster_points) and \
                 (total_clusters == num_correct_cluster_distance) and \
-                (total_properties == num_correct_properties_perfect) and \
                 num_hallucinated_entity == 0 and \
-                num_hallucinated_properties == 0 and \
                 total_ref_entities == num_entity_match_perfect:
-            perfect_result= True
+            entity_perfect_result = True
+
+        if (num_hallucinated_properties == 0 ) and (total_properties == num_correct_properties_perfect):
+            props_perfect_result = True
 
         return dict(
             total_color_property = total_color_property,
@@ -319,7 +316,8 @@ class EntityAndPropertyAnalyzer:
             num_correct_height_distance = num_correct_height_distance,
             num_correct_cuisine_properties = num_correct_cuisine_properties,
             num_correct_color = num_correct_color,
-            ent_prop_perfect_result = perfect_result
+            entity_perfect_result = entity_perfect_result,
+            props_perfect_result = props_perfect_result
         ), full_paired_entities
 
     def sort_entities(self, entities1, entities2):

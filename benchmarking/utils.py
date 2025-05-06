@@ -104,10 +104,20 @@ def load_key_table(path):
 
 def normalize(obj):
     if isinstance(obj, dict):
-        return {k: normalize(v) for k, v in sorted(obj.items()) if k != "id"}  # Exclude 'id' key
+        if 'value' in obj:
+            if isinstance(obj['value'], int):
+                obj['value'] = str(obj['value'])
+            obj['value']= obj['value'].lower()
+        return {k: normalize(v) for k, v in sorted(obj.items()) if k != "id" and k!="name"}  # Exclude 'id' key
     elif isinstance(obj, list):
         return sorted((normalize(item) for item in obj), key=lambda x: repr(x))
     return obj
 
 def are_dicts_equal(dict1, dict2):
+    print('normalized dict 1')
+    print(normalize(dict1))
+
+    print('normalized dict 2')
+    print(normalize(dict2))
+    print(normalize(dict1) == normalize(dict2))
     return normalize(dict1) == normalize(dict2)

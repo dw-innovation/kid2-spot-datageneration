@@ -166,7 +166,7 @@ def compare_yaml(area_analyzer: AreaAnalyzer, entity_and_prop_analyzer: EntityAn
 
     results_ents_props, full_paired_entities = entity_and_prop_analyzer.compare_entities(ref_entities,gen_entities)
     results_relations = relation_analyzer.compare_relations(ref_data, generated_data, full_paired_entities)
-    if results_area['area_perfect_result'] and results_ents_props['ent_prop_perfect_result'] and results_relations['relation_perfect_result']:
+    if results_area['area_perfect_result'] and results_ents_props['props_perfect_result'] and results_ents_props['entity_perfect_result'] and results_relations['relation_perfect_result']:
         is_perfect_match = True
 
     # todo refactor this
@@ -236,7 +236,6 @@ if __name__ == '__main__':
         results.append(result | meta_vals)
 
         for meta_field in meta_fields:
-            print(meta_field)
             if gold_label[meta_field] == 1:
                 if result["is_perfect_match"]:
                     meta_results[meta_field] += 1
