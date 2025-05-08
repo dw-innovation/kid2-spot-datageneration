@@ -71,7 +71,9 @@ class EntityAndPropertyAnalyzer:
         obj_name = obj_name.lower()
         if obj_name not in self.descriptors:
             normalized_name = self.fuzzy_search(obj_name)
-            if normalized_name == obj_name:
+            if obj_name in normalized_name:
+                normalized_name = obj_name
+            else:
                 corrected_name = spell(obj_name)
                 normalized_name = self.fuzzy_search(corrected_name)
         else:
@@ -84,11 +86,16 @@ class EntityAndPropertyAnalyzer:
         for descriptor in self.descriptors:
             score = fuzz.partial_ratio(descriptor.lower(), corrected_name)
 
-            if score > highest_score:
+            if score > highest_score and score > 80:
                 highest_score = score
+                # we do this, because station is under multiple descriptors, and lead wrong pairing!!!
+                if ' ' in corrected_name and descriptor=='station':
+                    continue
                 best_match = descriptor
-        if highest_score >= 90:
-            normalized_name = self.descriptors[best_match]
+
+
+        if best_match:
+            normalized_name = self.descriptors[best_match][0]
         else:
             normalized_name = corrected_name
         return normalized_name
@@ -110,7 +117,6 @@ class EntityAndPropertyAnalyzer:
             if 'color' in normalized_name or 'colour' in normalized_name:
                 normalized_name = 'color'
             normalized_name = normalized_name.replace('brand:', '')
-            # todo: fuzzy match
             normalized_name = self.normalization_with_descriptors(normalized_name)
             if isinstance(normalized_name, list):
                 normalized_name = normalized_name[0]
@@ -149,7 +155,7 @@ class EntityAndPropertyAnalyzer:
         return full_paired_entities, paired_objs, unpaired_objs
 
     def compose_height_value(self, height):
-        height = str(height)
+        height = height
         height_value = re.findall(r'\d+', height)[0]
         height_metric = height.replace(height_value,'')
         return height_value, height_metric
@@ -215,14 +221,14 @@ class EntityAndPropertyAnalyzer:
                 if are_dicts_equal(ref_ent, predicted_ent):
                     num_entity_match_perfect+=1
                 if ref_ent['type'] == 'cluster':
-                    ref_min_points = ref_ent.get('minPoints')
-                    predicted_min_points = predicted_ent.get('minpoints')
+                    ref_min_points = str(ref_ent.get('minPoints'))
+                    predicted_min_points = str(predicted_ent.get('minpoints'))
 
                     if ref_min_points == predicted_min_points:
                         num_correct_cluster_points+=1
 
-                    ref_max_distance = ref_ent.get('maxDistance')
-                    predicted_max_distance = predicted_ent.get('maxdistance')
+                    ref_max_distance = str(ref_ent.get('maxDistance'))
+                    predicted_max_distance = str(predicted_ent.get('maxdistance'))
 
                     if ref_max_distance == predicted_max_distance:
                         num_correct_cluster_distance+=1
@@ -232,7 +238,6 @@ class EntityAndPropertyAnalyzer:
                     ent_properties = predicted_ent.get('properties', None)
                     full_paired_props, paired_props, unpaired_props = self.pair_objects(
                         predicted_objs=ent_properties, reference_objs=ref_properties)
-
                     if not full_paired_props:
                         num_missing_properties += len(unpaired_props['reference'])
                     else:
@@ -241,6 +246,8 @@ class EntityAndPropertyAnalyzer:
                                 num_correct_properties_perfect += 1
 
                             if 'height' == ref_prop['name']:
+                                ref_prop['value'] = str(ref_prop['value'])
+                                ent_prop['value'] = str(ent_prop['value'])
                                 if ref_prop['value'] == ent_prop['value']:
                                     num_correct_height+=1
                                 ref_height_value, ref_height_metric = self.compose_height_value(ref_prop['value'])

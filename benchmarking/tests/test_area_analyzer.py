@@ -52,3 +52,12 @@ class TestBenchmarking(unittest.TestCase):
         assert results['num_correct_bbox'] == 0
         assert results['num_correct_name_area'] == 0
         assert results['num_correct_area_type'] == 1
+
+
+    def test_perfect_match(self):
+        ref_area = {'type': 'area', 'value': 'bay harbor'}
+        gen_area = {'type': 'area', 'value': 'Bay Harbor'}
+
+        results = self.area_analyzer.compare_area(ref_area=ref_area, gen_area=gen_area)
+
+        assert results['area_perfect_result'] == True

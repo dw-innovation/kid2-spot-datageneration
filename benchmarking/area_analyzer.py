@@ -3,12 +3,6 @@ class AreaAnalyzer:
         pass
 
     def compare_area(self, ref_area, gen_area):
-        print('==ref_area==')
-        print(ref_area)
-
-        print('==gen_area==')
-        print(gen_area)
-
         num_correct_bbox = 0
         num_correct_name_area = 0
         num_correct_area_type = 0

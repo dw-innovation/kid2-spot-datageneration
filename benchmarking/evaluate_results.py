@@ -195,6 +195,7 @@ if __name__ == '__main__':
     out_file_path_sum = args.out_file_path_sum
     pred_file_path = args.pred_file_path
 
+    # todo: add colors
     meta_fields = ["1 entity", "2 entities", "3 entities", "distance relation", "area", "proporties",
                    "typos", "grammar mistakes", "rel spatial term", "cluster", "contains relation",
                    "brand/name as property", "brand/name standalone", "non-roman alphabet"]

@@ -50,11 +50,6 @@ def find_pairs_fuzzy(list1, list2, threshold=80):
 
 
 def find_pairs_semantic(reference_list, prediction_list, threshold=0.7):
-    print('==reference list==')
-    print(reference_list)
-
-    print('==prediction list==')
-    print(prediction_list)
     paired = []
     unpaired = {"reference": reference_list.copy(), "prediction": prediction_list.copy()}
 
@@ -71,15 +66,17 @@ def find_pairs_semantic(reference_list, prediction_list, threshold=0.7):
         best_score = row[best_match_idx]  # Get the highest similarity score
 
         if best_score >= threshold:
-            matched_item = prediction_list[best_match_idx]
-            paired.append((reference_list[i], matched_item))
-            if matched_item in unpaired['prediction']:
-                unpaired["prediction"].remove(matched_item)  # Remove matched item from unpaired list
-            if matched_item in unpaired['reference']:
-                unpaired['reference'].remove(matched_item)
+            matched_item_pred = prediction_list[best_match_idx]
+            matched_item_ref = reference_list[i]
+            paired.append((reference_list[i], matched_item_pred))
+            if matched_item_pred in unpaired['prediction']:
+                unpaired["prediction"].remove(matched_item_pred)  # Remove matched item from unpaired list
+            if matched_item_pred in unpaired['reference']:
+                unpaired['reference'].remove(matched_item_pred)
+            if matched_item_ref in unpaired['reference']:
+                unpaired['reference'].remove(matched_item_ref)
         else:
             unpaired["reference"].append(reference_list[i])
-
     return paired, unpaired
 
 def load_key_table(path):
@@ -114,10 +111,4 @@ def normalize(obj):
     return obj
 
 def are_dicts_equal(dict1, dict2):
-    print('normalized dict 1')
-    print(normalize(dict1))
-
-    print('normalized dict 2')
-    print(normalize(dict2))
-    print(normalize(dict1) == normalize(dict2))
     return normalize(dict1) == normalize(dict2)
