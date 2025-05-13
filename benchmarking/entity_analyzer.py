@@ -246,34 +246,41 @@ class EntityAndPropertyAnalyzer:
                                 num_correct_properties_perfect += 1
 
                             if 'height' == ref_prop['name']:
-                                ref_prop['value'] = str(ref_prop['value'])
-                                ent_prop['value'] = str(ent_prop['value'])
-                                if ref_prop['value'] == ent_prop['value']:
-                                    num_correct_height+=1
-                                ref_height_value, ref_height_metric = self.compose_height_value(ref_prop['value'])
-                                pred_height_value, pred_height_metric = self.compose_height_value(ent_prop['value'])
-                                if ref_height_value == pred_height_value:
-                                    num_correct_height_distance+=1
-                                if ref_height_metric == pred_height_metric:
-                                    num_correct_height_metric+=1
+                                if 'value' not in ref_prop or 'value' not in ent_prop:
+                                    print(f'Mismatch between the props: {ref_prop} and {ent_prop}')
                                 else:
-                                    pred_height_metric = DIST_LOOKUP.get(pred_height_metric, None)
+                                    ref_prop['value'] = str(ref_prop['value'])
+                                    ent_prop['value'] = str(ent_prop['value'])
+                                    if ref_prop['value'] == ent_prop['value']:
+                                        num_correct_height+=1
+                                    ref_height_value, ref_height_metric = self.compose_height_value(ref_prop['value'])
+                                    pred_height_value, pred_height_metric = self.compose_height_value(ent_prop['value'])
+                                    if ref_height_value == pred_height_value:
+                                        num_correct_height_distance+=1
                                     if ref_height_metric == pred_height_metric:
-                                        num_correct_height_metric += 1
+                                        num_correct_height_metric+=1
+                                    else:
+                                        pred_height_metric = DIST_LOOKUP.get(pred_height_metric, None)
+                                        if ref_height_metric == pred_height_metric:
+                                            num_correct_height_metric += 1
                             if 'cuisine' == ref_prop['name']:
-                                if 'value' not in ent_prop:
+                                if 'value' not in ref_prop or 'value' not in ent_prop:
                                     print(f'Mismatch between the props: {ref_prop} and {ent_prop}')
                                 else:
                                     if ref_prop['value'] == ent_prop['value']:
                                         num_correct_cuisine_properties += 1
 
                             if 'color' in ent_prop['name'] or 'colour' in ent_prop['name']:
-                                if ent_prop['value'] == ref_prop['value']:
-                                    num_correct_color+=1
+                                if 'value' not in ref_prop or 'value' not in ent_prop:
+                                    print(f'Mismatch between the props: {ref_prop} and {ent_prop}')
+                                else:
+                                    if ent_prop['value'] == ref_prop['value']:
+                                        num_correct_color+=1
                             else:
                                 if ent_prop['name'] in self.color_descriptors:
-                                    if ent_prop['value'] == ref_prop['value']:
-                                        num_correct_color += 1
+                                    if 'value' not in ref_prop or 'value' not in ent_prop:
+                                        if ent_prop['value'] == ref_prop['value']:
+                                            num_correct_color += 1
 
 
                     # hallucinated prop

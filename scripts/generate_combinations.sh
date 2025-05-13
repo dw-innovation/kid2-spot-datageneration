@@ -1,5 +1,5 @@
-VERSION=v17
-SUFFIX=_Cluster_v2
+VERSION=v18
+SUFFIX=_75k-filtered
 
 ## create non-roman samples with prob 1.0, increase prob_of_entities_with_props from 0.2 to 0.5
 #python -m datageneration.generate_combination_table \
@@ -166,26 +166,28 @@ SUFFIX=_Cluster_v2
 #--prob_of_cluster_entities 0.0 \
 #--samples 10000
 
+
+
 python -m datageneration.generate_combination_table \
 --geolocations_file_path datageneration/data/countries+states+cities.json \
 --non_roman_vocab_file_path datageneration/data/area_non_roman_vocab.json \
 --tag_combination_path datageneration/data/tag_combinations_${VERSION}.jsonl \
 --tag_prop_examples_path datageneration/data/prop_examples_${VERSION}.jsonl \
 --color_bundle_path datageneration/data/colour_bundles.csv \
---output_file datageneration/results/${VERSION}${SUFFIX}/dataset_${VERSION}${SUFFIX}_5k.jsonl \
+--output_file datageneration/results/${VERSION}${SUFFIX}/dataset_${VERSION}${SUFFIX}.jsonl \
 --write_output \
 --max_distance_digits 5 \
 --max_number_of_entities_in_prompt 3 \
 --max_number_of_props_in_entity 3 \
---prob_of_entities_with_props 0.8 \
+--prob_of_entities_with_props 0.5 \
 --prob_of_two_word_areas 0.5 \
 --prob_generating_contain_rel 0.4 \
 --prob_of_numerical_properties 0.2 \
 --prob_of_color_properties 0.2 \
---prob_of_rare_non_numerical_properties 0.5 \
---prob_of_other_non_numerical_properties 0.0 \
---prob_of_popular_non_numerical_properties 0.1 \
+--prob_of_rare_non_numerical_properties 0.2 \
+--prob_of_other_non_numerical_properties 0.2 \
+--prob_of_popular_non_numerical_properties 0.2 \
 --prob_adding_brand_names_as_entity 0.025 \
---prob_of_non_roman_areas 0.6 \
---prob_of_cluster_entities 1.0 \
---samples 10000
+--prob_of_non_roman_areas 0.4 \
+--prob_of_cluster_entities 0.4 \
+--samples 75000
