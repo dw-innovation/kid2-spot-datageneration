@@ -85,16 +85,14 @@ class EntityAndPropertyAnalyzer:
         highest_score = 0
         for descriptor in self.descriptors:
             score = fuzz.token_set_ratio(descriptor.lower(), corrected_name)
-            if descriptor == 'church':
-                print(corrected_name)
-                print(descriptor)
-                print(score)
             if score > highest_score and score > 80:
                 highest_score = score
                 # we do this, because station is under multiple descriptors, and lead wrong pairing!!!
                 if ' ' in corrected_name and descriptor=='station':
                     continue
                 best_match = descriptor
+
+
         if best_match:
             normalized_name = self.descriptors[best_match][0]
         else:
