@@ -278,7 +278,7 @@ if __name__ == '__main__':
 
     total_properties = results['total_properties'].sum()
     evaluation_scores['percentage_correct_properties_perfect_acc'] = results['num_correct_properties_perfect'].sum() / total_properties
-    evaluation_scores['percentage_correct_properties_weak_acc'] = results['num_correct_properties_weak'].sum() / total_properties
+    # evaluation_scores['percentage_correct_properties_weak_acc'] = results['num_correct_properties_weak'].sum() / total_properties
 
     total_height_property = results['total_height_property'].sum()
     evaluation_scores['percentage_correct_height_metric'] = results['num_correct_height_metric'].sum() / total_height_property

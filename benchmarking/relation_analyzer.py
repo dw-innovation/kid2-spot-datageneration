@@ -1,7 +1,7 @@
 import copy
 import re
 import pandas as pd
-from benchmarking.utils import  DIST_LOOKUP
+from benchmarking.utils import  DIST_LOOKUP, compose_metric
 from collections import Counter
 
 def load_rel_spatial_terms(relative_spatial_terms_path: str):
@@ -20,13 +20,8 @@ class RelationAnalyzer:
         print(self.rel_terms)
         # todo implement rel spatial
 
-    def compose_dist_metric(self, height):
-        dist = re.findall(r'\d+', height)
-        if not dist:
-            return None, None
-        dist = dist[0]
-        metric = height.replace(dist,'').replace(' ', '')
-        return dist, metric
+    def compose_dist_metric(self, dist):
+        return compose_metric(dist)
 
     def compare_relations(self, reference_data, generated_data, full_paired_entities):
         """
@@ -61,7 +56,6 @@ class RelationAnalyzer:
 
         ref_rels = reference_data.get('relations', None)
         gen_rels = generated_data.get('relations', None)
-
         if not ref_rels:
             if not gen_rels:
                 perfect_result = True
@@ -197,12 +191,17 @@ class RelationAnalyzer:
                     if ref_spatial:
                         num_correct_relative_spatial_terms+=1
         # Contains Rels Comparison
-        gen_contain_rels_copy = copy.deepcopy(gen_contain_rels)
-        for ref_contain_rel in ref_contain_rels:
-            for idx, gen_contain_rel in enumerate(gen_contain_rels_copy):
-                if ref_contain_rel == gen_contain_rel:
-                    gen_contain_rel.pop(idx)
-                    num_correct_contains_rels+=1
+        if len(gen_contain_rels) > 0:
+            print('===gen contain rels===')
+            print(gen_contain_rels)
+            print('===rel contains rels===')
+            print(ref_contain_rels)
+            gen_contain_rels_copy = copy.deepcopy(gen_contain_rels)
+            for ref_contain_rel in ref_contain_rels:
+                for idx, gen_contain_rel in enumerate(gen_contain_rels_copy):
+                    if ref_contain_rel == gen_contain_rel:
+                        gen_contain_rel.pop(idx)
+                        num_correct_contains_rels+=1
 
         num_correct_rel_type = num_correct_contains_rels+num_correct_dist_edges
 

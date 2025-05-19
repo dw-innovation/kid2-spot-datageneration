@@ -1,6 +1,9 @@
 import copy
 import json
 import os
+import re
+import random
+import torch
 import pandas as pd
 import numpy as np
 from rapidfuzz import process, fuzz
@@ -11,7 +14,7 @@ from datageneration.utils import split_descriptors
 model = SentenceTransformer("cross-encoder/nli-deberta-v3-base")
 
 DIST_LOOKUP = {
-    "centimeters": "cm",
+    "centimeter": "cm",
     "meters": "m",
     "kilometers": "km",
     "inches": "in",
@@ -48,7 +51,11 @@ def find_pairs_fuzzy(list1, list2, threshold=80):
 
     return paired, unpaired
 
-
+np.random.seed(0)
+random.seed(0)
+torch.manual_seed(0)
+if torch.cuda.is_available():
+    torch.cuda.manual_seed_all(0)
 def find_pairs_semantic(reference_list, prediction_list, threshold=0.7):
     paired = []
     unpaired = {"reference": reference_list.copy(), "prediction": prediction_list.copy()}
@@ -59,9 +66,13 @@ def find_pairs_semantic(reference_list, prediction_list, threshold=0.7):
 
     # Compute cosine similarity matrix
     similarity_matrix = cosine_similarity(embeddings1, embeddings2)
+    matched_predictions = set()
 
     # Find best matches
     for i, row in enumerate(similarity_matrix):
+        # Set similarity to -1 for already matched predictions
+        for j in matched_predictions:
+            row[j] = -1
         best_match_idx = np.argmax(row)  # Get index of highest similarity
         best_score = row[best_match_idx]  # Get the highest similarity score
 
@@ -69,14 +80,14 @@ def find_pairs_semantic(reference_list, prediction_list, threshold=0.7):
             matched_item_pred = prediction_list[best_match_idx]
             matched_item_ref = reference_list[i]
             paired.append((reference_list[i], matched_item_pred))
+            matched_predictions.add(best_match_idx)
             if matched_item_pred in unpaired['prediction']:
                 unpaired["prediction"].remove(matched_item_pred)  # Remove matched item from unpaired list
-            if matched_item_pred in unpaired['reference']:
-                unpaired['reference'].remove(matched_item_pred)
             if matched_item_ref in unpaired['reference']:
                 unpaired['reference'].remove(matched_item_ref)
         else:
-            unpaired["reference"].append(reference_list[i])
+            if reference_list[i] not in unpaired['reference']:
+                unpaired["reference"].append(reference_list[i])
     return paired, unpaired
 
 def load_key_table(path):
@@ -105,6 +116,10 @@ def normalize(obj):
             if isinstance(obj['value'], int):
                 obj['value'] = str(obj['value'])
             obj['value']= obj['value'].lower()
+        if obj['name'] == 'height':
+            dist, metric = compose_metric(obj['value'])
+            if dist:
+                obj['value'] = f'{dist} {metric}'
         return {k: normalize(v) for k, v in sorted(obj.items()) if k != "id" and k!="name"}  # Exclude 'id' key
     elif isinstance(obj, list):
         return sorted((normalize(item) for item in obj), key=lambda x: repr(x))
@@ -112,3 +127,13 @@ def normalize(obj):
 
 def are_dicts_equal(dict1, dict2):
     return normalize(dict1) == normalize(dict2)
+
+def compose_metric(height):
+    dist = re.findall(r'\d+', height)
+    if not dist:
+        return None, None
+    dist = dist[0]
+    metric = height.replace(dist, '').replace(' ', '')
+    metric = metric.replace('.', '').replace(',', '')
+    metric = DIST_LOOKUP.get(metric, metric)
+    return dist, metric
