@@ -304,7 +304,6 @@ class EntityAndPropertyAnalyzer:
                 if are_dicts_equal(ref_ent, predicted_ent):
                     num_entity_match_perfect+=1
                 if ref_ent['type'] == 'cluster':
-                    num_entity_match_weak+=1
                     ref_min_points = str(ref_ent.get('minPoints'))
                     predicted_min_points = str(predicted_ent.get('minpoints'))
 
