@@ -173,7 +173,8 @@ class EntityAndPropertyAnalyzer:
             if normalized_name in predicted_obj_mapping:
                 # check if we have duplicate props
                 if normalized_name in reference_obj_mapping and 'value' in reference_obj_mapping[normalized_name]:
-                    if reference_obj_mapping[normalized_name]['value'] == predicted_obj['value']:
+                    predicted_value = predicted_obj.get('value', None)
+                    if reference_obj_mapping[normalized_name]['value'] == predicted_value:
                        old_predicted_obj = predicted_obj_mapping[normalized_name]
                        duplicate_predictions.append(old_predicted_obj)
                 predicted_obj_mapping[normalized_name] = predicted_obj
