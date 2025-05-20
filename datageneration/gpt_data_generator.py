@@ -84,8 +84,9 @@ def chatcompletions_with_backoff(**kwargs):
 
 
 # OpenAI parameters
-MODEL = os.getenv('MODEL', 'gpt-4o')
-TEMPERATURE = float(os.getenv('TEMPERATURE', 0.7))
+MODEL = os.getenv('MODEL', 'gpt-4.1-mini') #gpt-4.1-mini  #gpt-4.1-nano
+    # https://openai.com/index/gpt-4-1/
+TEMPERATURE = float(os.getenv('TEMPERATURE', 0.3))
 MAX_TOKENS = int(os.getenv('MAX_TOKENS', 4096))
 
 CLIENT = OpenAI(
@@ -198,49 +199,62 @@ class PromptHelper:
             # "Vary your phrasing. Do not affirm this request and return nothing but the answer.\n\n "
             # "You are an assistant that writes short, natural-sounding user queries based on structured geographic data in YAML format.
             "You are an assistant that generates short, natural-sounding user queries based on structured geographic "
-            "data in YAML format.\n\n"
+            "data in the form of scene descriptions.\n\n"
             "Imagine you're an investigative journalist or fact-checker, looking at an image or video of a real-world scene, "
             "and you're trying to describe what you see — the objects, places, and how they relate to one another. Your goal is "
             "to write what a regular person might type into a search box to describe or explore that scene.\n\n"
-            "The YAML provides a list of entities (e.g., landmarks, buildings, places, or objects), their properties, and how "
+            "The scene description provides a list of entities (e.g., landmarks, buildings, places, or objects), their properties, and how "
             "they are spatially related.\n"
             "Your task is to turn this into a natural, casual sentence or query — not a literal translation "
-            "of the YAML structure.\n\n"
+            "of the scene description.\n\n"
             "Here’s how to approach it:\n"
-            "- Focus on the scene, not the data format. Don't copy the structure or terminology of the YAML. Instead, write as if "
+            "- Focus on the scene, not the data format. Don't copy the structure or terminology of the input. Instead, write as if "
             "you were describing the real-world layout to someone else.\n"
             "- Use casual, human phrasing. Avoid technical terms like \"entity\", \"property\", or \"OSM key\".\n"
             "- Make sure to correctly use the entity information in the sentence and use ALL available information:"
             "  - Entities can either be a single entity (e.g. \"- Obj. 0: viewpoint\", i.e. a viewpoint), or a cluster of multiple "
             "of one type (e.g. \"- Obj. 1: 3 x bench\", i.e. three benches).\n"
-            "  - A cluster can have a specified distance value between the entities (e.g. \"- Obj. 0: 2 x house, "
-            "at max 50 m to another\" -> two houses within 50 m) \n"
-            "  - If a cluster has no distance value, the distance from the associated relations should be used "
-            "(e.g. \"- Obj. 1: 3 x bench\" & \"- The three benches are 50 m from the park\" -> maxDistance: 50 m.\n"
-            "  - If no distance is specified for a cluster and there is no associated distance in the relations, "
-            "default to 50 m.\n"
+            "  - If a cluster has no distance value, just use it like an entity in the sentence with the number of "
+            " occurences mentioned (e.g. \"three benches\"). \n"
+            "  - A cluster can also have a specified distance value between the entities (e.g. \"- Obj. 0: 2 x house, "
+            "at max 50 m to another\" -> In the sentence (example phrasing): \"two houses within 50 m\") \n"
+            "  - Important: If there is a distance specified for a cluster, the distance value MUST be used in the "
+            "sentence!! This can either be a distance value (see example above), or relative spatial terms (e.g. "
+            " \"five foutains next to another\"). \n"
+            "  - A cluster distance is different from a distance relation. Distance relations (if used) come in a separate "
+            "section marked as \"Distance\", cluster distances are part of object definitions. The cluster distance is only "
+            "between the multiple instances of the same object. A cluster can have a distance between its instances, and separately "
+            "relations that define the distance of the cluster to other objects/cluster. The phrase must include both "
+            "if both are given (e.g. \"3 houses in a radius of 30 m, which are 100 m from a fountain\" or \"a church next to two "
+            "parks that are nearby another). \n"
+            # "  - If a cluster has no distance value, the distance from the associated relations should be used "
+            # "(e.g. \"- Obj. 1: 3 x bench\" & \"- The three benches are 50 m from the park\" -> maxDistance: 50 m.\n"
+            # "  - If no distance is specified for a cluster and there is no associated distance in the relations, "
+            # "default to 50 m.\n"
             "- Translate tags into natural language. For example:\n"
-            "  - \"brand:Thalia\" → \"a Thalia\"\n"
-            "  - \"brand~Eiffel\" + \"cafe\" → \"an Eiffel café\"\n"
-            "  - \"cuisine~italian\" + \"restaurant\" → \"an Italian restaurant\"\n"
-            "  - \"building:material=wood\" → \"made from wood\"\n"
-            "  - \"roof:colour=red\" → \"with a red roof\"\n\n"
-            "- Always reflect spatial relationships exactly as stated in the YAML:\n"
+            "  - Entity \"brand:Thalia\" → \"a Thalia\"\n"
+            "  - Entity \"cafe\" + Property \"brand~Eiffel\" → \"an Eiffel café\"\n"
+            "  - Entity \"restaurant\" + Property \"cuisine~italian\" → \"an Italian restaurant\"\n"
+            "  - Property \"building:material=wood\" → \"made from wood\"\n"
+            "  - Property \"roof:colour=red\" → \"with a red roof\"\n\n"
+            "- Always reflect spatial relationships exactly as stated in the scene description:\n"
             "  - If a distance is given, treat it as a maximum.\n"
             "  - If a relation has a specified phrase (e.g., \"next to\", \"surrounded by\"), use that exact phrase — don’t invent alternatives.\n"
-            "  - If no relation is provided, do not imply one (in general, avoid terms like “near” or “close to” if not explicitly mentioned).\n\n"
+            "  - If a contains relation is given, use phrases like \"containing\", \"with\" and \"in(side)\" to describe the spatial relation.\n" 
+            "  - If no relation is provided, do not imply one (in general, avoid terms like \"with\", \"near\" or \"close to\" if not explicitly mentioned).\n\n"
             "- Use number formatting like this: {thousands} for thousands separators and {decimal} for decimals. Example: {example}.\n"
             "- Avoid repetition in phrasing across outputs. In general be direct, but include natural variation — "
             "some sentences can be a bit longer or have more detail; while the tendency is to be short and to the point.\n"
-            "- Only use the information in the YAML — and use **all** of it! Double check that all details, including cluster "
+            "- Only use the provided information about the scene — and use **all** of it! Double check that all details, including cluster "
             "distances and properties, are used in the generated sentence!\n"
-            "- You must use the same alphabet as used in the yaml. Do not change them to their english version in generated sentence if the "
-            "original used a non-latin alphabet.\n"
+            "- You must use the same alphabet as used in the provided data. Do not change them to their english version in generated sentence if the "
+            "original used a non-latin alphabet, or the other way around.\n"
+            "- Always use metrics exactly as specified in distance information, do not convert them to a different unit.\n"
             "- Do not generate why/what/how type questions, only instructions.\n\n"
-            "- If an entity/property combo is obviously nonsensical (e.g., a toilet or a street with a cuisine, a cliff "
-            "with a brand etc.), no sentence should be generated. This is only related to the entity and property names, "
-            "unrealistic numeric values like height or number of floor are acceptable. In nonsensical cases, return only:\n "
-            "`UNREALISTIC COMBINATION`\n\n"
+            # "- If an entity/property combo is obviously nonsensical (e.g., a toilet or a street with a cuisine, a cliff "
+            # "with a brand etc.), no sentence should be generated. This is only related to the entity and property names, "
+            # "unrealistic numeric values like height or number of floor are acceptable. In nonsensical cases, return only:\n "
+            # "`UNREALISTIC COMBINATION`\n\n"
             "==Persona==\n{persona} \n\n ==Style==\n{style}""")
         self.typo_templates = [
             "\n\n==Other specifications==\nThe text should contain a {amount} amount of typos.",
@@ -249,11 +263,12 @@ class PromptHelper:
         ]
         self.typo_amounts = ["small", "medium", "large"]
         self.ending_template = (
-            "Please take your time and make sure all the provided information is contained in the sentence. You are "
+            "\nPlease take your time and make sure all the provided information is contained in the sentence. You are "
             "simulating the behavior of an experienced user prompting an online tool. Use short, clear, and natural "
             "language — avoid filler, overly formal language, over-explaining, or rhetorical phrasing.\n"
             "Think of how real users would prompt after using the system for a while: concise, factual, and slightly "
-            "varied, but always focused on the core facts."
+            "varied, but always focused on the core facts. Double check again if all the provided information is used in the "
+            "generated sentence!"
 )
         self.search_template = "\n\n==Input==\n"
 
@@ -594,7 +609,6 @@ class GPTDataGenerator:
 
         :param dict loc_point: The dictionary containing all relevant information for the query
         '''
-
         area = loc_point.area
         entities = loc_point.entities
         relations = loc_point.relations
@@ -602,55 +616,6 @@ class GPTDataGenerator:
         beginning = self.prompt_helper.beginning(persona=persona, writing_style=style)
         beginning = beginning + self.prompt_helper.typo(self.prob_of_typos)
         search_prompt = self.prompt_helper.search_query(beginning)
-
-        core_prompt = self.prompt_helper.add_area_prompt(area)
-        core_prompt += "Objects:\n"
-
-        for entity_id, entity in enumerate(entities):
-            entity_name = normalize_entity_name(entity.name)
-            if entity.type == 'nwr':
-                core_prompt = core_prompt + "- Obj. " + str(entity_id) + ": " + entity_name
-            elif entity.type == 'cluster':
-                entity_value, written_value, type = self.edit_cluster_distance(entity)
-
-                # In case no distance was provided, use distance from relation before (target), unless this is not
-                # possible, then fall back to the relation after (source). Don't mention the maxdist in the prompt.
-                if type == 'none':
-                    if relations.relations:
-                        for rel in relations.relations:
-                            if rel.target == entity.id and rel.value:
-                                entity_value = copy.deepcopy(rel.value)
-                                break
-                        if not entity_value:
-                            for rel in relations.relations:
-                                if rel.source == entity.id and rel.value:
-                                    entity_value = copy.deepcopy(rel.value)
-                                    break
-                    if not entity_value:
-                        entity_value = Distance(magnitude="50", metric="m")
-                    entity.maxDistance = entity_value
-                    core_prompt = (core_prompt + "- Obj. " + str(entity_id) + ": " + str(entity.minPoints) + " x " +
-                                   entity_name)
-                elif type == 'relspat':
-                    entity.maxDistance = entity_value
-                    phrase_dist_relspat = np.random.choice(self.phrases_dist_relspat)
-                    phrase_anoth = np.random.choice(self.phrases_anoth)
-                    core_prompt = (core_prompt + "- Obj. " + str(entity_id) + ": " + str(entity.minPoints) + " x " +
-                                   entity_name + ", use this phrase to describe the " + phrase_dist_relspat + " " +
-                                   phrase_anoth + ": " + written_value)
-                else:
-                    entity.maxDistance = entity_value
-                    selected_phrases_desc = np.random.choice(self.phrases_desc)
-                    phrases_dist = np.random.choice(self.phrases_dist)
-                    phrase_anoth = np.random.choice(self.phrases_anoth)
-                    core_prompt = (core_prompt + "- Obj. " + str(entity_id) + ": " + str(entity.minPoints) + " x " +
-                                   entity_name + "," + selected_phrases_desc + " " + written_value + " " +
-                                   phrases_dist + phrase_anoth)
-            if len(entity.properties) > 0:
-                core_prompt += " | Properties -> "
-                core_prompt = self.prompt_helper.add_property_prompt(core_prompt=core_prompt,
-                                                                     entity_properties=entity.properties)
-            core_prompt += '\n'
 
         core_relation = ''
 
@@ -677,7 +642,58 @@ class GPTDataGenerator:
         if len(core_relation) > 0:
             core_relation = "Distances:\n" + core_relation
         else:
-            core_relation = "Distances:\nNo distance is given."
+            core_relation = "Distances:\nNo distance is given.\n"
+
+        # Generate object prompt lines, must be after relations so cluster can adapt the possibly updated relation distances
+        core_prompt = self.prompt_helper.add_area_prompt(area)
+        core_prompt += "Objects:\n"
+
+        for entity_id, entity in enumerate(entities):
+            entity_name = normalize_entity_name(entity.name)
+            if entity.type == 'nwr':
+                core_prompt = core_prompt + "- Obj. " + str(entity_id) + ": " + entity_name
+            elif entity.type == 'cluster':
+                entity_value, written_value, type = self.edit_cluster_distance(entity)
+
+                # In case no distance was provided, use distance from relation before (target), unless this is not
+                # possible, then fall back to the relation after (source). Don't mention the maxdist in the prompt.
+                if type == 'none':
+                    if relations.relations:
+                        for rel in relations.relations:
+                            if rel.target == entity.id and rel.value:
+                                entity_value = copy.deepcopy(rel.value)
+                                break
+                        if not entity_value:
+                            for rel in relations.relations:
+                                if rel.source == entity.id and rel.value:
+                                    entity_value = copy.deepcopy(rel.value)
+                                    break
+                    if not entity_value:
+                        entity_value = Distance(magnitude="50", metric="m")
+
+                    entity.maxDistance = entity_value
+                    core_prompt = (core_prompt + "- Obj. " + str(entity_id) + ": " + str(entity.minPoints) + " x " +
+                                   entity_name)
+                elif type == 'relspat':
+                    entity.maxDistance = entity_value
+                    phrase_dist_relspat = np.random.choice(self.phrases_dist_relspat)
+                    phrase_anoth = np.random.choice(self.phrases_anoth)
+                    core_prompt = (core_prompt + "- Obj. " + str(entity_id) + ": " + str(entity.minPoints) + " x " +
+                                   entity_name + ", use this phrase to describe the " + phrase_dist_relspat + " " +
+                                   phrase_anoth + ": " + written_value + " (from/to/of) another")
+                else:
+                    entity.maxDistance = entity_value
+                    selected_phrases_desc = np.random.choice(self.phrases_desc)
+                    phrases_dist = np.random.choice(self.phrases_dist)
+                    phrase_anoth = np.random.choice(self.phrases_anoth)
+                    core_prompt = (core_prompt + "- Obj. " + str(entity_id) + ": " + str(entity.minPoints) + " x " +
+                                   entity_name + "," + selected_phrases_desc + " " + written_value + " " +
+                                   phrases_dist + phrase_anoth)
+            if len(entity.properties) > 0:
+                core_prompt += " | Properties -> "
+                core_prompt = self.prompt_helper.add_property_prompt(core_prompt=core_prompt,
+                                                                     entity_properties=entity.properties)
+            core_prompt += '\n'
 
         core_prompt = core_prompt + core_relation
         core_prompt = search_prompt + core_prompt + self.prompt_helper.ending()
