@@ -112,6 +112,13 @@ def load_key_table(path):
 
 def normalize(obj):
     if isinstance(obj, dict):
+        if 'minPoints' in obj:
+            obj['minpoints'] = obj.pop('minPoints')
+            obj['maxdistance'] = obj.pop('maxDistance')
+
+        if 'minpoints' in obj or 'maxdistance' in obj:
+            obj['minpoints'] = str(obj['minpoints'])
+            obj['maxdistance'] = str(obj['maxdistance'])
         if 'value' in obj:
             if isinstance(obj['value'], int):
                 obj['value'] = str(obj['value'])
@@ -126,7 +133,16 @@ def normalize(obj):
     return obj
 
 def are_dicts_equal(dict1, dict2):
-    return normalize(dict1) == normalize(dict2)
+    normalized_dict_1 = normalize(dict1)
+    normalized_dict_2 = normalize(dict2)
+
+    print('normalized dict 1')
+    print(normalized_dict_1)
+
+    print('normalized dict 2')
+    print(normalized_dict_2)
+
+    return normalized_dict_1 == normalized_dict_2
 
 def compose_metric(height):
     dist = re.findall(r'\d+', height)

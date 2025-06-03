@@ -139,6 +139,12 @@ class TestBenchmarking(unittest.TestCase):
         assert len(unpaired_entities['reference']) == 0
         assert len(unpaired_entities['prediction']) == 0
 
+
+        entity_1 = [{'id': 0, 'maxdistance': '150 m', 'minpoints': 8, 'name': 'salt bin', 'type': 'cluster'}]
+        entity_2 = [{'id': 0, 'type': 'cluster', 'name': 'salt bin', 'minPoints': 8, 'maxDistance': '150 m'}]
+        (results, _) = self.entity_analyzer.compare_entities(reference_entities=entity_1, predicted_entities=entity_2)
+        self.assertEqual(results['entity_perfect_result'], 1)
+
     def test_pairing(self):
         ref_properties = [{'name': 'building material', 'operator': '=', 'value': 'brick'}, {'name': 'height', 'operator': '<', 'value': '2 m'}]
         gen_properties = [{'name': 'height', 'operator': '<', 'value': '2 m'}, {'name': 'material', 'operator': '=', 'value': 'brick'}]
@@ -197,7 +203,7 @@ class TestBenchmarking(unittest.TestCase):
         ref_entities = [{'id': 0, 'type': 'cluster', 'name': 'atm', 'minPoints': 8, 'maxDistance': '2 km', 'properties': [{'name': 'name', 'operator': '~', 'value': 'santander'}]}]
         pred_entities = [{'id': 0, 'name': "brand:eight santander atm's", 'type': 'nwr'}, {'id': 1, 'name': "brand:eight santander atm's", 'type': 'nwr'}]
         full_paired_props, paired_props, full_unpaired_props, unpaired_props = self.entity_analyzer.pair_objects(reference_objs=ref_entities, predicted_objs=pred_entities)
-        self.assertEqual(len(unpaired_props['prediction']), 1)
+        self.assertEqual(len(unpaired_props['prediction']), 2)
 
 
 

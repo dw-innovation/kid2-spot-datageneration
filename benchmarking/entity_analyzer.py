@@ -185,6 +185,12 @@ class EntityAndPropertyAnalyzer:
                 predicted_obj['normalized_name'] = normalized_name
 
         paired_objs, unpaired_objs = find_pairs_semantic(reference_list=list(reference_obj_mapping.keys()), prediction_list=list(predicted_obj_mapping.keys()))
+        print('==paired objs==')
+        print(paired_objs)
+
+        print('==unpaired objs==')
+        print(paired_objs)
+
         print('==duplicate predictions==')
         print(duplicate_predictions)
         for duplicate_prediction in duplicate_predictions:
@@ -298,20 +304,18 @@ class EntityAndPropertyAnalyzer:
                 num_hallucinated_properties+=1
 
         if full_paired_entities:
-            print('full paired entities')
-            print(full_paired_entities)
             for (ref_ent, predicted_ent) in full_paired_entities:
                 if are_dicts_equal(ref_ent, predicted_ent):
                     num_entity_match_perfect+=1
                 if ref_ent['type'] == 'cluster':
-                    ref_min_points = str(ref_ent.get('minPoints'))
-                    predicted_min_points = str(predicted_ent.get('minpoints'))
+                    ref_min_points = ref_ent.get('minpoints')
+                    predicted_min_points = predicted_ent.get('minpoints')
 
                     if ref_min_points == predicted_min_points:
                         num_correct_cluster_points+=1
 
-                    ref_max_distance = str(ref_ent.get('maxDistance'))
-                    predicted_max_distance = str(predicted_ent.get('maxdistance'))
+                    ref_max_distance = ref_ent.get('maxdistance')
+                    predicted_max_distance = predicted_ent.get('maxdistance')
 
                     if ref_max_distance == predicted_max_distance:
                         num_correct_cluster_distance+=1
