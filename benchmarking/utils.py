@@ -112,10 +112,11 @@ def load_key_table(path):
 
 def normalize(obj):
     if isinstance(obj, dict):
+        if 'name' in obj:
+            obj['name'] = obj['name'].lower()
         if 'minPoints' in obj:
             obj['minpoints'] = obj.pop('minPoints')
             obj['maxdistance'] = obj.pop('maxDistance')
-
         if 'minpoints' in obj or 'maxdistance' in obj:
             obj['minpoints'] = str(obj['minpoints'])
             obj['maxdistance'] = str(obj['maxdistance'])
