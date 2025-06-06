@@ -115,12 +115,13 @@ class PropertyGenerator:
                     if 'numerical' not in categories:
                         categories['numerical'] = []
                     categories['numerical'].append(tag_property)
-                elif 'brand' == tag_property_tag.key or 'name' == tag_property_tag.key or 'addr:housenumber' == tag_property_tag.key:
+                elif ('brand' in tag_property_tag.key or 'name' in tag_property_tag.key or
+                      'addr:housenumber' == tag_property_tag.key or 'addr:street' == tag_property_tag.key):
                     if 'popular_non_numerical' not in categories:
                         categories['popular_non_numerical'] = []
                     categories['popular_non_numerical'].append(tag_property)
                 elif 'colour' in tag_property_tag.key:
-                    if 'color' not in categories:
+                    if 'colour' not in categories:
                         categories['colour'] = []
                     categories['colour'].append(tag_property)
                 elif 'cuisine' in tag_property_tag.key:
