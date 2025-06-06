@@ -129,6 +129,8 @@ class CombinationRetriever(object):
         tag_property_df = tag_df[tag_df['core/prop'] != 'core']
         tag_properties = []
         for tag_prop in tag_property_df.to_dict(orient='records'):
+            if isinstance(tag_prop['descriptors'], float):
+                continue
             descriptors = split_descriptors(tag_prop['descriptors'])
             splited_tags = split_tags(tag_prop['tags'])
             processed_tags = []
