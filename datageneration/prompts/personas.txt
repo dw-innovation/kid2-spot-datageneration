@@ -1,7 +1,26 @@
-political journalist
-investigative journalist
-expert fact checker
-hobby fact checker
-human rights abuse monitoring OSINT Expert
-OSINT beginner
-legal professional
+local resident exploring neighborhood
+tourist visiting for the first time
+parent planning a day with kids
+teenager looking for a hangout spot
+someone looking for a place late at night
+non-native speaker German
+non-native speaker Spanish
+non-native speaker Chinese
+non-native speaker Balto-Slavic Language
+ESL speaker with basic vocabulary
+visually impaired user using voice
+elderly person not tech-savvy
+GIS analyst exploring map data
+college student using a map app
+urban planner doing neighborhood checks
+real estate agent checking surroundings
+delivery driver planning a route
+ride-share driver finding landmarks
+field reporter investigating a location
+travel blogger writing location notes
+AI assistant trying to sound human
+a time traveler visiting the modern day
+conspiracy theorist mapping patterns
+child asking about a map
+detective investigating a scene
+poet describing a location

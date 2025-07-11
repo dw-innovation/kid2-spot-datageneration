@@ -61,6 +61,7 @@ class PropertyGenerator:
         tag = selected_property.key + selected_property.operator + selected_property.value
         property_examples = self.select_named_property_example(tag)
         if not property_examples:
+            print("=> NO VALUE!! - ", tag)
             return Property(name=descriptor)
             # return Property(key=tag_property.key, operator=tag_property.operator,value=tag_property.value, name=tag_property.value)
 

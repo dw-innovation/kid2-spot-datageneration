@@ -90,7 +90,7 @@ class QueryCombinationGenerator(object):
         """
         peak_value = 3  # Number of entity with the highest probability
         decay_rate_right = 0.7
-        decay_rate_left = 0.5 #0.3
+        decay_rate_left = 0.6 #0.3
         entity_nums = np.arange(1, max_number_of_entities_in_prompt + 1)
         probabilities = np.zeros(max_number_of_entities_in_prompt)
         probabilities[peak_value - 1] = 1
@@ -112,7 +112,7 @@ class QueryCombinationGenerator(object):
         :param max_number_of_props_in_entity: The maximum allowed number of properties per entity
         :return: The selected number of properties
         """
-        decay_rate = 0.3
+        decay_rate = 0.5
         prop_nums = np.arange(1, max_number_of_props_in_entity + 1)
         probabilities = np.exp(-decay_rate * prop_nums)
         probabilities /= np.sum(probabilities)
@@ -129,7 +129,7 @@ class QueryCombinationGenerator(object):
                 maxDistance = get_random_decimal_with_metric(5)
                 selected_entities[id] = Entity(id=selected_entities[id].id, is_area=selected_entities[id].is_area,
                                                 name=selected_entities[id].name, type='cluster',
-                                                minPoints=minPoints, maxDistance=maxDistance, properties=[])
+                                                minPoints=minPoints, maxDistance=maxDistance, properties=selected_entities[id].properties)
 
         return selected_entities
 
@@ -249,7 +249,6 @@ class QueryCombinationGenerator(object):
                 remaining_prob = (1- sum(all_property_category_probs_values)) / len(all_property_category_probs_values)
                 all_property_category_probs_values = list(map(lambda x: x+remaining_prob, all_property_category_probs_values))
 
-
             selected_property_category = np.random.choice(all_property_categories, p=all_property_category_probs_values)
             selected_category_properties = categorized_properties[selected_property_category]
             candidate_indices = np.arange(len(selected_category_properties))
@@ -260,9 +259,10 @@ class QueryCombinationGenerator(object):
             # if tag_props_key in tag_properties_keys and tag_props_key not in ['cuisine', 'sport']:
                 # we keep cuisine, sport because facilities can serve multiple cuisine, and offer different sport activities
                 # continue
-            tag_properties_keys.append(tag_props_key)
-            tag_property = self.property_generator.run(tag_property)
-            tag_properties.append(tag_property)
+            if tag_props_key not in tag_properties_keys: # Ensure no duplicates
+                tag_properties_keys.append(tag_props_key)
+                tag_property = self.property_generator.run(tag_property)
+                tag_properties.append(tag_property)
 
         return tag_properties
 
