@@ -2,6 +2,7 @@ import numpy as np
 from enum import Enum
 from typing import List
 import copy
+import random
 
 from datageneration.data_model import Relation, Relations, Entity
 from datageneration.utils import get_random_decimal_with_metric
@@ -102,7 +103,16 @@ class RelationGenerator:
         other_entities = [*remaining_point_entities, *remaining_area_entities]
         # Extend other drawn entities to the first point entity of each "contains" group, as they are used to show
         # individual distances between this group and other entities
-        other_entities.extend([e[0] for e in point_entities_connecting_to_area_entity])
+        n = len(drawn_area_entities)
+        x = random.randint(0, n - 1)
+        # Randomly decide whether to pick from the area or the point list
+        if random.choice([True, False]):
+            other_entities.append(drawn_area_entities[x])
+        else:
+            sub_list = point_entities_connecting_to_area_entity[x]
+            other_entities.append(random.choice(sub_list))
+
+        #other_entities.extend([e[0] for e in point_entities_connecting_to_area_entity])
         other_entity_ids = [e.id for e in other_entities]
 
         assert len(drawn_area_entities) == len(point_entities_connecting_to_area_entity)

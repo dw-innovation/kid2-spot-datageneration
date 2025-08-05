@@ -1,4 +1,4 @@
-VERSION=v17_Cluster_v2
+VERSION=v18_120fix_75k
 
 #python -m datageneration.gpt_data_generator \
 #--relative_spatial_terms_path datageneration/data/relative_spatial_terms.csv \
@@ -70,10 +70,11 @@ VERSION=v17_Cluster_v2
 #--generate_sentences
 
 python -m datageneration.gpt_data_generator \
---relative_spatial_terms_path datageneration/data/relative_spatial_terms.csv \
---tag_query_file datageneration/results/${VERSION}/dataset_${VERSION}_10k.jsonl \
---output_prompt_generations datageneration/results/${VERSION}/prompts_dataset_${VERSION}_10k.jsonl \
---output_gpt_generations datageneration/results/${VERSION}/gpt_generations_dataset_${VERSION}_10k.jsonl \
+--relative_spatial_terms_path datageneration/prompts/relative_spatial_terms.csv \
+--contains_terms_path datageneration/prompts/contains_terms.csv \
+--tag_query_file datageneration/results/${VERSION}/dataset_${VERSION}.jsonl \
+--output_prompt_generations datageneration/results/${VERSION}/prompts_dataset_${VERSION}.jsonl \
+--output_gpt_generations datageneration/results/${VERSION}/gpt_generations_dataset_${VERSION}.jsonl \
 --persona_path datageneration/prompts/personas.txt \
 --styles_path datageneration/prompts/styles.txt \
 --prob_usage_of_relative_spatial_terms 0.4 \
