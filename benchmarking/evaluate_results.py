@@ -148,6 +148,7 @@ def compare_yaml(area_analyzer: AreaAnalyzer, entity_and_prop_analyzer: EntityAn
     :return: Boolean whether the two YAMLs are the same.
     """
     _, ref_data = is_parsable_yaml(yaml_true_string)
+    yaml_pred_string = yaml_pred_string.replace('</s>', '')
     _is_parsable_yaml, generated_data = is_parsable_yaml(yaml_pred_string)
 
     is_perfect_match = False
