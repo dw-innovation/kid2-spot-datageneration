@@ -5,7 +5,7 @@ from benchmarking.utils import  DIST_LOOKUP, compose_metric
 from collections import Counter
 
 def load_rel_spatial_terms(relative_spatial_terms_path: str):
-    relative_spatial_terms = pd.read_csv(relative_spatial_terms_path, sep=';').to_dict(orient='records')
+    relative_spatial_terms = pd.read_csv(relative_spatial_terms_path, sep=',').to_dict(orient='records')
     processed_rel_spatial_term_mapping = {}
     for relative_spatial_term in relative_spatial_terms:
         values = list(map(lambda x: x.rstrip().strip(), relative_spatial_term['Vals'].split(',')))
@@ -15,7 +15,7 @@ def load_rel_spatial_terms(relative_spatial_terms_path: str):
     return processed_rel_spatial_term_mapping
 
 class RelationAnalyzer:
-    def __init__(self, relative_spatial_terms: str='datageneration/data/relative_spatial_terms.csv'):
+    def __init__(self, relative_spatial_terms: str='datageneration/prompts/relative_spatial_terms.csv'):
         self.rel_terms = load_rel_spatial_terms(relative_spatial_terms)
         print(self.rel_terms)
         # todo implement rel spatial
