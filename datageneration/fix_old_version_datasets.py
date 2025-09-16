@@ -2,7 +2,20 @@ import yaml
 import pandas as pd
 from argparse import ArgumentParser
 
-def preprocessing(yaml_str):
+
+def preprocessing(yaml_str: str) -> str:
+    """
+    Parse and clean the query YAML string.
+
+    Specifically:
+    - Removes the 'value' key from the 'area' dict if its type is 'bbox'.
+
+    Args:
+        yaml_str: A string containing a YAML-formatted query.
+
+    Returns:
+        A cleaned YAML string with the necessary modifications.
+    """
     query = yaml.safe_load(yaml_str)
     area = query["area"]
 

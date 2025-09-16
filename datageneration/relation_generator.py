@@ -7,21 +7,79 @@ import random
 from datageneration.data_model import Relation, Relations, Entity
 from datageneration.utils import get_random_decimal_with_metric
 
+"""
+Relation generation utilities for synthetic spatial tasks.
+
+This module generates different kinds of relations between entities for tasks such as:
+- individual pairwise distances between entities,
+- "within radius" relations anchored at a source entity,
+- "in area" containment-style relations,
+- compound relations mixing "contains" with individual distances.
+
+Key types:
+- `Entity`: basic object with an `id` and a boolean `is_area`.
+- `Relation`: atomic relation with `type`, `source`, `target`, and optional `value`.
+- `Relations`: a container with a global `type` and a list of `Relation` items.
+
+Notes
+-----
+- Distances are produced by `get_random_decimal_with_metric(max_digits)` and returned as a
+  decimal-plus-unit data structure (passed directly into `Relation.value` unless stringified
+  elsewhere in downstream code).
+- The "contains" relation uses `type='contains'` and does not carry a numeric value.
+"""
 
 RELATION_TYPE='distance'
 
 class RELATION_TASKS(Enum):
+    """
+    Enum for the supported relation-generation tasks.
+    """
     INDIVIDUAL_DISTANCES = 'individual_distances'
     WITHIN_RADIUS = 'within_radius'
     IN_AREA = 'in_area'
 
 class RelationGenerator:
+    """
+    Generate relation structures (`Relations`) for a set of entities.
+
+    Parameters
+    ----------
+    max_distance_digits : int
+        Maximum number of digits for generated distance magnitudes.
+    prob_generating_contain_rel : float
+        Probability in [0, 1] of generating a "contains"-based scenario when possible.
+
+    Attributes
+    ----------
+    MAX_DISTANCE_DIGITS : int
+        Stored upper bound for distance magnitude digits.
+    prob_generating_contain_rel : float
+        Stored probability for branching into "contains" generation.
+    tasks : List[str]
+        Available task names taken from RELATION_TASKS values.
+    """
     def __init__(self, max_distance_digits: int, prob_generating_contain_rel: float):
         self.MAX_DISTANCE_DIGITS = max_distance_digits
         self.prob_generating_contain_rel = prob_generating_contain_rel
         self.tasks = [relation_task.value for relation_task in RELATION_TASKS]
 
     def generate_individual_distances(self, entity_ids: List[int]) -> List[Relation]:
+        """
+        Generate chained pairwise distance relations over a list of entity IDs.
+
+        Produces distances (entity[i] -> entity[i+1]) for i in [0, n-2].
+
+        Parameters
+        ----------
+        entity_ids : List[int]
+            Ordered IDs to connect with distances.
+
+        Returns
+        -------
+        List[Relation]
+            Distance relations with `type='distance'` and `value` set to a decimal-with-metric.
+        """
         # np.random.shuffle(entity_ids)
         relations = []
         for t_no in range(len(entity_ids)-1):
@@ -32,11 +90,19 @@ class RelationGenerator:
 
     def generate_within_radius(self, num_entities: int) -> List[Relation]:
         """
-        Generate relations representing entities within a certain radius.
-        Args:
-            num_entities (int): The number of entities for which relations need to be generated.
-        Returns:
-            List[Relation]: A list of Relation objects representing entities within a radius.
+        Generate a star-shaped set of 'within radius' distance relations.
+
+        Uses entity 0 as the anchor (source) and connects it to all others with a shared radius value.
+
+        Parameters
+        ----------
+        num_entities : int
+            Number of entities involved (IDs are assumed 0..num_entities-1).
+
+        Returns
+        -------
+        List[Relation]
+            Relations of `type='distance'` from source 0 to each target, all sharing the same `value`.
         """
         relations = []
         distance = get_random_decimal_with_metric(self.MAX_DISTANCE_DIGITS)
@@ -48,26 +114,44 @@ class RelationGenerator:
         return relations
 
     def generate_in_area(self, num_entities: int) -> None:
-        '''
-        It returns None, that indicates that the relation is not clear or one object exists
-        '''
+        """
+        Generate an 'in area' relation placeholder.
+
+        Returns
+        -------
+        None
+            Indicates that no explicit relation set is produced (e.g., ambiguous or singleton case).
+        """
         return None
 
     def generate_relation_with_contain(self, area_entities: List[Entity], point_entities: List[Entity],
                                         max_within_combs: int) -> Relations:
         """
-        This method generates relations that include at least one relation of type "contains". The contains relations
-        are randomly drawn based on the possible combinations of "area" and "point" entities. Depending on the number
-        of "contains" groups (meaning groups of areas and one or multiple entities contained within it), and other
-        entities not part of the "contains" groups, one of three relation types is possible:
-            - individual_distances_with_contains: Requires any combination of at least two groups and/or entities
-            - contains_within_radius: Requires only one group, but at least two points connected to the area
-            - contains_relation: Requires only one group, with any number of points connected to area
+        Generate relations including at least one 'contains' group.
 
-        :param area_entities: The entities of type "area"
-        :param point_entities: The entities of type "point"
-        :param max_within_combs: The maximum possible number of "contains" relation possible based on the entities
-        :return: The generated relations
+        Workflow
+        --------
+        1) Randomly choose a number of (area → contained points) groups.
+        2) For each group, pick one area and 1..k points it contains.
+        3) Compute any additional "other entities" to allow individual distances between
+           a representative of one group and those others.
+        4) Return either:
+           - type='individual_distances_with_contains' (contains + extra distances), or
+           - type='contains_relation' (only contains relations).
+
+        Parameters
+        ----------
+        area_entities : List[Entity]
+            Entities flagged as areas (i.e., `is_area=True`).
+        point_entities : List[Entity]
+            Entities flagged as points (`is_area=False`).
+        max_within_combs : int
+            Upper bound for the number of area→points containment groups.
+
+        Returns
+        -------
+        Relations
+            A `Relations` object with `type` and a list of `Relation` items.
         """
         num_within_combs = np.random.choice(np.arange(1,max_within_combs+1))
         remaining_area_entities = copy.deepcopy(area_entities)
@@ -133,13 +217,19 @@ class RelationGenerator:
     def generate_relation_with_contain_helper(self, drawn_area_entities: List[Entity],
              point_entities_connecting_to_area_entity: List[List[Entity]]) -> List[Relation]:
         """
-        Generate the relation format for contains relations. A distance value (replicating a "contains_within_radius"
-        relation) is only assigned if the argument add_dist is True.
+        Build atomic 'contains' relations for each (area → list of points) group.
 
-        :param drawn_area_entities: the entities that server as areas in the contains relations
-        :param point_entities_connecting_to_area_entity: a list of connected points for each area
-        :param add_dist: boolean whether distances should be assigned, or None
-        :return: the list of relations
+        Parameters
+        ----------
+        drawn_area_entities : List[Entity]
+            The chosen area entities, one per group.
+        point_entities_connecting_to_area_entity : List[List[Entity]]
+            For each area, the corresponding list of contained point entities.
+
+        Returns
+        -------
+        List[Relation]
+            A flat list of `Relation(type='contains', source=area.id, target=point.id)`.
         """
         relations = []
         for aid, area in enumerate(drawn_area_entities):
@@ -149,21 +239,28 @@ class RelationGenerator:
 
         return relations
 
-    def get_task(self, num_entities: int):
+    def get_task(self, num_entities: int) -> str:
         """
-        This method of selecting the task of the query using an exponential decay method. It first filters out
-        tasks that are not viable due to the number of entities. It then selects the task based on a probability
-        distribution that assigns higher probabilities to task at the beginning of the list. This allows for
-        a drafting system that prioritises certain tasks over others, as e.g. "individual_distances" is a
-        far more difficult task than "in_area" and therefore requires more training data.
+        Select a relation-generation task using an exponential-decay probability over viable tasks.
 
-        Example probability distribution with decay of 0.5:
-            - 3 or more entities: [0.50648039 0.30719589 0.18632372]
-            - 2 entities: [0.62245933 0.37754067]
-            - 1 entity: [1.0]
+        Viability rules
+        ---------------
+        - < 3 entities: remove 'individual_distances'
+        - == 1 entity: remove 'within_radius' (leaving 'in_area')
 
-        :param num_entities: The number of entities of the query
-        :return: The selected task
+        Probability
+        -----------
+        p(i) ∝ exp(-decay_rate * i) over the ordered viable task list.
+
+        Parameters
+        ----------
+        num_entities : int
+            Number of entities in the current scenario.
+
+        Returns
+        -------
+        str
+            Selected task name from `RELATION_TASKS`.
         """
         viable_tasks = [RELATION_TASKS.INDIVIDUAL_DISTANCES.value, RELATION_TASKS.WITHIN_RADIUS.value,
                         RELATION_TASKS.IN_AREA.value]
@@ -182,14 +279,20 @@ class RelationGenerator:
       
     def run(self, entities: List[Entity]) -> Relations:
         """
-        This task runs the general pipeline for generating relations between entities.
-        The specific task for relation generation is randomly selected.
-        Once it is defined, it will execute the corresponding function.
-        Args:
-            entities (List): The entities involved in the task.
+        Execute the full pipeline: optionally create 'contains' relations, else a standard task.
 
-        Returns:
-            List[Relation] or None: A list of Relation objects representing the task outcome.
+        Parameters
+        ----------
+        entities : List[Entity]
+            All entities in the scene (areas and points).
+
+        Returns
+        -------
+        Relations
+            A `Relations` object where:
+            - `type` is one of {'individual_distances_with_contains', 'contains_relation',
+              'individual_distances', 'within_radius', 'in_area'}
+            - `relations` is a list of `Relation` or `None` (for 'in_area').
         """
         area_entities = []
         point_entities = []
@@ -208,7 +311,20 @@ class RelationGenerator:
             relations = self.standard_rel_tasks(np.arange(len(entities)))
         return relations
 
-    def standard_rel_tasks(self, entity_ids):
+    def standard_rel_tasks(self, entity_ids) -> Relations:
+        """
+        Dispatch to a standard task (no 'contains' logic).
+
+        Parameters
+        ----------
+        entity_ids : iterable of int
+            Ordered entity IDs to use for relation construction.
+
+        Returns
+        -------
+        Relations
+            Container with the selected task type and generated relations (or None for 'in_area').
+        """
         num_entities = len(entity_ids)
         selected_task = self.get_task(num_entities)
         if selected_task == RELATION_TASKS.INDIVIDUAL_DISTANCES.value:

@@ -9,6 +9,30 @@ import yaml
 from nltk.corpus import stopwords
 import nltk
 
+"""
+Linguistic and YAML-metadata comparison between human-written and model-generated sentences.
+
+This module:
+- Loads human and model datasets (Excel/CSV).
+- Parses YAML-structured fields to count entities, properties, relations, and parsing errors.
+- Computes a suite of sentence-level statistics (lengths, n-gram repetition, readability, POS distribution).
+- Produces side-by-side normalized bar charts for YAML metrics, text statistics, and POS distributions.
+- Prints top words (with and without stopwords) for each corpus.
+
+Dependencies:
+    pandas, numpy, matplotlib, spacy, textstat, pyyaml, nltk
+    spaCy model: `en_core_web_sm`
+    NLTK resources: 'punkt', 'stopwords'
+
+Data expectations:
+    - human_df: columns ['sentence', 'YAML']
+    - model_df: columns ['sentence', 'query'] where 'query' contains a YAML string
+
+Notes:
+    - File paths are currently hard-coded under ./data/ .
+    - NLTK corpora are downloaded at runtime if missing.
+"""
+
 # Load NLTK resources
 nltk.download('punkt')
 nltk.download('stopwords')
@@ -84,6 +108,23 @@ df_plot.columns = ["Feature", "Human_norm", "Model_norm"]
 
 # Plotting
 def plot_normalized_comparison(df):
+    """
+    Plot a side-by-side bar chart of normalized values for Human vs. Model.
+
+    Args:
+        df (pandas.DataFrame): A dataframe with columns:
+            - 'Feature': str feature names
+            - 'Human_norm': float normalized value for the human set
+            - 'Model_norm': float normalized value for the model set
+
+    Returns:
+        None: Displays a matplotlib figure.
+
+    Notes:
+        This is the stand-alone (axes-owning) variant that uses the global pyplot
+        state to create a new figure. The module later defines an axes-based
+        variant with the same name that accepts an Axes object.
+    """
     x = range(len(df))
     width = 0.35
     plt.figure(figsize=(10, 6))
@@ -98,9 +139,45 @@ def plot_normalized_comparison(df):
 
 
 def get_ngrams(tokens, n):
+    """
+    Generate n-grams from a sequence of tokens.
+
+    Args:
+        tokens (Sequence[str]): Tokenized text.
+        n (int): Size of the n-gram (e.g., 2 for bigrams, 3 for trigrams).
+
+    Returns:
+        iterator[tuple[str, ...]]: A zip-based iterator yielding n-length tuples.
+    """
     return zip(*[tokens[i:] for i in range(n)])
 
 def analyze_sentences(sentences):
+    """
+    Compute linguistic statistics, frequency info, readability, and POS distribution.
+
+    Args:
+        sentences (list[str]): Collection of raw sentence strings.
+
+    Returns:
+        dict: A dictionary with the following keys:
+            - 'avg_sentence_length_words' (float)
+            - 'avg_sentence_length_chars' (float)
+            - 'avg_word_length' (float)
+            - 'type_token_ratio' (float)
+            - 'flesch_reading_ease' (float)
+            - 'flesch_kincaid_grade' (float)
+            - 'gunning_fog_index' (float)
+            - 'repeated_bigrams' (float): ratio of repeated bigrams over total bigrams
+            - 'repeated_trigrams' (float): ratio of repeated trigrams over total trigrams
+            - 'top_words' (list[tuple[str, int]]): top 20 tokens (with stopwords)
+            - 'top_words_no_stopwords' (list[tuple[str, int]]): top 20 tokens (no stopwords)
+            - 'pos_distribution' (dict[str, float]): normalized POS counts over total tokens
+
+    Notes:
+        - Uses spaCy for tokenization and POS tagging.
+        - Uses textstat for readability metrics over the full concatenated text.
+        - Only alphabetic tokens (token.is_alpha) are considered for many metrics.
+    """
     stop_words = set(stopwords.words('english'))
 
     docs = list(nlp.pipe(sentences))
@@ -196,6 +273,20 @@ comparison_df = pd.DataFrame({
 })
 
 def normalize_global(df):
+    """
+    Apply global min-max normalization across both Human and Model columns.
+
+    Args:
+        df (pandas.DataFrame): DataFrame with numeric columns 'Human' and 'Model'.
+
+    Returns:
+        pandas.DataFrame: Copy of the input with two added columns:
+            - 'Human_norm': normalized 'Human' values in [0, 1]
+            - 'Model_norm': normalized 'Model' values in [0, 1]
+
+    Raises:
+        ValueError: If the global range is zero (all values equal), normalization is undefined.
+    """
     norm_df = df.copy()
     all_values = df[['Human', 'Model']].values.flatten()
     global_min = all_values.min()
@@ -227,6 +318,18 @@ print(comparison_df_norm.round(3))
 #     plt.show()
 
 def plot_normalized_comparison(ax, df, title):
+    """
+    Plot normalized Human vs. Model values for a set of features on a provided Axes.
+
+    Args:
+        ax (matplotlib.axes.Axes): Target axes to draw the plot on.
+        df (pandas.DataFrame): DataFrame with:
+            - 'Feature' (str), 'Human_norm' (float), 'Model_norm' (float)
+        title (str): Title for the subplot.
+
+    Returns:
+        None: Draws bars on the provided axes.
+    """
     x = range(len(df))
     width = 0.35
     ax.bar(x, df['Human_norm'], width=width, label='Human')
@@ -267,6 +370,21 @@ def plot_normalized_comparison(ax, df, title):
 
 
 def plot_pos_distribution(ax, human_pos, model_pos):
+    """
+    Plot a side-by-side POS tag distribution for human vs. model on a provided Axes.
+
+    Args:
+        ax (matplotlib.axes.Axes): Target axes to draw the plot on.
+        human_pos (dict[str, float]): Normalized POS distribution for human text.
+        model_pos (dict[str, float]): Normalized POS distribution for model text.
+
+    Returns:
+        None: Draws bars on the provided axes.
+
+    Notes:
+        - Assumes keys in `human_pos` are the POS tag universe; missing keys in
+          `model_pos` are treated as zero.
+    """
     labels = list(human_pos.keys())
     x = range(len(labels))
     width = 0.35

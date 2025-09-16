@@ -9,12 +9,51 @@ from sklearn.metrics.pairwise import cosine_similarity
 spell = Speller()
 
 class EntityAndPropertyAnalyzer:
+    """
+    Analyze and compare entities & properties between reference (ground-truth)
+    and predicted (generated) structures.
+
+    Expected object schema (entity or property dictionaries):
+        {
+            "name": str | int,              # descriptor or property name
+            "type": "nwr" | "cluster" | …,  # for entities (optional for properties)
+            "value": str | int | float,     # for properties (optional)
+            "properties": [ {...}, ... ]    # list of property dicts (optional)
+        }
+
+    The class provides normalization and fuzzy descriptor matching, pairing of
+    predicted vs. reference objects, and rich comparison metrics (exact/weak
+    matches, hallucinations, missing items, and property-level checks).
+    """
     def __init__(self, descriptors):
+        """
+        Initialize the analyzer with descriptor bundles.
+
+        Args:
+            descriptors: A mapping from canonical descriptor name to a list of
+                equivalent/related descriptor strings. Example:
+                {
+                    "color": ["color", "colour", "hue"],
+                    "height": ["height", "tallness"]
+                }
+        """
         self.descriptors = descriptors
         self.color_descriptors = self.descriptors['color']
         self.color_descriptors.sort()
 
     def convert_values_to_string(self, data):
+        """
+        Normalize each item's 'name' and 'value' fields into lowercase strings.
+
+        - item['name'] -> lowercase string
+        - item['value'] -> string (lowercased) if present and was numeric or string
+
+        Args:
+            data: List of entity/property dicts to normalize in-place.
+
+        Returns:
+            The same list, with items normalized.
+        """
         for item in data:
             item["name"] = item["name"].lower()
             if 'value' not in item:
@@ -28,15 +67,20 @@ class EntityAndPropertyAnalyzer:
 
     def check_equivalent_entities(self, descriptors, ref, gen):
         """
-        DEPRECEATED -- integrated into the pair_objects
-        In case the reference and the generated entities + properties have descriptors that differ, but come from the
-        same bundle, this script replaces the generated entity/property descriptor with that of the reference to ensure it
-        will be treated as equal for the rest of the script.
+        (Deprecated) Replace generated entity/property descriptor variants with
+        the reference canonical names based on descriptor bundles.
 
-        :param descriptors: A map of descriptors where each descriptor maps to the corresponding bundle descriptor list.
-        :param ref: The reference entity from the ground truth data.
-        :param gen: The generated entity to be evaluated.
-        :return: gen_copy - The copy with the corrected entity values.
+        This mutates a copy of `gen` so that labels equivalent to reference
+        labels (within the same descriptor bundle) are unified to the reference
+        names. Use `pair_objects` for the current approach.
+
+        Args:
+            descriptors: Map of canonical descriptor -> list of equivalents.
+            ref: Reference entity list.
+            gen: Generated entity list.
+
+        Returns:
+            A deep-copied and adjusted list of generated entities.
         """
         gen_copy = copy.deepcopy(gen)
         for r in ref:
@@ -68,6 +112,21 @@ class EntityAndPropertyAnalyzer:
         return gen_copy
 
     def normalization_with_descriptors(self, obj_name):
+        """
+        Normalize an object/descriptor name using the provided bundles.
+
+        - If `obj_name` matches a canonical key in `self.descriptors`, return
+          the bundle list for that key.
+        - Otherwise, attempt fuzzy matching (with spell correction fallback) to
+          map to the closest canonical descriptor.
+        - If no good match is found, return the original (lowercased) input.
+
+        Args:
+            obj_name: Raw descriptor name.
+
+        Returns:
+            Either a list of descriptors (bundle) or the normalized string.
+        """
         obj_name = obj_name.lower()
         if obj_name not in self.descriptors:
             normalized_name = self.fuzzy_search(obj_name)
@@ -81,6 +140,19 @@ class EntityAndPropertyAnalyzer:
         return normalized_name
 
     def fuzzy_search(self, corrected_name):
+        """
+        Fuzzy-match a name against known descriptor keys and return a canonical.
+
+        Uses token_set_ratio and a threshold > 80. Special-cases 'station' to
+        avoid incorrect matches when the input contains a space.
+
+        Args:
+            corrected_name: Input name (ideally spell-corrected).
+
+        Returns:
+            Canonical descriptor string (first item of the matched bundle) if a
+            confident match exists, else the original `corrected_name`.
+        """
         best_match = None
         highest_score = 0
         for descriptor in self.descriptors:
@@ -100,12 +172,36 @@ class EntityAndPropertyAnalyzer:
         return normalized_name
 
     def pair_objects(self, predicted_objs, reference_objs):
-        '''
-        Pair entities/properties based on their names
-        :param predicted_objs:
-        :param reference_objs:
-        :return: paired entities, unpaired entities
-        '''
+        """
+        Pair entities/properties by (normalized) names, handling duplicates.
+
+        This builds mappings of normalized names for reference and predicted
+        objects, applies descriptor normalization (with rules for 'color' and
+        'brand'), and calls `find_pairs_semantic` to pair keys. It also tracks
+        duplicates and constructs “full” paired/unpaired structures.
+
+        Args:
+            predicted_objs: List of predicted objects (may be None/empty).
+            reference_objs: List of reference objects.
+
+        Returns:
+            A 4-tuple:
+                1) full_paired_entities (list[tuple[ref_obj, pred_obj]]):
+                   concrete object pairs for evaluation.
+                2) paired_objs (list[tuple[str, str]]):
+                   pairs of normalized names (ground_truth_name, predicted_name).
+                3) full_unpaired_objs (dict):
+                   {'reference': [unpaired_ref_objs...],
+                    'prediction': [unpaired_pred_objs...]}
+                4) unpaired_objs (dict[str, list[str]]):
+                   {'reference': [unpaired_ref_names...],
+                    'prediction': [unpaired_pred_names...]}
+
+        Notes:
+            - For properties with duplicates (same normalized name but different
+              values), attempts to align by value when constructing pairs.
+            - Values are lowercased strings when present.
+        """
         # create a dictionary of reference entities and predicted entities, names will be the keys
         print('===predicted objs===')
         print(predicted_objs)
@@ -236,6 +332,17 @@ class EntityAndPropertyAnalyzer:
         return full_paired_entities, paired_objs, full_unpaired_objs, unpaired_objs
 
     def compose_height_value(self, height):
+        """
+        Split a height string into distance and metric.
+
+        Expected format: "<distance> <metric>", e.g., "10 m" or "3.5 km".
+
+        Args:
+            height: Height string to split.
+
+        Returns:
+            (distance, metric) as strings.
+        """
         heigh_splits = height.split(' ')
         dist = heigh_splits[0]
         metric = heigh_splits[1]
@@ -243,12 +350,45 @@ class EntityAndPropertyAnalyzer:
 
     def compare_entities(self, reference_entities, predicted_entities) -> Dict:
         """
-        Check if two lists of entities are identical. The lists are first sorted via their names, to make sure the order
-        does not affect the results.
+        Compare two lists of entities and compute detailed match metrics.
 
-        :param reference_entities: The first entity list to compare (ref_data).
-        :param predicted_entities: The second entity list to compare (generated data).
-        :return: Boolean whether the two entity lists are the same.
+        Performs:
+            - Entity pairing (via `pair_objects`)
+            - Exact/weak entity matches (including type checks for 'nwr'/'cluster')
+            - Cluster-specific checks ('minpoints', 'maxdistance')
+            - Property comparison (exact, height/cuisine/color specifics)
+            - Hallucination (extra predictions) and missing counts
+
+        Args:
+            reference_entities: Ground-truth entity list.
+            predicted_entities: Generated entity list.
+
+        Returns:
+            Tuple:
+              (
+                metrics_dict,
+                full_paired_entities
+              )
+
+            where `metrics_dict` includes (abbrev):
+                - total_ref_entities, total_properties, total_height_property,
+                  total_cuisine_property, total_color_property, total_clusters
+                - num_entity_match_perfect, num_entity_match_weak,
+                  num_correct_entity_type
+                - num_correct_cluster_points, num_correct_cluster_distance
+                - num_correct_properties_perfect
+                - num_hallucinated_entity, num_missing_entity
+                - num_hallucinated_properties, num_missing_properties
+                - num_correct_height, num_correct_height_metric,
+                  num_correct_height_distance
+                - num_correct_cuisine_properties, num_correct_color
+                - entity_perfect_result (bool), props_perfect_result (bool)
+
+            and `full_paired_entities` is a list of (ref_entity, pred_entity) tuples.
+
+        Notes:
+            - Name normalization includes special handling for color/brand.
+            - Height comparisons additionally split distance vs. metric.
         """
         full_paired_entities, paired_entities, full_unpaired_entities, unpaired_entities = self.pair_objects(predicted_objs=predicted_entities, reference_objs=reference_entities)
         total_ref_entities = len(reference_entities)
@@ -431,7 +571,16 @@ class EntityAndPropertyAnalyzer:
             props_perfect_result = props_perfect_result
         ), full_paired_entities
 
-    def sort_entities(self, entities1, entities2):
+    def sort_entities(self, entities1, entities2):        """
+        Sort two entity lists by case-insensitive 'name'.
+
+        Args:
+            entities1: First list of entities.
+            entities2: Second list of entities.
+
+        Returns:
+            A tuple of (entities1_sorted, entities2_sorted).
+        """
         entities1_sorted = sorted(entities1, key=lambda x: x['name'].lower())
         entities2_sorted = sorted(entities2, key=lambda x: x['name'].lower())
         return entities1_sorted, entities2_sorted

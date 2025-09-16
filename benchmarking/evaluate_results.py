@@ -16,6 +16,24 @@ from benchmarking.relation_analyzer import RelationAnalyzer
 from benchmarking.area_analyzer import AreaAnalyzer
 from typing import Dict
 
+"""
+Benchmarking pipeline to compare YAML-structured predictions against gold labels.
+
+This module:
+- Parses/repairs YAML strings.
+- Normalizes brand/name properties.
+- Compares area, entities+properties, and relations via dedicated analyzers.
+- Aggregates detailed metrics and writes per-item results and summary scores.
+
+Inputs (CLI):
+    --key_table_path         Path to the descriptor key table (for normalization).
+    --gold_file_path         Path to the Excel file with gold labels.
+    --gold_sheet_name        Sheet name in the gold Excel file.
+    --pred_file_path         Path to a JSONL file with model predictions.
+    --out_file_path          Output Excel file for per-item results.
+    --out_file_path_sum      Output Excel file for aggregated summary metrics.
+"""
+
 # class ResultDataType(enum.Enum):
 #     TRUE = 'TRUE'
 #     FALSE = 'FALSE'
@@ -24,6 +42,15 @@ from typing import Dict
 
 
 class Result(BaseModel, frozen=True):
+    """
+    Container for a single-row comparison outcome.
+
+    Attributes:
+        yaml_true_string: Original gold YAML string.
+        yaml_pred_string: Original predicted YAML string (possibly post-cleanup).
+        is_parsable_yaml: True if the prediction YAML was successfully parsed or repaired.
+        is_perfect_match: True if area, entities+props, and relations all matched perfectly.
+    """
     yaml_true_string: str = Field(...)
     yaml_pred_string: str = Field(...)
     is_parsable_yaml: bool = Field(description="True if yaml can be parsed, otherwise False",
@@ -37,9 +64,19 @@ class Result(BaseModel, frozen=True):
 
 def is_parsable_yaml(yaml_string) -> bool:
     """
-    Checks whether the input batch of YAML strings is parsable.
+    Check whether a YAML string is parsable; attempt auto-fix if not.
 
-    :return: is_parsable, parsed_yaml - Boolean whether YAML is parsable plus parsed YAML (or None if not possible).
+    Tries `yaml.safe_load`; on failure, attempts `validate_and_fix_yaml`.
+
+    Args:
+        yaml_string: The YAML content as a string.
+
+    Returns:
+        (is_parsable, parsed_yaml):
+            - is_parsable (bool): True iff `yaml.safe_load` succeeded.
+              (Note: if repair succeeds, this flag still reflects the initial parse attempt.)
+            - parsed_yaml (dict | list | None): Parsed YAML (from safe_load or repair),
+              or None if neither path succeeded.
     """
     is_parsable = False
     parsed_yaml = None
@@ -56,12 +93,19 @@ def is_parsable_yaml(yaml_string) -> bool:
 
 # def prepare_relation(data) -> ResultDataType:
 #     """
-#     In order to compare relations independent of the order of entities, it is not sufficient to have numeric
-#     references for target and source. This method therefore replaces the numeric pointers with the descriptors (names)
-#     of the references entities, as this makes comparisons possible.
+#     Check whether a YAML string is parsable; attempt auto-fix if not.
 #
-#     :param data: The entire query, including area, entities and relations.
-#     :return: prepped_relation - The updated relation with descriptors instead of numeric pointers.
+#     Tries `yaml.safe_load`; on failure, attempts `validate_and_fix_yaml`.
+#
+#     Args:
+#         yaml_string: The YAML content as a string.
+#
+#     Returns:
+#         (is_parsable, parsed_yaml):
+#             - is_parsable (bool): True iff `yaml.safe_load` succeeded.
+#               (Note: if repair succeeds, this flag still reflects the initial parse attempt.)
+#             - parsed_yaml (dict | list | None): Parsed YAML (from safe_load or repair),
+#               or None if neither path succeeded.
 #     """
 #     relations = copy.deepcopy(data["relations"])
 #     prepped_relation = copy.deepcopy(data["relations"])
@@ -82,14 +126,14 @@ def is_parsable_yaml(yaml_string) -> bool:
 
 # def compare_relations(reference_relations, predicted_relations) -> ResultDataType:
 #     """
-#     Check if two lists of relations are identical. There are two different ways how the comparison is done, based on
-#     whether the order of source and target is relevant or not (only the case in "contains" relations).
-#     Contains relations (where the order matters) are compared as lists. Other relations (where the order of source
-#     and target does not matter) is compared as a list of frozensets.
+#     Compare two relation lists; order matters for 'contains', not for distance.
 #
-#     :param reference_relations: The first relations list to compare (ref_rel).
-#     :param predicted_relations: The second relations list to compare (gen_rel).
-#     :return: Boolean whether the two relations lists are the same.
+#     Args:
+#         reference_relations: Gold relations list.
+#         predicted_relations: Predicted relations list.
+#
+#     Returns:
+#         Ratio of matched relations over total (float in [0, 1]).
 #     """
 #     if not predicted_relations:
 #         return 0
@@ -130,6 +174,15 @@ def is_parsable_yaml(yaml_string) -> bool:
 #     return matches / total_relations
 
 def normalize_name_brands(data):
+    """
+    Normalize 'brand:*' properties as 'name' to unify naming variants.
+
+    Args:
+        data: Parsed YAML dict with an 'entities' list.
+
+    Returns:
+        The same dict with in-place normalization applied.
+    """
     for entity in data.get('entities', []):
         if 'properties' in entity:
             for prop in entity['properties']:
@@ -140,14 +193,31 @@ def normalize_name_brands(data):
 
 def compare_yaml(area_analyzer: AreaAnalyzer, entity_and_prop_analyzer: EntityAndPropertyAnalyzer, relation_analyzer: RelationAnalyzer, yaml_true_string, yaml_pred_string) -> Dict:
     """
-    Compare two YAML structures represented as strings. This is done by comparing areas, entities and relations
-    separately.
+    Compare two YAML structures (gold vs. prediction) at area, entity/property, and relation levels.
 
-    :param yaml_true_string: The first YAML to compare.
-    :param yaml_pred_string: The first YAML to compare.
-    :return: Boolean whether the two YAMLs are the same.
+    Steps:
+        1) Parse/repair both YAML strings.
+        2) Normalize brand/name fields.
+        3) Compare areas, entities+properties, and relations using the provided analyzers.
+        4) Merge all metrics into a single result dict and set `is_perfect_match` if all subsystems match.
+
+    Args:
+        area_analyzer: Analyzer for area-level comparison.
+        entity_and_prop_analyzer: Analyzer for entity/property-level comparison.
+        relation_analyzer: Analyzer for relation-level comparison.
+        yaml_true_string: Gold YAML text.
+        yaml_pred_string: Predicted YAML text (may contain artifacts like '</s>').
+
+    Returns:
+        dict with keys including (subset):
+            - yaml_pred_string, yaml_true_string
+            - is_perfect_match, is_parsable_yaml
+            - area_* (from AreaAnalyzer)
+            - entity/property metrics (from EntityAndPropertyAnalyzer)
+            - relation_* (from RelationAnalyzer)
     """
     _, ref_data = is_parsable_yaml(yaml_true_string)
+    print("!!!!", yaml_pred_string)
     yaml_pred_string = yaml_pred_string.replace('</s>', '')
     _is_parsable_yaml, generated_data = is_parsable_yaml(yaml_pred_string)
 

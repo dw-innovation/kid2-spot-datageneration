@@ -25,10 +25,11 @@ DIST_LOOKUP = {
 
 def write_output(generated_combs, output_file):
     """
-    Writes the generated_combs to JSON with the given output_file path.
+    Write a list of generated combination objects to a JSONL file.
 
-    :param generated_combs: The generated combinations.
-    :param output_file: The path where the output file should be written.
+    Args:
+        generated_combs (list): List of objects with `.model_dump(mode="json")` method.
+        output_file (str): Path to the output JSONL file.
     """
     os.makedirs(os.path.dirname(output_file), exist_ok=True)
 
@@ -38,6 +39,19 @@ def write_output(generated_combs, output_file):
             out_file.write('\n')
 
 def find_pairs_fuzzy(list1, list2, threshold=80):
+    """
+    Find best fuzzy matches between two lists of strings using RapidFuzz.
+
+    Args:
+        list1 (list of str): First list of strings (e.g., ground truth).
+        list2 (list of str): Second list of strings (e.g., predictions).
+        threshold (int): Minimum match score (0–100) to consider as a match.
+
+    Returns:
+        tuple:
+            paired (list of tuples): Matched pairs from list1 and list2.
+            unpaired (dict): Unmatched items from both lists.
+    """
     paired = []
     unpaired = {"list1": [], "list2": list2.copy()}
 
@@ -57,6 +71,19 @@ torch.manual_seed(0)
 if torch.cuda.is_available():
     torch.cuda.manual_seed_all(0)
 def find_pairs_semantic(reference_list, prediction_list, threshold=0.7):
+    """
+    Find best semantic matches between two lists using SentenceTransformer embeddings.
+
+    Args:
+        reference_list (list of str): List of reference strings.
+        prediction_list (list of str): List of predicted strings.
+        threshold (float): Minimum cosine similarity score to consider a valid match.
+
+    Returns:
+        tuple:
+            paired (list of tuples): Matched (reference, prediction) pairs.
+            unpaired (dict): Items in reference and prediction lists not matched.
+    """
     paired = []
     unpaired = {"reference": reference_list.copy(), "prediction": prediction_list.copy()}
 
@@ -92,11 +119,14 @@ def find_pairs_semantic(reference_list, prediction_list, threshold=0.7):
 
 def load_key_table(path):
     """
-    Loads the primary key table and transforms it into a map where each individual descriptor maps to a list of all
-    descriptors in its bundle.
+    Load an Excel key table where each row contains a comma-separated bundle of descriptors.
+    Maps each descriptor to its full bundle.
 
-    :param path: The path to the primary key table file.
-    :return: descriptors - Map of descriptors.
+    Args:
+        path (str): Path to the Excel file.
+
+    Returns:
+        dict: Mapping from descriptor to full list of related descriptors (bundle).
     """
     primary_key_table = pd.read_excel(path, engine='openpyxl')
 
@@ -111,6 +141,18 @@ def load_key_table(path):
     return descriptors
 
 def normalize(obj):
+    """
+    Normalize nested dictionaries or lists to enable accurate comparison.
+    - Lowercases strings
+    - Converts some keys/values to a consistent format
+    - Converts height values with units to "<value> <unit>" format
+
+    Args:
+        obj (dict | list | str): The object to normalize.
+
+    Returns:
+        Normalized version of the input object.
+    """
     if isinstance(obj, dict):
         if 'name' in obj:
             obj['name'] = obj['name'].lower()
@@ -134,6 +176,16 @@ def normalize(obj):
     return obj
 
 def are_dicts_equal(dict1, dict2):
+    """
+    Compare two dictionaries after normalization to check if they are equivalent.
+
+    Args:
+        dict1 (dict): First dictionary.
+        dict2 (dict): Second dictionary.
+
+    Returns:
+        bool: True if normalized dictionaries are equal, else False.
+    """
     normalized_dict_1 = normalize(dict1)
     normalized_dict_2 = normalize(dict2)
 
@@ -146,6 +198,17 @@ def are_dicts_equal(dict1, dict2):
     return normalized_dict_1 == normalized_dict_2
 
 def compose_metric(height):
+    """
+    Extract numeric distance and normalized metric unit from a height string.
+
+    Args:
+        height (str): A height string like "200 meters" or "5ft".
+
+    Returns:
+        tuple:
+            dist (str | None): Extracted numeric part of the height.
+            metric (str | None): Standardized unit (e.g., "m", "ft").
+    """
     dist = re.findall(r'\d+', height)
     if not dist:
         return None, None

@@ -25,6 +25,18 @@ load_dotenv(override=True)
 import random
 import time
 
+"""
+Generate natural-language search queries (and optional sentences via an LLM)
+from structured scene descriptions (areas, entities, relations, properties).
+
+Pipeline overview:
+- Build prompt text from IMR objects (`LocPoint`, `Entity`, `Relations`, etc.).
+- Add optional style/persona/typos and distance-writing variations.
+- (Optionally) call an LLM with retry/backoff to produce final sentences.
+- Save prompts and/or generated sentences.
+
+CLI flags allow generating prompts only, sentences only, or both.
+"""
 
 # define a retry decorator
 def retry_with_exponential_backoff(
@@ -35,8 +47,14 @@ def retry_with_exponential_backoff(
         max_retries: int = 10,
         errors: tuple = (openai.RateLimitError,),
 ):
-    """Retry a function with exponential backoff."""
+    """Wrapper around `CLIENT.chat.completions.create` with backoff (via decorator).
 
+    Args:
+        **kwargs: Keyword args forwarded to the OpenAI Chat Completions API.
+
+    Returns:
+        API response object.
+    """
     def wrapper(*args, **kwargs):
         # Initialize variables
         num_retries = 0
@@ -73,13 +91,14 @@ def retry_with_exponential_backoff(
 
 @retry_with_exponential_backoff
 def chatcompletions_with_backoff(**kwargs):
-    '''
-    Helper function to deal with the "openai.error.RateLimitError". If not used, the script will simply
-    stop once the limit is reached, not saving any of the data generated until then. This method will wait
-    and then try again, hence preventing the error.
+    """Wrapper around `CLIENT.chat.completions.create` with backoff (via decorator).
 
-    :param kwargs: List of arguments passed to the OpenAI API for completion.
-    '''
+    Args:
+        **kwargs: Keyword args forwarded to the OpenAI Chat Completions API.
+
+    Returns:
+        API response object.
+    """
     return CLIENT.chat.completions.create(**kwargs)
 
 
@@ -99,7 +118,15 @@ CLIENT = OpenAI(
     base_url="https://llm-hub.dw.com/openai"
 )
 
-def request_openai(prompt):
+def request_openai(prompt: str) -> str:
+    """Send a single-turn chat completion request and return the text content.
+
+    Args:
+        prompt: User message content.
+
+    Returns:
+        First choice message text.
+    """
     response = chatcompletions_with_backoff(
         model=MODEL,  # "gpt-4",
         temperature=TEMPERATURE,
@@ -111,16 +138,10 @@ def request_openai(prompt):
     )
     text = response.choices[0].message.content
     return text
-# def request_openai(prompt):
-#     response = CLIENT.chat.completions.create(
-#         model="azure-gpt-4o",  # Must match deployment name, not OpenAI model name
-#         messages=[{"role": "user", "content": prompt}],
-#         temperature=TEMPERATURE,
-#         max_tokens=MAX_TOKENS,
-#     )
-#     return response.choices[0].message.content
 
-def is_number(s):
+
+def is_number(s: str) -> bool:
+    """Return True if string `s` parses as a float, else False."""
     if not s:
         return False
     try:
@@ -130,13 +151,18 @@ def is_number(s):
         return False
 
 
-def remove_surrounding_double_quotes(text):
+def remove_surrounding_double_quotes(text: str) -> str:
+    """Strip matching leading/trailing double quotes from `text`, if present."""
     if len(text) >= 2 and text[0] == '"' and text[-1] == '"':
         return text[1:-1]
     return text
 
 
-def post_processing(text):
+def post_processing(text: str) -> str:
+    """Basic cleanup for model output lines.
+
+    Replaces CRs, trims, removes literal 'User:' prefix, and strips wrapping quotes.
+    """
     text = text.replace('\r', '').strip()
     text = text.replace("User:", "")
     text = remove_surrounding_double_quotes(text)
@@ -144,6 +170,16 @@ def post_processing(text):
 
 
 def load_rel_spatial_terms(relative_spatial_terms_path: str) -> List[RelSpatial]:
+    """Load relative spatial terms CSV → `RelSpatial` list.
+
+    CSV columns: `Dist` (e.g., '3 m'), `Vals` (comma-separated descriptors).
+
+    Args:
+        relative_spatial_terms_path: Path to CSV.
+
+    Returns:
+        List of `RelSpatial` with parsed distance and term values.
+    """
     relative_spatial_terms = pd.read_csv(relative_spatial_terms_path, sep=',').to_dict(orient='records')
     processed_rel_spatial_terms = []
     for relative_spatial_term in relative_spatial_terms:
@@ -153,18 +189,29 @@ def load_rel_spatial_terms(relative_spatial_terms_path: str) -> List[RelSpatial]
     return processed_rel_spatial_terms
 
 def load_contains_terms(contains_terms_path: str) -> List[str]:
+    """Load a single-row CSV of comma-separated 'contains' phrases.
+
+    Args:
+        contains_terms_path: Path to CSV.
+
+    Returns:
+        List of phrases (strings).
+    """
     df = pd.read_csv(contains_terms_path, sep=',')  # assuming tab-separated
     contains_terms = df.iloc[0, 1]  # row 0 (after header), column 1
     return contains_terms.split(', ')
 
 def load_list_of_strings(list_of_strings_path: str) -> List[str]:
-    '''
-    Helper function for personas and styles for data generation. Loads a list of strings from a text file.
-    params:
-    list_of_strings_path: Path to the personas or styles text file.
-    return:
-    list_of_strings: List of strings, either personas or styles.
-    '''
+    """Load a text file as a list of stripped lines.
+
+    Useful for personas and styles.
+
+    Args:
+        list_of_strings_path: Path to `.txt` file.
+
+    Returns:
+        List of strings (one per line).
+    """
     with open(list_of_strings_path, 'r') as f:
         list_of_strings = f.readlines()
         list_of_strings = list(map(lambda x: x.rstrip().strip(), list_of_strings))
@@ -172,6 +219,7 @@ def load_list_of_strings(list_of_strings_path: str) -> List[str]:
 
 
 def normalize_entity_name(entity_name):
+    """Normalize entity names for rendering in prompts (placeholder for tweaks)."""
     # if 'brand:' in entity_name:
     #     entity_name = entity_name.replace('brand:', '')
 
@@ -179,73 +227,26 @@ def normalize_entity_name(entity_name):
 
 
 class PromptHelper:
-    '''
-    It is a helper class for prompt generation. It has templates and functions for paraphrasing prompts.
-    '''
+    """Helper utilities to compose prompt text from IMR data.
 
+    Responsibilities:
+      - Build instruction blocks and core rules.
+      - Render areas, entities, properties, relations.
+      - Randomize phrasing (typos, numeric vs written distances, etc.).
+
+    Most methods return short text snippets used by the main generator.
+    """
     def __init__(self, relative_spatial_terms, contains_terms, prob_usage_of_relative_spatial_terms,
                  prob_usage_of_written_numbers, prob_distance_writing_with_full_metric,
                  prob_distance_writing_no_whitespace):
+        """Initialize with reference lists and probabilities."""
         self.relative_spatial_terms = relative_spatial_terms
         self.contains_terms = contains_terms
         self.prob_usage_of_relative_spatial_terms = prob_usage_of_relative_spatial_terms
         self.prob_usage_of_written_numbers = prob_usage_of_written_numbers
         self.prob_distance_writing_no_whitespace = prob_distance_writing_no_whitespace
         self.prob_distance_writing_with_full_metric = prob_distance_writing_with_full_metric
-        # self.beginning_template = (
-        #     "You are an assistant that generates short, natural-sounding user queries based on structured geographic "
-        #     "data in the form of scene descriptions.\n\n"
-        #     "Imagine you're an investigative journalist or fact-checker, looking at an image or video of a real-world scene, "
-        #     "and you're trying to describe what you see — the objects, places, and how they relate to one another. Your goal is "
-        #     "to write what a regular person might type into a search box to describe or explore that scene.\n\n"
-        #     "The scene description provides a list of entities (e.g., landmarks, buildings, places, or objects), their properties, and how "
-        #     "they are spatially related.\n"
-        #     "Your task is to turn this into a natural, casual sentence or query — not a literal translation "
-        #     "of the scene description.\n\n"
-        #     "Here’s how to approach it:\n"
-        #     "- Focus on the scene, not the data format. Don't copy the structure or terminology of the input. Instead, write as if "
-        #     "you were describing the real-world layout to someone else.\n"
-        #     "- Use casual, human phrasing. Avoid technical terms like \"entity\", \"property\", or \"OSM key\".\n"
-        #     "- Make sure to correctly use the entity information in the sentence and use ALL available information:"
-        #     "  - Entities can either be a single entity (e.g. \"- Obj. 0: viewpoint\", i.e. a viewpoint), or a cluster of multiple "
-        #     "of one type (e.g. \"- Obj. 1: 3 x bench\", i.e. three benches).\n"
-        #     "  - If a cluster has no distance value, just use it like an entity in the sentence with the number of "
-        #     " occurences mentioned (e.g. \"three benches\"). \n"
-        #     "  - A cluster can also have a specified distance value between the entities (e.g. \"- Obj. 0: 2 x house, "
-        #     "at max 50 m to another\" -> In the sentence (example phrasing): \"two houses within 50 m\") \n"
-        #     "  - Important: If there is a distance specified for a cluster, the distance value MUST be used in the "
-        #     "sentence!! This can either be a distance value (see example above), or relative spatial terms (e.g. "
-        #     " \"five foutains next to another\"). \n"
-        #     "  - A cluster distance is different from a distance relation. Distance relations (if used) come in a separate "
-        #     "section marked as \"Distance\", cluster distances are part of object definitions. The cluster distance is only "
-        #     "between the multiple instances of the same object. A cluster can have a distance between its instances, and separately "
-        #     "relations that define the distance of the cluster to other objects/cluster. The phrase must include both "
-        #     "if both are given (e.g. \"3 houses in a radius of 30 m, which are 100 m from a fountain\" or \"a church next to two "
-        #     "parks that are nearby another). \n"
-        #     "- Translate tags into natural language. For example:\n"
-        #     "  - Entity \"brand:Thalia\" → \"a Thalia\"\n"
-        #     "  - Entity \"cafe\" + Property \"brand~Eiffel\" → \"an Eiffel café\"\n"
-        #     "  - Entity \"restaurant\" + Property \"cuisine~italian\" → \"an Italian restaurant\"\n"
-        #     "  - Property \"building:material=wood\" → \"made from wood\"\n"
-        #     "  - Property \"roof:colour=red\" → \"with a red roof\"\n\n"
-        #     "- Always reflect spatial relationships exactly as stated in the scene description:\n"
-        #     "  - If a distance is given, treat it as a maximum.\n"
-        #     "  - If a relation has a specified phrase (e.g., \"next to\", \"surrounded by\"), use that exact phrase — don’t invent alternatives.\n"
-        #     "  - If a contains relation is given, use phrases like \"containing\", \"with\" and \"in(side)\" to describe the spatial relation.\n"
-        #     "  - If no relation is provided, do not imply one (in general, avoid terms like \"with\", \"near\" or \"close to\" if not explicitly mentioned).\n\n"
-        #     "- Use number formatting like this: {thousands} for thousands separators and {decimal} for decimals. Example: {example}.\n"
-        #     "- Avoid repetition in phrasing across outputs. In general be direct, but include natural variation — "
-        #     "some sentences can be a bit longer or have more detail; while the tendency is to be short and to the point.\n"
-        #     "- Only use the provided information about the scene — and use **all** of it! Double check that all details, including cluster "
-        #     "distances and properties, are used in the generated sentence!\n"
-        #     "- You must use the same alphabet as used in the provided data. Do not change them to their english version in generated sentence if the "
-        #     "original used a non-latin alphabet, or the other way around.\n"
-        #     "- Always use metrics exactly as specified in distance information, do not convert them to a different unit.\n"
-        #     "- Do not generate why/what/how type questions, only instructions.\n\n"
-        #     # "- If an entity/property combo is obviously nonsensical (e.g., a toilet or a street with a cuisine, a cliff "
-        #     # "with a brand etc.), no sentence should be generated. This is only related to the entity and property names, "
-        #     # "unrealistic numeric values like height or number of floor are acceptable. In nonsensical cases, return only:\n "
-        #     # "`UNREALISTIC COMBINATION`\n\n"
+
 
         self.instruction_template = """
 ###  SYSTEM  ###
@@ -349,21 +350,6 @@ Think step-by-step, but only output the query, nothing else.
             "- Typos: Introduce a large number of typos and grammar issues, making the sentence feel informal, rushed, or even broken in parts.\n",
         ]
 
-        # self.typo_templates = [
-        #     "\n\n==Other specifications==\nThe text should contain a {amount} amount of typos.",
-        #     "\n\n==Other specifications==\nThe text should contain a {amount} amount of grammar mistakes.",
-        #     "\n\n==Other specifications==\nThe text should contain a {amount} amount of typos and grammar mistakes."
-        # ]
-        # self.typo_amounts = ["small", "medium", "large"]
-#         self.ending_template = (
-#             "\nPlease take your time and make sure all the provided information is contained in the sentence. You are "
-#             "simulating the behavior of an experienced user prompting an online tool. Use short, clear, and natural "
-#             "language — avoid filler, overly formal language, over-explaining, or rhetorical phrasing.\n"
-#             "Think of how real users would prompt after using the system for a while: concise, factual, and slightly "
-#             "varied, but always focused on the core facts. Double check again if all the provided information is used in the "
-#             "generated sentence!"
-# )
-
         self.name_regex_templates = ["", "", "", "contains the letters", "begins with the letters",
                                      "ends with the letters"]
         self.phrases_for_numerical_comparison = {
@@ -386,18 +372,25 @@ Think step-by-step, but only output the query, nothing else.
         self.distance_writing_styles_probs = [1.0 - self.prob_distance_writing_with_full_metric, self.prob_distance_writing_with_full_metric]
 
     def get_instructions(self, persona: str, writing_style: str, rules: str, input: str, typos: str) -> str:
-        '''
-        Create the beginning of a prompt by using the beginning template
-        '''
+        """Render the instruction block used as the model prompt.
+
+        Args:
+            persona: Persona label.
+            writing_style: Style label.
+            rules: Bullet list of rules to include (stringified).
+            input: The 'scene' block (area/objects/distances).
+            typos: Optional 'typos' directive snippet.
+
+        Returns:
+            Full instruction text for the LLM.
+        """
         finished_instructions = self.instruction_template.format(persona=persona, style=writing_style, rules=rules, typos=typos, input=input)
         seps = [["comma", "period", "10,000.00"], ["period", "comma", "10.000,00"]][np.random.choice([0, 1])]
         finished_instructions = finished_instructions.format(thousands=seps[0], decimal=seps[1], example=seps[2])
         return finished_instructions
 
     def typo(self, prob_of_typos: float) -> str:
-        '''
-        Add specifications for inclusion of typos if randomly selected
-        '''
+        """Optionally include a typo directive based on probability."""
         if np.random.choice([True, False], p=[prob_of_typos, 1 - prob_of_typos]):
             typo_text = np.random.choice(self.typo_templates)
         else:
@@ -406,18 +399,14 @@ Think step-by-step, but only output the query, nothing else.
         return typo_text
 
     def add_area_prompt(self, area: Area) -> str:
-        '''
-        Helper to generate area prompt that is appended to search_prompt
-        '''
+        """Format the 'Search area' part of the scene, if applicable."""
         area_prompt = ""
         if area.type not in ["bbox", "polygon"]:
             area_prompt = "Search area:\n- " + area.value + "\n"
         return area_prompt
 
     def add_numerical_prompt(self, entity_property: Property) -> str:
-        '''
-        This helper generates a numerical prompt for numerical properties and properties such as height
-        '''
+        """Format numeric-like properties (height, distances, etc.)."""
         if not is_number(entity_property.value) and np.random.choice([True, False]):
             metric = self.dist_lookup[entity_property.value.rsplit(" ", 1)[-1]]
             value = entity_property.value.rsplit(" ", 1)[0] + " " + metric
@@ -435,9 +424,7 @@ Think step-by-step, but only output the query, nothing else.
             return f": {selected_numerical_phrase} {value}"
 
     def add_name_regex_prompt(self, entity_property: Property) -> str:
-        '''
-        It is a helper function for name properties such as name, street names
-        '''
+        """Format name-like properties with optional substring constraint."""
         selected_name_regex = np.random.choice(self.name_regex_templates)
 
         if len(entity_property.value) > 1 and len(selected_name_regex) > 0:
@@ -448,12 +435,11 @@ Think step-by-step, but only output the query, nothing else.
         return f": {selected_name_regex} \"{entity_property.value}\""
 
     def add_other_non_numerical_prompt(self, entity_property: Property) -> str:
-        '''
-        handler for core/prop type of properties having no value and properties such as cuisine
-        '''
+        """Format other non-numeric properties (e.g., cuisine, material)."""
         return f": {entity_property.value}" if entity_property.value else ""
 
     def add_property_prompt(self, core_prompt: str, entity_properties: List[Property]) -> str:
+        """Append a formatted property list to `core_prompt`."""
         for entity_property in entity_properties:
             core_prompt = core_prompt + entity_property.name
 
@@ -468,9 +454,7 @@ Think step-by-step, but only output the query, nothing else.
         return core_prompt[:-2]
 
     def add_relative_spatial_terms(self, relation: Relation, entities: List[Entity]) -> Tuple[str, Distance]:
-        '''
-        Randomly selects relative spatial term
-        '''
+        """Create a 'use this term to describe the spatial relation' instruction."""
         selected_relative_spatial = np.random.choice(self.relative_spatial_terms)
 
         # select randomly descriptor of relative special
@@ -484,6 +468,7 @@ Think step-by-step, but only output the query, nothing else.
 
     def add_relative_spatial_term_helper(self, selected_relative_spatial_term: str, relation: Relation,
                                          selected_relative_spatial: RelSpatial, entities: List[Entity]):
+        """Helper that pairs a selected term with relation source/target names."""
         for entity in entities:
             if entity.id == relation.target:
                 target_ent = normalize_entity_name(entity.name)
@@ -495,13 +480,16 @@ Think step-by-step, but only output the query, nothing else.
         return generated_prompt, overwritten_distance
 
     def generate_written_word_distance(self, distance: Distance, max_digits: int) -> tuple[Distance, Distance]:
-        """
-        Generates a random number starting at 100, with the last two digits always being zero, and returns it as both
-        a scalar and written number.
+        """Randomly generate a large rounded integer and return numeric and written variants.
 
-        :param metric: the metric of the old distance
-        :param max_digits: maximum number of digits allowed
-        :return: numeric - new numeric value, written - corresponding number in written words
+        The magnitude is a multiple of 100 with a digit length up to `max_digits`.
+
+        Args:
+            distance: Original distance whose metric is preserved.
+            max_digits: Max total digits (before the trailing two zeros).
+
+        Returns:
+            (numeric, written) as `Distance` objects.
         """
         digits = randint(1, max_digits - 2)
         low = np.power(10, digits - 1)
@@ -519,7 +507,7 @@ Think step-by-step, but only output the query, nothing else.
 
     def add_desc_away_prompt_helper(self, relation: Relation, selected_phrases_desc: str, selected_phrases_away: str,
                                     entities: List[Entity]):
-        '''Helper function for generating desc away prompts'''
+        """Format a line like '- The A is ~ 3 m away from the B'."""
         distance = self.rewrite_distance(relation.value)
 
         for entity in entities:
@@ -533,6 +521,7 @@ Think step-by-step, but only output the query, nothing else.
         return generated_prompt
 
     def rewrite_distance(self, distance: Distance) -> str:
+        """Return a string representation of a distance, with optional full metric and whitespace tweaks."""
         magnitude = distance.magnitude
         metric = distance.metric
         selected_task = np.random.choice(self.distance_writing_styles, p=self.distance_writing_styles_probs)
@@ -551,6 +540,7 @@ Think step-by-step, but only output the query, nothing else.
         return distance_as_str
 
     def add_desc_away_prompt(self, relation: Relation, entities: List[Entity]) -> str:
+        """Create a distance line using 'away from' phrasing and optional descriptors."""
         selected_phrases_desc = np.random.choice(self.phrases_desc)
         selected_phrases_away = np.random.choice(self.phrases_away)
 
@@ -559,6 +549,7 @@ Think step-by-step, but only output the query, nothing else.
         return generated_prompt
 
     def add_prompt_for_within_radius_relation(self, distance: Distance) -> str:
+        """Create a line describing a shared radius constraint among all objects."""
         distance = self.rewrite_distance(distance)
         selected_phrase = np.random.choice(self.phrases_radius)
         selected_phrase = selected_phrase.replace('DIST', distance)
@@ -566,12 +557,15 @@ Think step-by-step, but only output the query, nothing else.
         return generated_prompt
 
     def add_relation_with_contain(self, relations: List[Relation], entities: List[Entity]) -> Tuple[str, Relations]:
-        '''
-        This function identifies the objects having containing relationship, collect the remaining ones which have
-        individual rels with the other ones.
-        :param relations:
-        :return: generated_prompt, List[Relation]: list of individual relations
-        '''
+        """Extract and format 'contains' relations as instruction lines.
+
+        Args:
+            relations: Relations for the scene.
+            entities: Entities referenced by the relations.
+
+        Returns:
+            (generated_prompts, positions) where positions are indices in `relations`.
+        """
         contains_phrase = np.random.choice(self.phrases_contains)
         contains_term = np.random.choice(self.contains_terms)
 
@@ -591,6 +585,16 @@ Think step-by-step, but only output the query, nothing else.
         return (generated_prompts, positions)
 
 class GPTDataGenerator:
+    """High-level generator for prompts and LLM-produced sentences.
+
+    Orchestrates:
+      - Converting IMR data to prompt text (via `PromptHelper`)
+      - Sampling stylistic variations (personas, styles, typos)
+      - Optionally converting relation/cluster distances to written words or rel-spatial phrases
+      - Calling the LLM to obtain sentences
+
+    Args control probabilities for optional behaviors.
+    """
     def __init__(self, relative_spatial_terms: List[RelSpatial], contains_terms: List[str],
                  personas: List[str],
                  styles: List[str],
@@ -601,6 +605,7 @@ class GPTDataGenerator:
                  prob_distance_writing_with_full_metric: float = 0.1,
                  prob_distance_writing_no_whitespace: float = 0.8,
                  max_dist_digits: int = 5):
+        """Initialize generator with resources and probability knobs."""
 
         self.relative_spatial_terms = relative_spatial_terms
         self.contains_terms = contains_terms
@@ -629,6 +634,7 @@ class GPTDataGenerator:
                                           prob_distance_writing_no_whitespace=self.prob_distance_writing_no_whitespace)
 
     def update_relation_distance(self, relations: Relations, relation_to_be_updated: Relation, distance: str):
+        """Mutate a `Relations` object by replacing one relation's distance value."""
         updated_relations = []
         for relation in relations.relations:
             if relation == relation_to_be_updated:
@@ -639,6 +645,11 @@ class GPTDataGenerator:
         return relations.update(relations=updated_relations)
 
     def edit_cluster_distance(self, entity):
+        """Possibly assign a cluster distance: none, relative-spatial, written number, or numeric.
+
+        Returns:
+            (entity_value, written_value, type) where type ∈ {'none','relspat','written','number'}.
+        """
         if np.random.choice([False, True], p=[
             1.0 - self.prob_no_cluster_distance, self.prob_no_cluster_distance]):
             # use_cluster_distance = False
@@ -685,13 +696,22 @@ class GPTDataGenerator:
         return entity_value, written_value, type
 
     def generate_prompt(self, loc_point: LocPoint, persona: str, style: str) -> str:
-        '''
-        A method that takes the intermediate query representation, and uses it to generate a natural language prompt for
-        the GPT API. Different sentence structures are required for the different tasks, for the special tag "count",
-        as well as for the different substring searches (beginning, ending, containing, equals).
+        """Convert a single IMR query (`LocPoint`) into an instruction prompt.
 
-        :param dict loc_point: The dictionary containing all relevant information for the query
-        '''
+        The prompt includes:
+          - Optional search area
+          - Objects with properties (clusters rendered with count and optional distance hints)
+          - Distances section (individual distances, within-radius, contains), with optional rel-spatial phrasing
+          - Rules + persona/style + typo directives
+
+        Args:
+            loc_point: IMR scene input.
+            persona: Persona to apply.
+            style: Writing style to apply.
+
+        Returns:
+            (loc_point, prompt_text) where prompt_text is sent to the LLM.
+        """
         feature_tracker = {
             "cluster": False,
             "cluster_distance": False,
@@ -808,6 +828,7 @@ class GPTDataGenerator:
         return loc_point, instructions
 
     def assign_persona_styles_to_queries(self, num_of_all_persona_style, num_tag_queries):
+        """Cycle persona/style pairs across queries to distribute variety."""
         persona_style_ids = list(range(num_of_all_persona_style))
         num_tag_queries_ids = list(range(num_tag_queries))
 
@@ -816,6 +837,11 @@ class GPTDataGenerator:
         return persona_style_tag_pairs
 
     def individual_prompt_generation(self, relations, entities):
+        """Render lines for each 'distance' relation, possibly converting to rel-spatial or written numbers.
+
+        Returns:
+            (lines, positions, used_relspat: bool)
+        """
         use_relspat = False
         indiv_prompt = []
         positions = []
@@ -863,6 +889,7 @@ class GPTDataGenerator:
         return (indiv_prompt, positions, use_relspat)
 
     def radius_prompt_generation(self, relations):
+        """Render the shared-radius variant; optionally convert the numeric to written words."""
         radius_prompt = ""
         distance = relations.relations[0].value
         use_written_distance = np.random.choice([False, True], p=[
@@ -880,13 +907,14 @@ class GPTDataGenerator:
         return radius_prompt
 
     def generate_prompts(self, tag_queries: List[LocPoint]) -> List[GeneratedPrompt]:
-        '''
-        A method that takes the intermediate query representation, and uses it to generate a natural language prompt for
-        the GPT API. Different sentence structures are required for the different tasks, for the special tag "count",
-        as well as for the different substring searches (beginning, ending, containing, equals).
+        """Build instruction prompts from IMR queries, with persona/style assignments.
 
-        :param dict tag_queries: The dictionary containing all relevant information for the query
-        '''
+        Args:
+            tag_queries: List of `LocPoint` IMR scenes.
+
+        Returns:
+            List of `GeneratedPrompt` items (IMR + prompt + persona/style).
+        """
         all_possible_persona_and_styles = list(itertools.product(self.personas, self.styles))
         random.shuffle(all_possible_persona_and_styles)
         num_tag_queries = len(tag_queries)
@@ -903,6 +931,15 @@ class GPTDataGenerator:
         return results
 
     def generate_sentences(self, generated_prompts, output_gpt_generations_temp) -> List[GeneratedIMRSentence]:
+        """Call the LLM for each prompt and stream interim results to a temp file.
+
+        Args:
+            generated_prompts: Iterable of dicts or `GeneratedPrompt`-like items.
+            output_gpt_generations_temp: Path for temp JSONL output.
+
+        Returns:
+            List of generated sentence dicts (query/prompt/style/persona/sentence).
+        """
         generated_sentences = []
         for generated_prompt in tqdm(generated_prompts, total=len(generated_prompts)):
             generated_sentence = self.generate_sentence(generated_prompt)
@@ -925,9 +962,7 @@ class GPTDataGenerator:
 
 
 if __name__ == '__main__':
-    '''
-    Define paths and run all desired functions.
-    '''
+    """CLI: configure inputs and generation options, then run the pipeline."""
     parser = ArgumentParser()
     parser.add_argument('--relative_spatial_terms_path', help='Path for the relative spatial term definitions', required=True)
     parser.add_argument('--contains_terms_path', help='Path for the contains terms', required=True)

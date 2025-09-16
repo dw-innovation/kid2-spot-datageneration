@@ -2,6 +2,19 @@ import pandas as pd
 from pathlib import Path
 from argparse import ArgumentParser
 
+"""
+Script to merge multiple training and development TSV files into two consolidated files.
+
+The script:
+- Accepts multiple input `.tsv` files via command-line arguments.
+- Separates them into 'train' and 'dev' sets based on filename.
+- Concatenates each set.
+- Saves the merged files to a specified output folder.
+
+Usage:
+    python merge_datasets.py --input_files file1.tsv,file2.tsv,... --output_folder path/to/output
+"""
+
 if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument('--input_files', type=lambda s:[i for i in s.split(',')])

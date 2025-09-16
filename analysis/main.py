@@ -2,7 +2,29 @@ import pandas as pd
 from datetime import datetime
 from argparse import ArgumentParser
 
+"""
+Script to filter and extract unique input sentences from an Excel file based on a date filter.
+
+This script:
+- Reads an Excel file containing timestamped entries.
+- Filters the data to only include rows with a specific date.
+- Extracts and prints unique input sentences from the filtered data.
+
+Usage:
+    python script.py --input_file path/to/file.xlsx --date_filter YYYY-MM-DD
+"""
+
+
 def transform_timestamp_to_str(timestamp_obj):
+    """
+    Convert a timestamp object to a string in 'YYYY-MM-DD' format.
+
+    Args:
+        timestamp_obj (datetime or str): The timestamp object to convert.
+
+    Returns:
+        str: A string representation of the date (first 10 characters).
+    """
     return str(timestamp_obj)[:10]
 
 if __name__ == '__main__':

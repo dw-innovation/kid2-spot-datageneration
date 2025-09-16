@@ -9,17 +9,34 @@ from datageneration.utils import NON_ROMAN_LANG_GROUPS
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
+"""
+Script to generate non-Roman alphabet alternatives for geographic names using Wikidata.
+
+Functionality:
+- Loads a nested JSON (countries > states > cities).
+- Queries Wikidata to find non-Roman versions of each name via sitelinks (e.g., zhwiki, arwiki).
+- Caches results locally for performance.
+- Outputs a dictionary mapping each name to its non-Roman versions in various languages.
+
+Example output:
+{
+  "Berlin": {
+    "non_roman_versions": {
+      "zh": "柏林",
+      "ar": "برلين"
+    }
+  },
+  ...
+}
+"""
+
 WIKIDATA_API_WIKIPEDIA_SITE_LINKS = 'https://www.wikidata.org/w/api.php?action=wbgetentities&ids=WD_ID&props=sitelinks&format=json'
 WIKIDATA_API_WD_REQUEST_ENDPOINT='https://en.wikipedia.org/w/api.php?action=query&prop=pageprops&ppprop=wikibase_item&redirects=1&titles=TITLE&format=json'
 cache_wikidata_ids = Cache("wikidata-ids-cache")
 cache_wikidata_non_roman_names = Cache("wikidata-non_roman_names-cache")
 
-def requests_retry_session(
-    retries=3,
-    backoff_factor=0.3,
-    status_forcelist=(500, 502, 504),
-    session=None,
-):
+def requests_retry_session(retries=3, backoff_factor=0.3, status_forcelist=(500, 502, 504), session=None):
+    """Configure a retry-enabled HTTP session."""
     session = session or requests.Session()
     retry = Retry(
         total=retries,
@@ -36,11 +53,15 @@ def requests_retry_session(
 
 @cache_wikidata_ids.memoize()
 def request_wd_id(wd_title):
-    '''
-    Given name of an area, it returns its wikidata id if it has.
-    :param wd_title:
-    :return:
-    '''
+    """
+    Given a Wikipedia title (e.g., 'Berlin'), return its Wikidata ID (e.g., 'Q64').
+
+    Args:
+        wd_title: The Wikipedia page title.
+
+    Returns:
+        Wikidata entity ID string if found, else None.
+    """
     endpoint = WIKIDATA_API_WD_REQUEST_ENDPOINT.replace('TITLE', wd_title)
     response = requests_retry_session().get(endpoint)
     response.raise_for_status()
@@ -63,6 +84,17 @@ def request_wd_id(wd_title):
 
 @cache_wikidata_non_roman_names.memoize()
 def get_dict_of_non_roman_alternatives(wd_id: str) -> Dict:
+    """
+    Given a Wikidata ID, return a dict of non-Roman name alternatives
+    from available Wikipedia sitelinks (e.g., zhwiki, arwiki).
+
+    Args:
+        wd_id: A Wikidata entity ID (e.g., 'Q64').
+
+    Returns:
+        Dict mapping language codes to alternative names.
+        E.g., {'zh': '柏林', 'ar': 'برلين'}
+    """
     endpoint = WIKIDATA_API_WIKIPEDIA_SITE_LINKS.replace('WD_ID', wd_id)
     response = requests_retry_session().get(endpoint)
     response.raise_for_status()
@@ -90,6 +122,15 @@ area_names_non_roman_vocab = {}
 
 
 def extract_non_roman_alternatives(area_name: str):
+    """
+    Wrapper that extracts non-Roman versions of a given name using Wikidata.
+
+    Args:
+        area_name: City/state/country name as it appears in Wikipedia.
+
+    Returns:
+        Dict of non-Roman language names if available, else empty dict.
+    """
     '''
     extract wikidata
     :param area_name:
