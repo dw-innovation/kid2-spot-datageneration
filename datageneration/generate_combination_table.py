@@ -14,8 +14,50 @@ from datageneration.property_generator import PropertyGenerator, fetch_color_bun
 from datageneration.relation_generator import RelationGenerator
 from datageneration.utils import get_random_decimal_with_metric, write_output
 
+"""
+Query combination generator
+
+This module assembles full query objects by sampling:
+- An area (with optional non‑Roman script variants).
+- One or more entities (optionally with properties).
+- Inter-entity relations (distance / containment).
+
+The main entry point is `QueryCombinationGenerator.run`, which returns a list of
+`LocPoint` objects. A CLI is provided for batch generation and optional writing
+to disk.
+"""
 
 class QueryCombinationGenerator(object):
+    """Compose random query combinations (area, entities, relations, properties).
+
+    This orchestrates:
+      - Area generation (`AreaGenerator`)
+      - Entity selection with descriptors/tag combinations
+      - Property sampling per entity (`PropertyGenerator`)
+      - Relation generation (`RelationGenerator`)
+      - Optional clustering attributes for entities
+
+    Sampling is controlled by the probability parameters provided at init.
+
+    Args:
+        geolocation_file: Path to the geo DB JSON (countries > states > cities).
+        non_roman_vocab_file: Path to non‑Roman name vocabulary JSON.
+        tag_combinations: Allowed entity/tag combinations with descriptors & props.
+        property_examples: Raw property example rows (JSON lines → dicts).
+        max_distance_digits: Max number of digits for generated distance magnitudes.
+        prob_of_two_word_areas: P(area has two+ words) when sampling areas.
+        prob_generating_contain_rel: P(to generate containment relations).
+        prob_adding_brand_names_as_entity: P(to inject a brand:* entity).
+        prob_of_numerical_properties: P(category weight for numerical props).
+        prob_of_color_properties: P(category weight for color props).
+        prob_of_popular_non_numerical_properties: P(weight for popular non-num props).
+        prob_of_other_non_numerical_properties: P(weight for other non-num props).
+        prob_of_rare_non_numerical_properties: P(weight for rare non-num props).
+        prob_of_non_roman_areas: P(to translate area to non‑Roman script if possible).
+        color_bundle_path: Path to color bundles used by `PropertyGenerator`.
+        prob_of_cluster_entities: P(to convert an entity to type='cluster' with
+            `minPoints` and `maxDistance` set).
+    """
     def __init__(self, geolocation_file: str,
                  non_roman_vocab_file: str,
                  tag_combinations: List[TagCombination],
@@ -57,6 +99,16 @@ class QueryCombinationGenerator(object):
         }
 
     def categorize_entities_based_on_their_props(self, tag_combinations: List[TagCombination]) -> Dict:
+        """Bucket tag combinations by property category for targeted sampling.
+
+        Args:
+            tag_combinations: List of `TagCombination` (typically core entities).
+
+        Returns:
+            Dict mapping category → list of `TagCombination`, with keys:
+                'numerical', 'colour', 'rare_non_numerical', 'popular_non_numerical',
+                'other_non_numerical', and 'default' (all core combos).
+        """
         categorized_entities = {
             'numerical': [],
             'colour': [],
@@ -74,19 +126,18 @@ class QueryCombinationGenerator(object):
         return categorized_entities
 
     def get_number_of_entities(self, max_number_of_entities_in_prompt: int) -> int:
-        """
-        This method of selecting the number of entities uses an exponential decay method that returns
-        a probability distribution that has a peak probability value, from which the probabilities decrease
-        towards both sides. The decay rate can be customised per side to allow for the selection of a higher
-        decay rate towards the left to minimise one and two entity samples. This is due to the fact that these
-        queries don't have sufficient entities to assign all three query types and should hence occur less in the
-        training data.
+        """Sample number of properties per entity favoring smaller counts.
+
+        Uses an exponential decay to keep sentences readable.
 
         Example probability distribution with 4 ents, peak 3, decay left 0.3, decay right 0.4:
             [0.0993, 0.1999, 0.4026, 0.2982]
 
-        :param max_number_of_entities_in_prompt: The maximum allowed number of entities per query
-        :return: The selected number of entities
+        Args:
+            max_number_of_props_in_entity: Upper bound of properties per entity.
+
+        Returns:
+            The sampled number of properties (int) in [1, max_number_of_props_in_entity].
         """
         peak_value = 3  # Number of entity with the highest probability
         decay_rate_right = 0.7
@@ -102,15 +153,17 @@ class QueryCombinationGenerator(object):
         return number_of_entities_in_prompt
 
     def get_number_of_props(self, max_number_of_props_in_entity: int):
-        """
-        This method of selecting the number of properties uses an exponential decay method that returns
-        a probability distribution that assigns higher probabilities to lower values, as many entities
-        with multiple properties will result in convoluted sentence
+        """Sample number of properties per entity favoring smaller counts.
+
+        Uses an exponential decay to keep sentences readable.
 
         Example probability distribution with 4 props & decay of 0.3: [0.3709, 0.2748, 0.2036, 0.1508]
 
-        :param max_number_of_props_in_entity: The maximum allowed number of properties per entity
-        :return: The selected number of properties
+        Args:
+            max_number_of_props_in_entity: Upper bound of properties per entity.
+
+        Returns:
+            The sampled number of properties (int) in [1, max_number_of_props_in_entity].
         """
         decay_rate = 0.5
         prop_nums = np.arange(1, max_number_of_props_in_entity + 1)
@@ -120,7 +173,15 @@ class QueryCombinationGenerator(object):
 
         return selected_num_of_props
 
-    def add_cluster_entities(self, selected_entities):
+    def add_cluster_entities(self, selected_entities)
+        """Optionally convert entities to 'cluster' type with minPoints/maxDistance.
+
+        Args:
+            selected_entities: Entities to augment.
+
+        Returns:
+            Updated list with some entities converted to clusters.
+        """
         for id, entity in enumerate(selected_entities):
             add_cluster = np.random.choice([True, False], p=[self.prob_of_cluster_entities,
                                                                      1 - self.prob_of_cluster_entities])
@@ -135,22 +196,21 @@ class QueryCombinationGenerator(object):
 
     def generate_entities(self, max_number_of_entities_in_prompt: int, max_number_of_props_in_entity: int,
                           prob_of_entities_with_props: float) -> List[Entity]:
-        """
-        Generates a list of entities with associated properties based on random selection of descriptors.
+        """Generate entities (optionally with properties) from tag combinations.
+
+        Sampling strategy:
+          1) Decide number of entities.
+          2) For each, optionally add properties based on category weights.
+          3) Occasionally inject a brand:* entity.
+          4) Optionally convert to cluster.
 
         Args:
-            max_number_of_entities_in_prompt (int): Number of entities to generate.
-            max_number_of_props_in_entity (int): Maximum number of properties each entity can have.
-            prob_of_entities_with_props (float): Ratio of entities that have a non-zero number of properties
+            max_number_of_entities_in_prompt: Max entities to include in the query.
+            max_number_of_props_in_entity: Max properties allowed per entity.
+            prob_of_entities_with_props: Probability an entity carries ≥1 property.
 
         Returns:
-            List[Entity]: A list of generated entities with associated properties.
-
-        Note:
-            - The function selects a random subset of descriptors from the available combinations of entity tag combinations.
-            - Each entity is assigned a random name chosen from the selected descriptors.
-            - If `max_number_of_props_in_entity` is greater than or equal to 1, properties are generated for each entity.
-              Otherwise, entities are generated without properties.
+            List of `Entity` objects.
         """
         number_of_entities_in_prompt = self.get_number_of_entities(max_number_of_entities_in_prompt)
         selected_entities = []
@@ -183,15 +243,10 @@ class QueryCombinationGenerator(object):
 
                     current_max_number_of_props = min(len(candidate_properties), max_number_of_props_in_entity)
                     if current_max_number_of_props > 1:
-                        # selected_num_of_props = np.random.randint(1, max_number_of_props_in_entity)
                         selected_num_of_props = self.get_number_of_props(current_max_number_of_props)
                     else:
                         selected_num_of_props = current_max_number_of_props
 
-                    # print('selected tag prompt')
-                    # print(selected_tag_comb)
-                    # print('candidate properties')
-                    # print(candidate_properties)
                     properties = self.generate_properties(candidate_properties=candidate_properties,
                                                           num_of_props=selected_num_of_props)
                     selected_entities.append(
@@ -220,6 +275,21 @@ class QueryCombinationGenerator(object):
         return selected_entities
 
     def generate_properties(self, candidate_properties: List[TagProperty], num_of_props: int, trial_err_count=100) -> List[Property]:
+        """Select and instantiate a set of properties from candidates.
+
+        The method:
+          - Filters property categories based on configured probabilities.
+          - Samples categories and then specific tag properties.
+          - Ensures no duplicate descriptor keys within the same entity.
+
+        Args:
+            candidate_properties: Tag properties available for the chosen entity.
+            num_of_props: Number of properties to generate.
+            trial_err_count: Max attempts before giving up (prevents infinite loops).
+
+        Returns:
+            A list of concrete `Property` instances.
+        """
         categorized_properties = self.property_generator.categorize_properties(candidate_properties)
         all_property_categories = list(self.all_properties_with_probs.keys())
         all_properties_with_probs = self.all_properties_with_probs
@@ -268,20 +338,29 @@ class QueryCombinationGenerator(object):
 
     # todo make it independent from entities
     def generate_relations(self, entities: List[Entity]) -> Relations:
+        """Generate relations between entities via the `RelationGenerator`.
+
+        Args:
+            entities: Entities to consider when creating relations.
+
+        Returns:
+            A `Relations` object describing distances/containment.
+        """
         relations = self.relation_generator.run(entities=entities)
         return relations
 
     def sort_entities(self, entities: List[Entity], relations: Relations) -> (List[Entity], Relations):
-        """
-        In the process of selecting areas and points that are in a "contains" relations with another, the IDs in
-        the IMR can become fairly messy, as the random entity selection does not select based on area or point entities.
-        This sorting step is performed to generate a uniform output (contains relations before distance relations,
-        always first the area and then all the contained points). It puts the entities in the correct order and
-        adjusts the IDs.
+        """Return entities with relations sorted for stable output.
 
-        :param entities: The entities of the query
-        :param relations: The relations of the query
-        :return: The sorted entities and relations
+        For now, this keeps entities as-is and sorts relations by (min(source,target), max(...))
+        to ensure deterministic ordering when containment is present.
+
+        Args:
+            entities: Original list of entities.
+            relations: Relations to be sorted into a stable order.
+
+        Returns:
+            Tuple of (entities, sorted_relations).
         """
         sorted_relations = copy.deepcopy(relations)
         sorted_relations.relations = sorted(relations.relations, key=lambda r: (min(r.source, r.target), max(r.source, r.target)))
@@ -316,23 +395,23 @@ class QueryCombinationGenerator(object):
 
     def run(self, num_queries: int, max_number_of_entities_in_prompt: int, max_number_of_props_in_entity: int,
             prob_of_entities_with_props: float) -> List[LocPoint]:
-        '''
-        A method that generates random query combinations and optionally saves them to a JSON file.
-        It gets a list of random tag combinations and adds additional information that is required to generate
-        full queries, including area names, and different search tasks.
-        The current search tasks are: (1) individual distances: a random specific distance is defined between all objects,
-        (2) within radius: a single radius within which all objects are located, (3) in area: general search for all objects
-        within given area.
+        """Generate a batch of random query combinations.
 
-        TODO: Write/update all docstrings, maybe use this text somewhere else
+        For each query:
+          - Sample an area,
+          - Generate entities (+ optional properties),
+          - Generate relations,
+          - Optionally sort entities/relations for containment cases.
 
-        :param num_queries: (int) TODO
-        :param max_number_of_entities_in_prompt: (int) TODO
-        :param max_number_of_props_in_entity: (int) TODO
-        :param prob_of_entities_with_props: (int) TODO
-        :param percentage_of_entities_with_props: (float) TODO
-        :return: loc_points (List[LocPoint])
-        '''
+        Args:
+            num_queries: Number of query objects to generate.
+            max_number_of_entities_in_prompt: Max entities allowed per query.
+            max_number_of_props_in_entity: Max properties allowed per entity.
+            prob_of_entities_with_props: P(entity carries ≥1 property).
+
+        Returns:
+            List of `LocPoint` objects representing the generated queries.
+        """
         loc_points = []
         for _ in tqdm(range(num_queries), total=num_queries):
             area = self.generate_area()
@@ -350,13 +429,16 @@ class QueryCombinationGenerator(object):
         return loc_points
 
     def generate_area(self) -> Area:
+        """Delegate to `AreaGenerator` to sample an area string/object.
+
+        Returns:
+            An `Area` describing either an empty bbox or a concrete area string.
+        """
         return self.area_generator.run()
 
 
 if __name__ == '__main__':
-    '''
-    Define paths and run all desired functions.
-    '''
+    """CLI: configure inputs & probabilities, then generate query combinations."""
     parser = ArgumentParser()
     parser.add_argument('--geolocations_file_path', help='Path to a file containing cities, countries, etc.')
     parser.add_argument('--non_roman_vocab_file_path', help='Path to a file containing a vocabulary of areas with non-roman alphabets')

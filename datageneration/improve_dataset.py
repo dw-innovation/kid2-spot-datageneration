@@ -6,6 +6,21 @@ from dotenv import load_dotenv
 
 load_dotenv(override=True)
 
+"""
+Script for sentence augmentation using the OpenAI API.
+
+This script loads TSV files containing original sentences and queries, 
+then probabilistically modifies the sentences by:
+1. Adding "find all"-style instruction variations.
+2. Introducing typos or grammar mistakes at varying severity levels.
+
+The modified sentence is sent as a prompt to a GPT model to generate the final altered sentence.
+Results are saved to new TSV files with the same structure.
+
+Requirements:
+- OPENAI_API_KEY must be set in a .env file or environment variable.
+"""
+
 client = OpenAI(
   api_key=os.environ['OPENAI_API_KEY'],  # this is also the default, it can be omitted
 )
@@ -22,6 +37,15 @@ for input_filename in input_filenames:
 
     # Function to decide if a sentence should be altered
     def maybe_add_all_phrase(query):
+        """
+        Randomly adds an instruction to include a 'find all'-style phrase in the sentence.
+
+        Parameters:
+            query (str): The original query string from the dataset.
+
+        Returns:
+            str: Instructional string for the GPT prompt or an empty string.
+        """
         if "cluster" not in str(query).lower() and random.random() < 0.20:
             phrase = random.choice(all_variants)
             return (f"The sentence should be updated to use a variation of the phrase \"{phrase}\" for one entity similar to "
@@ -29,6 +53,12 @@ for input_filename in input_filenames:
         return ""
 
     def maybe_add_typos_instruction():
+        """
+        Randomly adds an instruction to introduce typos or grammar mistakes.
+
+        Returns:
+            str: Instructional string for the GPT prompt or an empty string.
+        """
         if random.random() < 0.40:
             level = random.choice(error_levels)
             mistake_type = random.choice(error_types)

@@ -7,7 +7,28 @@ from pathlib import Path
 import pandas as pd
 import yaml
 
+"""
+Preprocess and split JSONL input data into training and development TSV files.
+
+This script:
+- Loads a JSONL file of samples with `sentence` and `query` fields.
+- Filters out invalid or unwanted sentences (e.g. containing "sorry").
+- Converts the query field from YAML string to cleaned YAML dump.
+- Splits the data into a training and development set.
+- Saves both sets as tab-separated TSV files.
+
+Usage (CLI):
+    python script.py --input_file data.jsonl --output_folder ./out --dev_samples 100
+"""
+
 def merge_jsonl_files(input_files, output_file):
+    """
+    Merge multiple JSONL files into a single file.
+
+    Args:
+        input_files (List[str]): List of paths to input .jsonl files.
+        output_file (str): Path to the merged output file.
+    """
     with open(output_file, 'w') as outfile:
         for jsonl_file in input_files:
             with open(jsonl_file, 'r') as infile:
@@ -31,16 +52,18 @@ if __name__ == '__main__':
     processed_samples_df = []
     for idx, sample in samples_df.iterrows():
         sentence = sample["sentence"]
+
+        # Skip samples with "sorry" or missing sentences
         if '''sorry''' in sentence.lower():
             continue
         if isinstance(sentence, float):
             continue
 
         query = sample["query"]
-        query = yaml.safe_load(query)
-        query_string = yaml.dump(query, allow_unicode=True)
-        processed_samples_df.append({'query': query_string, 'sentence': sentence})
+        query = yaml.safe_load(query)  # parse YAML string
+        query_string = yaml.dump(query, allow_unicode=True) # convert to normalized YAML string
 
+        processed_samples_df.append({'query': query_string, 'sentence': sentence})
 
     processed_samples_df = pd.DataFrame(processed_samples_df)
     development_set = processed_samples_df.sample(dev_samples)

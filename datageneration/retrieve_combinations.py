@@ -11,20 +11,62 @@ from datageneration.data_model import Tag, TagProperty, TagCombination, TagPrope
     remove_duplicate_tag_properties
 from datageneration.utils import CompoundTagPropertyProcessor, SEPERATORS, write_output, split_descriptors
 
+"""
+Tag combination and property example retrieval for OSM-based data generation.
+
+This module:
+- Splits and normalizes compound OSM tags from a CSV/XLSX "Primary Key" table.
+- Fetches commonly co-occurring tag properties via the Taginfo API.
+- Optionally generates example values (e.g., cuisines, colours) for selected properties.
+- Writes out structured `TagCombination` and `TagPropertyExample` objects for downstream use.
+
+Key types (from datageneration.data_model):
+- Tag, TagProperty, TagCombination, TagPropertyExample
+
+CLI usage (examples):
+    python combination_retriever.py \
+        --source data/primary_keys.csv \
+        --output_file out/tag_combinations.jsonl \
+        --generate_tag_list_with_properties \
+        --prop_limit 100 --min_together_count 5000
+
+    python combination_retriever.py \
+        --source data/primary_keys.csv \
+        --output_file out/property_examples.jsonl \
+        --generate_property_examples --prop_example_limit 100000
+"""
+
 cache = Cache("tmp")
 
 TAG_INFO_API_ENDPOINT = "https://taginfo.openstreetmap.org/api/4/tag/combinations?key=TAG_KEY&value=TAG_VALUE&sortname=together_count&sortorder=desc"
 
 
 @cache.memoize()
-def request_tag_combinations(tag_key, tag_value):
-    '''
-    Takes URL and sends request to website, returns the JSON response.
+def request_tag_combinations(tag_key: str, tag_value: str) -> Dict[str, Any]:
+    """
+    Tag combination and property example retrieval for OSM-based data generation.
 
-    :param str tag_key: Key value of the tag
-    :param str tag_value: Key value of the value
-    '''
+    This module:
+    - Splits and normalizes compound OSM tags from a CSV/XLSX "Primary Key" table.
+    - Fetches commonly co-occurring tag properties via the Taginfo API.
+    - Optionally generates example values (e.g., cuisines, colours) for selected properties.
+    - Writes out structured `TagCombination` and `TagPropertyExample` objects for downstream use.
 
+    Key types (from datageneration.data_model):
+    - Tag, TagProperty, TagCombination, TagPropertyExample
+
+    CLI usage (examples):
+        python combination_retriever.py \
+            --source data/primary_keys.csv \
+            --output_file out/tag_combinations.jsonl \
+            --generate_tag_list_with_properties \
+            --prop_limit 100 --min_together_count 5000
+
+        python combination_retriever.py \
+            --source data/primary_keys.csv \
+            --output_file out/property_examples.jsonl \
+            --generate_property_examples --prop_example_limit 100000
+    """
     url = TAG_INFO_API_ENDPOINT.replace("TAG_KEY", tag_key).replace("TAG_VALUE", tag_value)
 
     response = requests.get(url)
@@ -34,12 +76,24 @@ def request_tag_combinations(tag_key, tag_value):
         return response.json()
 
 
-def is_similar_to_english(char):
-    '''
-    Check if a given character only is part of the English alphabet or a slight variation thereof.
+def is_similar_to_english(char: str) -> bool:
+    """
+    Check whether a character is ASCII English or a close diacritic variant.
 
-    :param char c: The char to be checked
-    '''
+    Parameters
+    ----------
+    char : str
+        Single character to check.
+
+    Returns
+    -------
+    bool
+        True if character is in the English alphabet or a normalized variant; False otherwise.
+
+    Notes
+    -----
+    - Uses NFKD normalization to strip diacritics before comparison.
+    """
     english_alphabet = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
     similar_chars = english_alphabet + 'ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõöøùúûüýþÿ'
 
@@ -52,12 +106,20 @@ def is_similar_to_english(char):
     return stripped_char in similar_chars
 
 
-def is_roman(s):
-    '''
-    Check if a given string only contains letters of the English alphabet or slight variations thereof.
+def is_roman(s: str) -> bool:
+    """
+    Check whether a string contains only (extended) Roman/Latin letters.
 
-    :param str s: The string to be checked
-    '''
+    Parameters
+    ----------
+    s : str
+        Input string.
+
+    Returns
+    -------
+    bool
+        True if all characters are ASCII or pass `is_similar_to_english`; False otherwise.
+    """
     for char in s:
         if ord(char) > 127 and not is_similar_to_english(char):
             return False
@@ -66,8 +128,25 @@ def is_roman(s):
 
 comp_prop_processor = CompoundTagPropertyProcessor()
 
-def split_tags(tags: str) -> List[TagProperty]:
-    '''this function splits the compound tags. it uses comp_prop_process for handling complex compounds such as highway'''
+def split_tags(tags: str) -> List[str]:
+    """
+    Split and normalize a comma-separated list of OSM tag patterns.
+
+    Handles:
+    - 'AND' compounds (e.g., "highway=primary AND surface=asphalt")
+    - bracketed compounds processed by `CompoundTagPropertyProcessor`
+    - whitespace removal and lowercase normalization
+
+    Parameters
+    ----------
+    tags : str
+        Comma-separated tag expression(s).
+
+    Returns
+    -------
+    List[str]
+        A list of normalized tag patterns like "key=val", "key~***example***", etc.
+    """
     processed_tags = set()
     for tag in tags.split(','):
         tag = tag.lstrip().strip()
@@ -91,6 +170,42 @@ def split_tags(tags: str) -> List[TagProperty]:
 
 
 class CombinationRetriever(object):
+    """
+    Build `TagCombination` and `TagPropertyExample` datasets from a Primary Key table.
+
+    Parameters
+    ----------
+    source : str
+        Path to CSV/XLSX file containing the Primary Key table (columns include 'tags',
+        'core/prop', 'descriptors', 'area/point', etc.).
+    prop_limit : int
+        Max number of related properties to fetch per (key, value) via Taginfo.
+    min_together_count : int
+        Minimum together_count threshold for Taginfo combinations to be considered.
+    add_non_roman_examples : bool
+        If True, property examples may include non-Roman strings; otherwise filtered.
+
+    Attributes
+    ----------
+    tag_properties : List[TagProperty]
+        Parsed TagProperty templates from the Primary Key table (where 'core/prop' != 'core').
+    prop_limit : int
+        Stored property fetch limit.
+    min_together_count : int
+        Stored Taginfo together_count threshold.
+    tag_df : pd.DataFrame
+        Loaded and de-duplicated Primary Key dataframe.
+    all_osm_tags_and_properties : Dict[str, dict]
+        Mapping of normalized tag pattern to metadata (key/operator/value/type/descriptors).
+    all_tags_property_ids : iterable
+        Keys of `all_osm_tags_and_properties`.
+    numeric_tags_property_ids : List[str]
+        A subset of keys (ending with '>0') used in numeric setups.
+    tags_requiring_many_examples : List[str]
+        Whitelist of patterns for which a large number of examples should be retrieved.
+    add_non_roman_examples : bool
+        Example filtering behavior.
+    """
     def __init__(self, source: str, prop_limit: int, min_together_count: int, add_non_roman_examples: bool):
         if source.endswith('xlsx'):
             tag_df = pd.read_excel(source, engine='openpyxl')
@@ -117,15 +232,19 @@ class CombinationRetriever(object):
         self.add_non_roman_examples = add_non_roman_examples
 
     def fetch_tag_properties(self, tag_df: pd.DataFrame) -> List[TagProperty]:
-        '''
-        Process properties from the Primary Key table (DataFrame)
+        """
+        Build `TagProperty` objects from the Primary Key dataframe.
 
-        Args:
-            tag_df (DataFrame): DataFrame containing tags and tag properties
+        Parameters
+        ----------
+        tag_df : pd.DataFrame
+            The Primary Key dataframe.
 
-        Returns:
-            list: List of TagProperty objects
-        '''
+        Returns
+        -------
+        List[TagProperty]
+            Parsed properties (rows where 'core/prop' != 'core').
+        """
         tag_property_df = tag_df[tag_df['core/prop'] != 'core']
         tag_properties = []
         for tag_prop in tag_property_df.to_dict(orient='records'):
@@ -151,13 +270,18 @@ class CombinationRetriever(object):
 
     def process_tag_properties(self, tag_df):
         """
-        Process tags, properties from a DataFrame (PrimaryKey table).
+        Parse all tags/properties from the Primary Key dataframe into a normalized mapping.
 
-        Args:
-            tag_df (DataFrame): DataFrame containing tag properties.
+        Parameters
+        ----------
+        tag_df : pd.DataFrame
+            Input dataframe with at least 'tags', 'core/prop', 'descriptors' columns.
 
-        Returns:
-            dict: Dictionary containing processed tag properties.
+        Returns
+        -------
+        Dict[str, Dict[str, Any]]
+            Mapping from normalized tag pattern (e.g., 'amenity=restaurant') to metadata
+            (key/operator/value, type, descriptors, original tags string).
         """
         # all tags and properties
         all_osm_tags_and_properties = {}
@@ -194,20 +318,25 @@ class CombinationRetriever(object):
 
     def request_property_examples(self, property_key: str, num_examples: int, count_limit: int = -1) -> List[str]:
         """
-        It is a helper function for generate_property_examples. Retrieve examples of property keys. For example: cuisine -> italian, turkish, etc.
+        Retrieve example values for a non-numeric property (e.g., cuisine → 'italian', 'turkish').
 
-        Args:
-            property_key (str): The key of the property for which examples are requested.
-            num_examples (int): The number of examples to retrieve.
+        Fetches pages from Taginfo (key/value counts) until the requested number of examples is met
+        or pages are exhausted. Splits multi-values by ';'. Applies roman/non-roman filtering.
 
-        Returns:
-            List[str]: A list of property examples.
+        Parameters
+        ----------
+        property_key : str
+            OSM key to fetch examples for (e.g., 'cuisine', 'brand', 'name', 'roof:colour').
+        num_examples : int
+            Maximum number of examples to collect.
+        count_limit : int, optional
+            Minimum Taginfo count required for an example to be included (default: -1 = no threshold).
 
-        This method fetches examples associated with the non-numerical properties from TagInfo API. It retrieves examples recursively page by page until the number of examples are equal to the threshold. The examples
-        are split by semicolons (';'), and only examples that pass the 'isRoman' function
-        check are included.
+        Returns
+        -------
+        List[str]
+            Collected, de-duplicated example values.
         """
-
         def fetch_examples_recursively(curr_page, fetched_examples):
             examples = ti.get_page_of_key_values(property_key, curr_page)
             if len(examples) == 0:
@@ -237,20 +366,22 @@ class CombinationRetriever(object):
 
     def generate_property_examples(self, num_examples: int = 100000) -> List[TagPropertyExample]:
         """
-        Generate property examples for each tags whose type is 'prop' or 'core/prop'.
+        Generate example values for properties that require instances (***example***).
 
-        Args:
-            num_examples (int): Number of examples to generate for each property (default is 100).
+        Parameters
+        ----------
+        num_examples : int, optional
+            Upper bound for examples to gather for properties that require many examples; defaults to 100000.
 
-        Returns:
-            List[TagPropertyExample]: List of TagPropertyExample objects containing property keys and their examples.
+        Returns
+        -------
+        List[TagPropertyExample]
+            Objects containing the tag pattern key (e.g., "name~***example***") and its example values.
 
-        This method generates examples for specific tag properties based on predefined criteria.
-        It iterates through all tag properties and retrieves examples using the `request_property_examples`
-        method. Examples are only generated for tag properties with type other than 'core' and having the value
-        'numerical'. TagPropertyExample objects are created for each property along with their examples,
-        which are then returned as a list.
-
+        Notes
+        -----
+        - For colour-related keys, a high `count_limit` is applied to prioritize frequent values.
+        - Only properties with type != 'core' and patterns containing '***example***' are processed.
         """
         properties_and_their_examples = []
         for curr_tag, all_tags in self.all_osm_tags_and_properties.items():
@@ -270,13 +401,22 @@ class CombinationRetriever(object):
         return properties_and_their_examples
 
     def check_other_tag_in_properties(self, other_tag: str) -> tuple:
-        '''
-        check if the combination in the property list
-        Args:
-            other_tag (str): e.g. name=, name~
-        Returns:
-            tuple(bool, int): True and its index in self.tag_properties, False and its index -1 otherwise.
-        '''
+        """
+        Check whether a candidate 'other_tag' exists in the parsed TagProperty list.
+
+        Matches both 'key<op>value' and 'key<op>' forms (treating '***any***', '***example***',
+        '***numeric***', and 'yes' as empty values).
+
+        Parameters
+        ----------
+        other_tag : str
+            Candidate tag pattern (e.g., 'name=', 'name~', 'surface=asphalt').
+
+        Returns
+        -------
+        tuple[bool, list[int] | int]
+            (True, [indices...]) if found; otherwise (False, -1).
+        """
         exists = False
         results = []
         for tag_prop_idx, tag_prop in enumerate(self.tag_properties):
@@ -298,6 +438,24 @@ class CombinationRetriever(object):
             return (exists, -1)
 
     def request_related_tag_properties(self, tag_key: str, tag_value: str, limit: int = 100) -> List[TagProperty]:
+        """
+        Query Taginfo for (key,value) co-occurrence and return matching TagProperty templates.
+
+        Parameters
+        ----------
+        tag_key : str
+            The focal OSM key (e.g., 'amenity').
+        tag_value : str
+            The focal OSM value (e.g., 'clinic').
+        limit : int, optional
+            Maximum number of TagProperty items to return, by descending together_count.
+
+        Returns
+        -------
+        List[TagProperty]
+            TagProperty objects present in `self.tag_properties` whose (other_key, other_value)
+            appear with the given (tag_key, tag_value) and pass the together_count threshold.
+        """
         combinations = request_tag_combinations(tag_key=tag_key, tag_value=tag_value)['data']
         selected_properties = []
         for combination in combinations:
@@ -327,12 +485,18 @@ class CombinationRetriever(object):
 
     def generate_tag_list_with_properties(self) -> List[TagCombination]:
         """
-        Generates a list of TagCombination objects with associated properties. Given core osm tag, it fetches the
-        associated combinations. Next, the combinations with a type of "core" are discarded.
+        Generate `TagCombination` objects (per row of Primary Key table) with related properties.
 
-        Returns:
-            List[TagCombination]: A list of TagCombination objects containing cluster ID, descriptors,
-                                  combination type, tags, and tag properties.
+        Workflow
+        --------
+        - Parse row into cluster_id, descriptors, comb_type, tags.
+        - For each (key, value) tag, fetch related TagProperty templates (unless comb_type == 'prop').
+        - Deduplicate properties and pack into a TagCombination.
+
+        Returns
+        -------
+        List[TagCombination]
+            One `TagCombination` per input row with associated properties.
         """
         tag_combinations = []
 
@@ -365,10 +529,17 @@ class CombinationRetriever(object):
 
 
 if __name__ == '__main__':
-    '''
-    Define paths and run all desired functions.
-    '''
+    """
+    CLI entry point.
 
+    Flags:
+        --generate_tag_list_with_properties : Build TagCombination objects and write to output_file.
+        --generate_property_examples        : Build TagPropertyExample objects and write to output_file.
+
+    Notes:
+        - You can run both flags in a single invocation; each writes to the same output path in sequence.
+        - `--add_non_roman_examples` controls filtering of example values (default True).
+    """
     parser = ArgumentParser()
     parser.add_argument('--source', help='domain-specific primary keys', required=True)
     parser.add_argument('--output_file', help='Path to save the tag list', required=True)

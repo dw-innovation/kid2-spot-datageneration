@@ -2,6 +2,14 @@ from enum import Enum
 from pydantic import BaseModel, Field
 from typing import List, Optional, Union
 
+"""
+Data models and enums for geolocation tagging, spatial queries, and prompt generation.
+
+Includes:
+- Core tag structures (`Tag`, `TagProperty`, `TagCombination`)
+- Location and area structures (`Area`, `Entity`, `LocPoint`, `Relations`)
+- Prompt generation schemas (`GeneratedPrompt`, `GeneratedIMRSentence`)
+"""
 
 # Tag Combinations
 class TagType(Enum):

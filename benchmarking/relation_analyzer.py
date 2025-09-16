@@ -4,7 +4,48 @@ import pandas as pd
 from benchmarking.utils import  DIST_LOOKUP, compose_metric
 from collections import Counter
 
+"""
+Relation analysis utilities.
+
+This module provides:
+- `load_rel_spatial_terms`: Load and normalize a CSV mapping of relative spatial
+  terms to distance categories.
+- `RelationAnalyzer`: Compare gold vs. generated relations, including distance-
+  and containment-type relations, distance values/metrics, and (optionally)
+  relative spatial terms. Returns detailed counters plus a 'perfect' flag.
+
+Expected data format (high level):
+- reference_data / generated_data: dicts with keys:
+    - 'relations': list of relation dicts, where each relation has fields like:
+        {
+          "type": "distance" | "dist" | "contains",
+          "source": <entity_id or name>,
+          "target": <entity_id or name>,
+          "value": "<number> <metric>",            # for distance relations
+          "spatial_term": "<term>" (optional)      # e.g., "north of", etc.
+        }
+    - 'entities': list of entities with 'id' and 'name' (for mapping IDs->names)
+- full_paired_entities: list of (ref_entity_dict, gen_entity_dict) pairs where
+  each entity dict includes at least 'id' and 'normalized_name'.
+"""
+
 def load_rel_spatial_terms(relative_spatial_terms_path: str):
+    """
+    Load relative spatial terms from a CSV and build a term→distance mapping.
+
+    The CSV is expected to have at least the columns:
+      - 'Vals': comma-separated terms/synonyms (e.g., "north of, to the north")
+      - 'Dist': associated distance/label for those terms
+
+    Whitespace around individual terms is stripped.
+
+    Args:
+        relative_spatial_terms_path: Path to the CSV file.
+
+    Returns:
+        dict[str, str]: Mapping from individual term (lowercase preserved as read)
+        to its associated distance label.
+    """
     relative_spatial_terms = pd.read_csv(relative_spatial_terms_path, sep=',').to_dict(orient='records')
     processed_rel_spatial_term_mapping = {}
     for relative_spatial_term in relative_spatial_terms:
@@ -15,24 +56,78 @@ def load_rel_spatial_terms(relative_spatial_terms_path: str):
     return processed_rel_spatial_term_mapping
 
 class RelationAnalyzer:
+    """
+    Compare relations between reference and generated structures.
+
+    Responsibilities:
+      - Load relative spatial terms and keep them as a lookup.
+      - Normalize distances via `compose_metric`.
+      - Compare distance relations (source/target unordered) and 'contains'
+        relations (order matters).
+      - Track correctness of relation edges, distance values/metrics, and
+        optional spatial terms; determine a 'perfect' result flag.
+
+    Notes:
+        - Entity IDs in relations are mapped to normalized names using
+          `full_paired_entities` (list of (ref_entity, gen_entity) pairs).
+        - For distance metric normalization, unknown metrics are mapped via
+          `DIST_LOOKUP` as a fallback.
+    """
     def __init__(self, relative_spatial_terms: str='datageneration/prompts/relative_spatial_terms.csv'):
+        """
+        Initialize the analyzer and load relative spatial term mappings.
+
+        Args:
+            relative_spatial_terms: Path to the CSV of relative spatial terms.
+        """
         self.rel_terms = load_rel_spatial_terms(relative_spatial_terms)
         print(self.rel_terms)
         # todo implement rel spatial
 
     def compose_dist_metric(self, dist):
+        """
+        Normalize a distance string into (value, metric).
+
+        Args:
+            dist (str): Distance string, typically "<number> <metric>".
+
+        Returns:
+            tuple[str, str]: (value, metric) as produced by `compose_metric`.
+        """
         return compose_metric(dist)
 
     def compare_relations(self, reference_data, generated_data, full_paired_entities):
         """
-        Check if two lists of relations are identical. There are two different ways how the comparison is done, based on
-        whether the order of source and target is relevant or not (only the case in "contains" relations).
-        Contains relations (where the order matters) are compared as lists. Other relations (where the order of source
-        and target does not matter) is compared as a list of frozensets.
+        Compare two relation lists (gold vs. generated) and compute metrics.
 
-        :param relations1: The first relations list to compare (ref_rel).
-        :param relations2: The second relations list to compare (gen_rel).
-        :return: Boolean whether the two relations lists are the same.
+        Distance relations:
+            - Order of (source, target) does NOT matter.
+            - Edges are compared as frozensets of {source, target}.
+            - Values and metrics are compared; metrics also checked via DIST_LOOKUP.
+
+        Contains relations:
+            - Order DOES matter; compared as ordered pairs [source, target].
+
+        Also counts/validates (when present) relative spatial terms.
+
+        Args:
+            reference_data (dict): Parsed gold YAML dict with 'entities' and 'relations'.
+            generated_data (dict): Parsed generated YAML dict with 'entities' and 'relations'.
+            full_paired_entities (list[tuple[dict, dict]]): Pairs (ref_entity, gen_entity)
+                used to map numeric IDs to normalized names before comparison.
+
+        Returns:
+            dict: Metrics summary containing (subset):
+                - total_rels, total_dist_rels, total_contains_rels
+                - num_correct_rel_type
+                - num_correct_dist_edges, num_correct_dist_rels
+                - num_correct_contains_rels
+                - total_relative_spatial_terms, num_correct_relative_spatial_terms
+                - num_correct_dist_metric, num_correct_dist_value, num_correct_dist
+                - relation_perfect_result (bool)
+
+        Raises:
+            Exception: If a reference relation has an unexpected 'type'.
         """
         print('==reference data==')
         print(reference_data)

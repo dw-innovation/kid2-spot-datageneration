@@ -1,8 +1,60 @@
 class AreaAnalyzer:
+    """
+    Compare a reference geographic area with a generated area and report match quality.
+
+    The expected area schema is a dictionary of the form:
+        {
+            "type": "bbox" | "area",
+            # if type == "bbox": value may be omitted (only the type is compared)
+            # if type == "area": value is a string name (e.g., country/region/city)
+            "value": <optional, str>
+        }
+
+    Notes:
+        - Current implementation assumes there is exactly one area to compare
+          (i.e., it computes per-singleton metrics and a boolean "perfect" flag).
+        - For "area" (name-based) comparison, matching is case-insensitive.
+        - Country/name normalization beyond lowercasing is not implemented yet
+          (see TODO).
+    """
     def __init__(self):
+        """Initialize the analyzer. (No state is maintained.)"""
         pass
 
     def compare_area(self, ref_area, gen_area):
+        """
+        Compare a reference area against a generated area.
+
+        Args:
+            ref_area: Reference area dictionary. Must contain:
+                - 'type' (str): Either 'bbox' or 'area'.
+                - 'value' (str, optional): If 'type' == 'area', the area name.
+            gen_area: Generated area dictionary. Must contain:
+                - 'type' (str): Either 'bbox' or 'area'.
+                - 'value' (str, optional): If 'type' == 'area', the area name.
+
+        Returns:
+            dict: Aggregated comparison metrics for this single area:
+                - total_area (int): Always 1 (singleton comparison).
+                - total_bbox (int): 1 if ref area type is 'bbox', else 0.
+                - total_name_area (int): 1 if ref area type is 'area', else 0.
+                - num_correct_bbox (int): 1 if both are 'bbox' (type matches), else 0.
+                - num_correct_name_area (int): 1 if both are 'area' and names match
+                  case-insensitively, else 0.
+                - num_correct_area_type (int): 1 if 'type' matches, else 0.
+                - area_perfect_result (bool): True iff all applicable checks pass
+                  (type match AND bbox/name match as relevant).
+
+        Raises:
+            Exception: If ref_area['type'] is neither 'bbox' nor 'area'.
+
+        Example:
+            >> analyzer = AreaAnalyzer()
+            >> ref = {"type": "area", "value": "Germany"}
+            >> gen = {"type": "area", "value": "germany"}
+            >> analyzer.compare_area(ref, gen)["area_perfect_result"]
+            True
+        """
         num_correct_bbox = 0
         num_correct_name_area = 0
         num_correct_area_type = 0
@@ -51,21 +103,29 @@ class AreaAnalyzer:
 
     # def compare_areas_strict(self, ref_area, test_area) -> ResultDataType:
     #     """
-    #     Checks if two areas are identical.
+    #     Check if two areas are identical (strict equality on dicts).
     #
-    #     :param area1: The first area to compare.
-    #     :param area2: The second area to compare.
-    #     :return: Boolean whether the two areas are the same.
+    #     Args:
+    #         ref_area: First area dict.
+    #         test_area: Second area dict.
+    #
+    #     Returns:
+    #         ResultDataType: TRUE if dicts are exactly equal, else FALSE.
     #     """
     #     return ResultDataType.TRUE if (ref_area == test_area) else ResultDataType.FALSE
     #
     # def compare_areas_light(self, ref_area, test_area) -> ResultDataType:
     #     """
-    #     Checks if two areas are identical.
+    #     Light comparison that tolerates some formatting differences:
+    #     - For named areas, compare lowercased 'value' (or 'name' fallback).
+    #     - For bbox, only types must match.
     #
-    #     :param area1: The first area to compare.
-    #     :param area2: The second area to compare.
-    #     :return: Boolean whether the two areas are the same.
+    #     Args:
+    #         ref_area: Reference area dict.
+    #         test_area: Candidate area dict.
+    #
+    #     Returns:
+    #         ResultDataType: TRUE on light match conditions, else FALSE.
     #     """
     #     if ref_area["type"] != "bbox":
     #         if test_area['type'] == "bbox":

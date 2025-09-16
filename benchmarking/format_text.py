@@ -1,15 +1,63 @@
 import numpy as np
 
+"""
+Utilities to turn structured prompt instructions into human-readable HTML text.
+
+This module exposes a single function:
+
+- format_text(instructions_with_values): consumes a list of instruction records
+  (lists/tuples where specific positions carry flags and values) and returns
+  the same records augmented with a generated HTML instruction string.
+"""
+
 def format_text(instructions_with_values):
     """
-    A function that takes the instructions plus the added values and turns them into written instructions. It basically
-    simply checks which requirements and values are present in the instructions_with_values list and adds the
-    corresponding sentences to the instruction text.
+    Convert structured instruction records into formatted HTML instruction text.
 
-    :param instructions_with_values: The required and optional instructions plus the additional drawn information.
-    :return: instructions_with_formatted_text - The required and optional instructions plus the instruction text.
+    The function iterates over `instructions_with_values`, where each element is a
+    sequence (list/tuple) containing flags and values at fixed indices. It builds a
+    human-readable HTML string describing what to include in a search prompt and
+    appends that HTML string to each record at position 9 (i.e., returns `record[:9] + [text]`).
+
+    Expected record layout (by index/keys referenced in this function):
+        - record[2] (str): relation mode, one of:
+            "in_area", "within_radius", a string containing "individual_distances",
+            and/or a string containing "contains".
+        - record[3] (str): desired overall style string.
+        - record[9] (Optional[Enum/Obj]): area object; if truthy, must have `.value` attribute
+            used as the displayable area name; else "Please don't specify a search area."
+        - record[10] (int): number of objects to select.
+        - record[11] (int): number of objects that must have attributes.
+        - record[12] (int): number of attributes to choose.
+
+    In addition to positional fields, some flags are checked by membership with
+    `in record` (i.e., the record may also contain these string markers):
+        - "brand_alone"       → at least one object must be a brand name
+        - "brand_type"        → at least one property must be a brand name
+        - "spatial_yes"       → include a relative spatial term (link provided)
+        - "grammar_few" / "grammar_many"
+        - "typos_few" / "typos_many"
+        - "multiple_of_one"   → treat one object as a cluster of N items (N randomly chosen)
+        - "non_roman_area"    → render area name in a non‑Roman script
+        - "non_roman_brand"   → render brand name in a non‑Roman script
+
+    Args:
+        instructions_with_values: A list of instruction records (sequences). Each record
+            must provide positions/flags as described above.
+
+    Returns:
+        list[sequence]: A list where each original record is returned with an additional
+        HTML instruction string appended (i.e., `record[:9] + [html_text]`).
+
+    Notes:
+        - The output HTML uses <br /> for line breaks and includes three SharePoint links
+          (objects, attributes, relative distance terms).
+        - A random choice is used to select between metric/imperial units and to set counts
+          for some additional instructions (e.g., cluster size, non‑Roman alphabet). This
+          introduces nondeterminism in outputs across runs.
+        - The function does not mutate the input records; it constructs new records
+          by slicing and concatenation.
     """
-
     instructions_with_formatted_text = []
 
     for instruction in instructions_with_values:

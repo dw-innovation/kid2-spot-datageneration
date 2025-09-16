@@ -1,6 +1,15 @@
 import yaml
 # from jsonschema import validate
 
+"""Utilities for validating and gently auto-fixing YAML snippets.
+
+This module exposes:
+- SCHEMA: a minimal JSON-schema-like structure describing the expected YAML shape.
+- validate_and_fix_yaml: loads YAML text, and on common parse errors, attempts small
+  string-level fixes (trimming artifacts, quoting scalar values, splitting joined keys)
+  before retrying the parse.
+"""
+
 SCHEMA = {
     'type': 'object',
     'properties': {
@@ -18,6 +27,34 @@ SCHEMA = {
 
 
 def validate_and_fix_yaml(yaml_text):
+    """Parse YAML text and attempt simple auto-fixes on common parse errors.
+
+    This function tries to be resilient to frequent generation/formatting artifacts:
+    - Removes trailing model tokens like ``</s>`` and ``<|endoftext|>``.
+    - On ``yaml.parser.ParserError``: trims whitespace on lines that look like
+      collection headers (e.g., "entities", "relations") and retries.
+    - On ``yaml.composer.ComposerError``: auto-quotes scalar values after a key
+      named ``value:`` and retries.
+    - On ``yaml.scanner.ScannerError``: inserts a newline before an inline ``id:``
+      that appears on the same line as another key and retries.
+
+    Args:
+        yaml_text (str): Raw YAML text to be parsed.
+
+    Returns:
+        Any | None: The Python object produced by ``yaml.safe_load`` (typically a
+        ``dict`` for this schema), or ``None`` if an error was handled but no fix
+        condition applied (and thus no recursive retry returned a value).
+
+    Notes:
+        - Schema validation with ``jsonschema.validate`` is present but commented
+          out; enable it if you want strict conformance to ``SCHEMA`` after load.
+        - Errors are printed to stdout when auto-fixes are attempted.
+
+    Raises:
+        Any exception from PyYAML not explicitly handled here will propagate.
+
+    """
     yaml_text = yaml_text.replace('</s>', '')
     yaml_text = yaml_text.replace('<|endoftext|>','')
     try:

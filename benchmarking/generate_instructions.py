@@ -9,28 +9,49 @@ from argparse import ArgumentParser
 from benchmarking.format_text import format_text
 from datageneration.area_generator import AreaGenerator
 
+"""
+Instruction set generator for SPOT prompt creation.
+
+This module:
+- Randomly composes required + optional instruction combinations with constraints.
+- Draws concrete values (area name, counts for entities/properties).
+- Renders final human-readable HTML instructions (via `format_text`).
+- Exports CSV and JSONL with the generated instructions.
+
+Outputs:
+- benchmarking/results/instructions.csv
+- benchmarking/results/instructions.json
+"""
+
 def generate_instructions(entities, areas, types, styles, typos, grammar_mistakes, relative_spatial_terms,
                           written_numbers, brand, multiple_of_one, names_or_areas_in_non_roman_alphabet,
                           min_items, max_items):
     """
-    Function that generates the lists of instructions based on the given parameters.
-    Each instruction set includes a few required pieces of information (e.g. number of entities), and zero or multiple
-    optional ones.
+    Draw required + optional instruction combinations under simple constraints.
 
-    :param entities: The options for number of entities.
-    :param areas: The options for types of areas (e.g. "City, Country").
-    :param types: The options for types of queries (e.g. "within radius").
-    :param styles: The options for style instructions (e.g. "Simple language, multiple sentences.").
-    :param typos: Options & occurrence count for amount of typos.
-    :param grammar_mistakes: Options & occurrence count for amount of grammar mistakes.
-    :param relative_spatial_terms: Option & occurrence count for use of relative spatial terms.
-    :param written_numbers: Option & occurrence count for use of written numbers.
-    :param brand: Options & occurrence count for the use of the name/brand tag bundle.
-    :param multiple_of_one: Option & occurrence count for the use of clusters (multiple of one object).
-    :param names_or_areas_in_non_roman_alphabet: Options & occurrence count for the use of non-roman alphabets.
-    :param min_items: The minimum number of items drawn for each query (in case of zero optional).
-    :param max_items: The maximum number of items drawn for each query.
-    :return: final_instructions - The final list of written instructions.
+    Required dimensions (exactly one per instruction): `entities`, `areas`, `types`, `styles`.
+    Optional flags are drawn to match target counts (e.g., 'typos_few' N times).
+
+    Constraints (examples):
+      - 'individual_distances'* requires exactly 3 entities.
+      - 'within_radius' or 'contains_relation' cannot use 1 entity.
+      - 'spatial_yes' is not combined with 'within_radius'/'in_area'/'contains'.
+      - 'non_roman_area' requires area ≠ 'No Area'.
+      - Mutually exclusive: grammar_few vs grammar_many, typos_few vs typos_many, brand_alone vs brand_type.
+      - 'non_roman_brand' only if a brand flag is present.
+
+    Args:
+        entities: Options for number of entities (e.g., ["1 Entity","2 Entities","3 Entities"]).
+        areas: Options for area type (e.g., ["No Area","City","Region",...]).
+        types: Options for relation type (e.g., "within_radius", "in_area", ...).
+        styles: Options for style instructions.
+        typos, grammar_mistakes, relative_spatial_terms, written_numbers, brand,
+        multiple_of_one, names_or_areas_in_non_roman_alphabet: Dicts mapping option->target count.
+        min_items: Minimum total items per instruction (required + optional).
+        max_items: Maximum total items per instruction.
+
+    Returns:
+        List of instruction tuples (required values followed by zero or more optional flags).
     """
     # Dict to keep track of the amount of times each optional instruction was drawn already
     optional_items_counts = {
@@ -49,12 +70,16 @@ def generate_instructions(entities, areas, types, styles, typos, grammar_mistake
 
     def generate_optional_combinations(nonzero_optional_num, zero_optional_num):
         """
-        Helper function that generates a list of combinations of required and optional instructions. It checks to make
-        sure no combinations with contradicting information is included.
+        Enumerate/draw optional-flag combinations within [min_items, max_items] minus 4 required slots.
 
-        :param nonzero_optional_num: The no. of times a combination with at least one optional instructions is included.
-        :param zero_optional_num: The no. of times a combination with no optional instructions is included.
-        :return: The list of combinations.
+        Excludes logically contradicting combos (see docstring above).
+
+        Args:
+            nonzero_optional_num: Target count for combos with ≥1 optional flag.
+            zero_optional_num: Target count for combos with 0 optional flags.
+
+        Returns:
+            A randomized list of optional-flag tuples.
         """
         buckets = [0, 0, 0, 0]
         all_combinations = []
@@ -107,11 +132,7 @@ def generate_instructions(entities, areas, types, styles, typos, grammar_mistake
                   if item != "non_roman_brand"):
         for comb in optional_combinations:
             def draw_vals():
-                """
-                Helper function that draws the required instructions based on the current counter.
-
-                :return: entity, area, type, style - The drawn values of the required pieces of information.
-                """
+                """Draw the four required fields based on current counters."""
                 entity = entities[entity_counter]
                 area = areas[area_counter]
                 type = types[type_counter]
@@ -137,20 +158,20 @@ def generate_instructions(entities, areas, types, styles, typos, grammar_mistake
 
                 entity, area, type, style = draw_vals()
 
-            # Add combination if it does not exceed the predefined optional item count
+            # accept if adding this combo does not exceed target counts for its flags
             if all(item_counts[item] < optional_items_counts[item] for item in comb):
                 inst_ = (entity, area, type, style) + comb
                 final_instructions.append(inst_)
                 for item in comb:
                     item_counts[item] += 1
 
-            # Loop through the required combinations in a way that generates all possible combinations
+            # advance counters to cover space
             entity_counter = (entity_counter + 1) % len(entities)
             area_counter = (area_counter + 1) % len(areas)
             type_counter = (type_counter + 2) % len(types)
             style_counter = (style_counter + 1) % len(styles)
 
-    # Loop over the instructions and add "non_roman_brand" randomly to combinations where brand is used.
+    # add 'non_roman_brand' where appropriate, up to its target count
     for iid, instruction in enumerate(final_instructions):
         if (item_counts["non_roman_brand"] < optional_items_counts["non_roman_brand"] and
                 len(instruction) < max_items and any(item in instruction for item in ["brand_alone", "brand_type"])
@@ -164,12 +185,21 @@ def generate_instructions(entities, areas, types, styles, typos, grammar_mistake
 
 def add_values(instructions, geolocations_file_path):
     """
-    Function to add values to the drawn instructions. The only value left that truly needs to be drawn directly is
-    the area name. The other values required are just the numbers of entities and properties of the query.
+    Enrich drawn instruction tuples with concrete values: area object and counts.
 
-    :param instructions: The instructions drawn in the previous step.
-    :param geolocations_file_path: The path to the geolocation file.
-    :return: instructions_with_values - The previous instructions plus the newly drawn information.
+    Adds to each instruction:
+      - area object (generated by `AreaGenerator`, based on the area selection)
+      - number of entities
+      - number of entities with properties
+      - total number of properties
+
+    Args:
+        instructions: Output of `generate_instructions`.
+        geolocations_file_path: Path to a file with cities/regions/countries used by `AreaGenerator`.
+
+    Returns:
+        A list of lists: original instruction tuple padded to length 9 plus
+        [area, num_entities, ents_with_props, num_props].
     """
     area_generator = AreaGenerator(geolocation_file=geolocations_file_path, percentage_of_two_word_areas=0.5)
 
@@ -232,13 +262,6 @@ if __name__ == '__main__':
     brand = {"brand_alone": 50, "brand+type": 50}
     multiple_of_one = {"yes": 100}
     names_or_areas_in_non_roman_alphabet = {"non_roman_area": 50, "non_roman_brand": 50}
-    # typos = {"few": 2, "many": 2}
-    # grammar_mistakes = {"few": 2, "many": 2}
-    # relative_spatial_terms = {"yes": 5}
-    # written_numbers = {"yes": 5}
-    # brand = {"brand_alone": 2, "brand+type": 2}
-    # multiple_of_one = {"yes": 5}
-    # names_or_areas_in_non_roman_alphabet = {"non_roman_area": 2, "non_roman_brand": 2}
 
     min_items = 4
     max_items = 7

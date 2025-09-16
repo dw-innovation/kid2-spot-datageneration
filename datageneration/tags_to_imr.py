@@ -8,16 +8,33 @@ from typing import List, Dict, Union
 from datageneration.data_model import Tag
 from datageneration.utils import write_output, SEPERATORS, split_descriptors, write_dict_output
 
+"""
+Transform OSM-style tag expressions into an IMR (Intermediate Model Representation).
+
+This module converts tag bundles from a primary key table into a graph-friendly IMR format:
+- Parses AND/OR logic across tags.
+- Supports key/value unions like `key1|key2=value1|value2`.
+- Emits Tag objects (from datageneration.data_model) or nested dicts: {"and": [...]}, {"or": [...]}.
+
+CLI:
+    python transform_tags_to_imr.py \
+        --primary_key_table data/primary_keys.xlsx \
+        --output_file out/imr.jsonl
+"""
 
 def generate_and_condition(conditions: List) -> Dict[str, List[Tag]]:
     """
-    Generate an 'AND' condition from a list of conditions.
+    Build an AND condition from a list of condition lists.
 
-    This function takes a list of conditions, where each condition is a list of Tag objects,
-    and combines them into a single 'AND' condition.
+    Parameters
+    ----------
+    conditions : List[Iterable[Tag]]
+        Each element is a list/iterable of Tag objects (a clause). They are flattened and joined by AND.
 
-    :param conditions: A list of conditions, where each condition is represented as a list of Tag objects.
-    :return: A dictionary containing the 'AND' condition, with the key 'and' mapped to a list of Tag objects.
+    Returns
+    -------
+    Dict[str, List[Tag]]
+        {"and": [Tag, Tag, ...]} — a single AND clause containing all tags from all input clauses.
     """
     res = {"and": list(chain.from_iterable(conditions))}
     return res
@@ -25,13 +42,17 @@ def generate_and_condition(conditions: List) -> Dict[str, List[Tag]]:
 
 def generate_or_condition(conditions: List) -> Union[List[Tag], Dict[str, List[Tag]]]:
     """
-    Generate an 'OR' condition from a list of conditions.
+    Build an AND condition from a list of condition lists.
 
-    This function takes a list of conditions, where each condition is a list of Tag objects,
-    and combines them into a single 'OR' condition.
+    Parameters
+    ----------
+    conditions : List[Iterable[Tag]]
+        Each element is a list/iterable of Tag objects (a clause). They are flattened and joined by AND.
 
-    :param conditions: A list of conditions, where each condition is represented as a list of Tag objects.
-    :return: A dictionary containing the 'AND' condition, with the key 'and' mapped to a list of Tag objects.
+    Returns
+    -------
+    Dict[str, List[Tag]]
+        {"and": [Tag, Tag, ...]} — a single AND clause containing all tags from all input clauses.
     """
     first_condition = conditions[0]
 
@@ -45,11 +66,23 @@ def generate_or_condition(conditions: List) -> Union[List[Tag], Dict[str, List[T
 
 
 def transform_tags_to_imr(tags_str: str) -> List[Dict[str, List[Tag]]]:
-    '''
-    Transform tag lists in a string format into IMR which contains tag filters
-    :param tags_str:
-    :return: list of dictionary
-    '''
+    """
+    Convert a tag expression string into IMR.
+
+    Splits comma-separated groups and converts each into a disjunction/conjunction of Tag filters.
+    Currently, the implementation returns a single-element list containing an OR block (or passthrough).
+
+    Parameters
+    ----------
+    tags_str : str
+        Tag expression, e.g. "amenity=restaurant|cafe, cuisine=italian AND diet:vegan=yes".
+
+    Returns
+    -------
+    List[Union[Dict[str, Any], List[Tag], Tag]]
+        A list with a single element representing the IMR for the input tag(s).
+        Example: [{"or": [Tag(...), {"and": [Tag(...), Tag(...)]}, ...]}]
+    """
     if "," in tags_str:
         tags = [t_.strip() for t_ in tags_str.split(',')]
     else:
@@ -63,11 +96,22 @@ def transform_tags_to_imr(tags_str: str) -> List[Dict[str, List[Tag]]]:
 
 def yield_tag_filters_for_imr(tags: Union[str, List[str]]) -> List[Tag]:
     """
-    Yield tag filters for constructing IMR. Filters are connected each other AND or OR operators
+    Yield Tag filters (and grouped AND blocks) to build IMR.
 
-    :param tags (str or list of str): The tag string or list of tag strings to be processed.
+    Handles:
+    - AND groups: "a=b AND c=d"
+    - Key/value unions: "a|b=c|d" → all cartesian products (a=c, a=d, b=c, b=d)
+    - Operators found in SEPERATORS; defaults to "=" if none found.
 
-    :return: list of tags: a list of tags
+    Parameters
+    ----------
+    tags : Union[str, List[str]]
+        A single tag string or a list of tag strings.
+
+    Yields
+    ------
+    Union[Tag, Dict[str, List[Tag]]]
+        Either Tag objects, or {"and": [Tag, ...]} blocks.
     """
     if isinstance(tags, str):
         tags = [tags]
@@ -88,14 +132,28 @@ def yield_tag_filters_for_imr(tags: Union[str, List[str]]) -> List[Tag]:
                 yield Tag(key=comb[0], operator=op, value=comb[1])
 
 def tag_serializer(tag):
+    """
+    Convert a Tag object to a serializable dictionary.
+
+    Parameters
+    ----------
+    tag : Tag
+        The Tag to serialize.
+
+    Returns
+    -------
+    Dict[str, Any]
+        tag.to_dict() result.
+    """
     return tag.to_dict()
 
 if __name__ == '__main__':
-    '''
-    Load the current tag bundle list, and transform it to a version in which all tag bundles are represented in the
-    graph database format the model translates natural sentences into. Save the result as JSON.
-    '''
+    """
+    Load the Primary Key table, transform each row's `tags` into IMR, and write JSON lines.
 
+    For each descriptor in a row, an entry is emitted:
+        {"key": <descriptor>, "imr": <IMR for row tags>}
+    """
     parser = ArgumentParser()
     parser.add_argument('--primary_key_table', required=True)
     parser.add_argument('--output_file', required=True)
