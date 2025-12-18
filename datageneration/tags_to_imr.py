@@ -162,7 +162,10 @@ if __name__ == '__main__':
     output_file = args.output_file
     tag_list_path = args.primary_key_table
 
-    primary_key_table = pd.read_excel(args.primary_key_table, engine='openpyxl')
+    if '.csv' in tag_list_path:
+        primary_key_table = pd.read_csv(args.primary_key_table)
+    else:
+        primary_key_table = pd.read_excel(args.primary_key_table, engine='openpyxl')
 
     results = []
     for row in tqdm(primary_key_table.to_dict(orient='records'), total=len(primary_key_table)):
@@ -171,9 +174,9 @@ if __name__ == '__main__':
         if isinstance(descriptors_str, float):
             print(tags_str)
             continue
-        desriptors = split_descriptors(descriptors_str)
+        descriptors = split_descriptors(descriptors_str)
         tags = json.loads(json.dumps(transform_tags_to_imr(tags_str), default=tag_serializer))
 
-        for descriptor in desriptors:
-            results.append(dict(key=descriptor, imr=tags))
+        for descriptor in descriptors:
+            results.append(dict(cluster_id=row['index'], key=descriptor, imr=tags, descriptors=list(descriptors)))
     write_dict_output(results, output_file, bool_add_yaml=False)
