@@ -172,7 +172,6 @@ if __name__ == '__main__':
         descriptors_str = row['descriptors']
         tags_str = row['tags']
         if isinstance(descriptors_str, float):
-            print(tags_str)
             continue
         descriptors = split_descriptors(descriptors_str)
         tags = json.loads(json.dumps(transform_tags_to_imr(tags_str), default=tag_serializer))
