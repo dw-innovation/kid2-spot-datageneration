@@ -6,7 +6,7 @@ import numpy as np
 import yaml
 from pathlib import Path
 from random import randint
-from typing import List
+from typing import List, Set
 
 from datageneration.data_model import Distance
 
@@ -162,6 +162,7 @@ def write_dict_output(generated_combs, output_file: str, bool_add_yaml: bool = T
 
     with open(output_file, "w", encoding="utf-8") as out_file:
             for generated_comb in generated_combs:
+                print(generated_comb)
                 json.dump(generated_comb, out_file, ensure_ascii=False)
                 out_file.write('\n')
 
