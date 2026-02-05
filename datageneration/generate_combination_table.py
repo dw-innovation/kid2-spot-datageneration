@@ -5,7 +5,7 @@ import pandas as pd
 from argparse import ArgumentParser
 from pathlib import Path
 from tqdm import tqdm
-from typing import List, Dict
+from typing import List, Dict, Union
 
 from datageneration.area_generator import AreaGenerator, NamedAreaData, load_named_area_data
 from datageneration.data_model import TagPropertyExample, TagProperty, Property, TagCombination, Entity, Relations, \
@@ -73,7 +73,8 @@ class QueryCombinationGenerator(object):
                  prob_of_rare_non_numerical_properties: float,
                  prob_of_non_roman_areas: float,
                  color_bundle_path: str,
-                 prob_of_cluster_entities: float
+                 prob_of_cluster_entities: float,
+                 must_have_descriptors: Union[List, None]
                  ):
 
         color_bundles = fetch_color_bundle(property_examples=property_examples,bundle_path=color_bundle_path)
@@ -97,6 +98,7 @@ class QueryCombinationGenerator(object):
             "popular_non_numerical": self.prob_of_popular_non_numerical_properties,
             "other_non_numerical": self.prob_of_other_non_numerical_properties,
         }
+        self.must_have_descriptors = must_have_descriptors
 
     def categorize_entities_based_on_their_props(self, tag_combinations: List[TagCombination]) -> Dict:
         """Bucket tag combinations by property category for targeted sampling.
@@ -173,7 +175,7 @@ class QueryCombinationGenerator(object):
 
         return selected_num_of_props
 
-    def add_cluster_entities(self, selected_entities)
+    def add_cluster_entities(self, selected_entities):
         """Optionally convert entities to 'cluster' type with minPoints/maxDistance.
 
         Args:
@@ -261,16 +263,37 @@ class QueryCombinationGenerator(object):
                     if selected_tag_comb in selected_tag_combs:
                         continue
                     selected_tag_combs.append(selected_tag_comb)
+
+                    properties = []
                     selected_entities.append(
-                        Entity(id=len(selected_entities), is_area=is_area, name=entity_name, properties=[]))
+                        Entity(id=len(selected_entities), is_area=is_area, name=entity_name, properties=properties))
             else:
                 brand_examples = self.property_generator.select_named_property_example("brand~***example***")
                 entity_name = f"brand:{np.random.choice(brand_examples)}"
                 is_area = False
+                properties = []
                 selected_entities.append(
-                    Entity(id=len(selected_entities), is_area=is_area, name=entity_name, properties=[]))
+                    Entity(id=len(selected_entities), is_area=is_area, name=entity_name, properties=properties))
+
+        selected_descriptors = set()
+        for selected_entity in selected_entities:
+            print(selected_entity)
+            selected_descriptors.add(selected_entity.name)
+            selected_props = selected_entity.properties
+            for selected_prop in selected_props:
+                selected_descriptors.add(selected_prop.name)
+        if must_have_descriptors:
+            overlapped_descriptors = selected_descriptors & must_have_descriptors
+
+            print('Overlapped Descriptors:')
+            print(overlapped_descriptors)
+
+            if len(overlapped_descriptors) == 0:
+                self.generate_entities(max_number_of_entities_in_prompt, max_number_of_props_in_entity,
+                          prob_of_entities_with_props)
 
         selected_entities = self.add_cluster_entities(selected_entities)
+
 
         return selected_entities
 
@@ -462,6 +485,7 @@ if __name__ == '__main__':
     parser.add_argument('--prob_of_popular_non_numerical_properties', type=float, default=0.1)
     parser.add_argument('--prob_of_other_non_numerical_properties', type=float, default=0.5)
     parser.add_argument('--prob_of_cluster_entities', type=float, default=0.3)
+    parser.add_argument('--filter', help='If a file is given, the combinations must include one or more tags from the list.', default=None)
 
     args = parser.parse_args()
 
@@ -486,10 +510,17 @@ if __name__ == '__main__':
     prob_of_popular_non_numerical_properties = args.prob_of_popular_non_numerical_properties
     prob_of_rare_non_numerical_properties = args.prob_of_rare_non_numerical_properties
     prob_of_cluster_entities = args.prob_of_cluster_entities
+    filter_data_path = args.filter
+
 
     tag_combinations = pd.read_json(tag_combination_path, lines=True).to_dict('records')
     tag_combinations = [TagCombination(**tag_comb) for tag_comb in tag_combinations]
     property_examples = pd.read_json(tag_prop_examples_path, lines=True).to_dict('records')
+
+    must_have_descriptors = None
+    if filter_data_path:
+        filter_data = pd.read_csv(filter_data_path)
+        must_have_descriptors = set(filter_data['descriptors'].unique())
 
     query_comb_generator = QueryCombinationGenerator(geolocation_file=geolocations_file_path,
                                                      non_roman_vocab_file=non_roman_vocab_file_path,
@@ -506,7 +537,8 @@ if __name__ == '__main__':
                                                      prob_of_popular_non_numerical_properties=prob_of_popular_non_numerical_properties,
                                                      prob_of_other_non_numerical_properties= prob_of_other_non_numerical_properties,
                                                      prob_of_rare_non_numerical_properties=prob_of_rare_non_numerical_properties,
-                                                     prob_of_cluster_entities=prob_of_cluster_entities)
+                                                     prob_of_cluster_entities=prob_of_cluster_entities,
+                                                     must_have_descriptors=must_have_descriptors)
 
     generated_combs = query_comb_generator.run(num_queries=num_samples,
                                                max_number_of_entities_in_prompt=max_number_of_entities_in_prompt,

@@ -5,7 +5,7 @@ import unicodedata
 from argparse import ArgumentParser
 from diskcache import Cache
 from tqdm import tqdm
-from typing import List
+from typing import List, Dict, Any
 
 from datageneration.data_model import Tag, TagProperty, TagCombination, TagPropertyExample, \
     remove_duplicate_tag_properties
@@ -504,6 +504,8 @@ class CombinationRetriever(object):
             cluster_id = row['index']
             is_area = True if row['area/point'] == 'area' else False
             descriptors = split_descriptors(row['descriptors'])
+            print(descriptors)
+            print(row)
             comb_type = row['core/prop'].strip()
             tags = split_tags(row['tags'])
 

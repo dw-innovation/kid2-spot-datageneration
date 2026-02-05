@@ -113,9 +113,10 @@ MAX_TOKENS = int(os.getenv('MAX_TOKENS', 4096))
 # CLIENT = OpenAI(
 #     api_key=os.environ["OPENAI_API_KEY"], organization=os.environ["OPENAI_ORG"]
 # )
+
 CLIENT = OpenAI(
     api_key=os.getenv("LLM_API_KEY"),
-    base_url="https://llm-hub.dw.com/openai"
+    base_url=os.getenv("LLM_BASE_URL"),
 )
 
 def request_openai(prompt: str) -> str:

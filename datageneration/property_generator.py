@@ -220,7 +220,8 @@ class PropertyGenerator:
         return Property(name=descriptor, operator=operator, value=generated_numerical_value)
         # return Property(key=tag_property.key, operator=tag_aproperty.operator, value=generated_numerical_value, name=tag_property.key)
 
-    def generate_color_property(self, tag_attribute: TagProperty) -> Property:        """
+    def generate_color_property(self, tag_attribute: TagProperty) -> Property:
+        """
         Generate a colour `Property` by sampling from precomputed colour bundles.
 
         For all tag patterns in `tag_attribute.tags`, uses their concatenated key form
