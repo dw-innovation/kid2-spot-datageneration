@@ -36,9 +36,9 @@ def query(payload, environment):
 
 
 if __name__ == '__main__':
-    output_file = 'benchmarking/results/spot_Mistral-Small-24B-Base-2501-unsloth_ep10_training_ds_v16_3-17_1_2-18_3_param-4_prompt-v2-benchmarking050625_remote.jsonl'
-    benchmarking_file = 'benchmarking/data/gold_annotations_14072025.xlsx'
-    gold_sheet_name = 'gold_annotations_14072025'
+    output_file = 'benchmarking/results/spot_Mistral-Small-24B-Base-2501-unsloth_ep10_training_ds_v16_3-17_1_2-18_3_param-4_prompt-v2-descriptor_updates_02022026_remote.jsonl'
+    benchmarking_file = 'benchmarking/data/goldstandard_testing_dataset.xlsx'
+    gold_sheet_name = 'descriptor_updates_02022026'
     environment = "development"
 
     gold_ds = pd.read_excel(benchmarking_file, sheet_name=gold_sheet_name)
