@@ -64,12 +64,12 @@ class TestGenerateCombination(unittest.TestCase):
         ]
         properties = self.query_comb_generator.generate_properties(
             candidate_properties=candidate_properties,
-            num_of_props=4)
+            num_of_props=4, has_cuisine=False)
 
         assert len(properties) == 4
 
         properties = self.query_comb_generator.generate_properties(candidate_properties=candidate_properties,
-                                                                   num_of_props=3)
+                                                                   num_of_props=3, has_cuisine=False)
 
         assert len(properties) == 3
 
@@ -94,7 +94,8 @@ class TestGenerateCombination(unittest.TestCase):
         self.query_comb_generator.prob_of_non_numerical_properties = 0.0
         self.query_comb_generator.prob_of_color_properties = 0.0
 
-        generated_props = self.query_comb_generator.generate_properties(candidate_properties=candidate_properties, num_of_props=3)
+        generated_props = self.query_comb_generator.generate_properties(candidate_properties=candidate_properties,
+                                                                        num_of_props=3, has_cuisine=False)
 
         numeric_props = ['levels', 'building levels', 'floors', 'height']
         for generated_prop in generated_props:
