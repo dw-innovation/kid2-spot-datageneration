@@ -188,7 +188,7 @@ class QueryCombinationGenerator(object):
             add_cluster = np.random.choice([True, False], p=[self.prob_of_cluster_entities,
                                                                      1 - self.prob_of_cluster_entities])
             if add_cluster:
-                minPoints = np.random.choice(np.arange(20))
+                minPoints = np.random.choice(np.arange(1, 21))
                 maxDistance = get_random_decimal_with_metric(5)
                 selected_entities[id] = Entity(id=selected_entities[id].id, is_area=selected_entities[id].is_area,
                                                 name=selected_entities[id].name, type='cluster',
@@ -231,6 +231,8 @@ class QueryCombinationGenerator(object):
                     selected_tag_comb = self.entity_tag_combinations[selected_property_category][selected_idx_for_combinations]
                     is_area = selected_tag_comb.is_area
 
+                    has_cuisine = any(tag.key == "cuisine" for tag in selected_tag_comb.tags)
+
                     if selected_tag_comb in selected_tag_combs:
                         continue
 
@@ -250,7 +252,7 @@ class QueryCombinationGenerator(object):
                         selected_num_of_props = current_max_number_of_props
 
                     properties = self.generate_properties(candidate_properties=candidate_properties,
-                                                          num_of_props=selected_num_of_props)
+                                                          num_of_props=selected_num_of_props, has_cuisine=has_cuisine)
                     selected_entities.append(
                         Entity(id=len(selected_entities), is_area=is_area, name=entity_name, properties=properties))
                 else:
@@ -297,7 +299,8 @@ class QueryCombinationGenerator(object):
 
         return selected_entities
 
-    def generate_properties(self, candidate_properties: List[TagProperty], num_of_props: int, trial_err_count=100) -> List[Property]:
+    def generate_properties(self, candidate_properties: List[TagProperty], num_of_props: int, has_cuisine: bool,
+                            trial_err_count=100) -> List[Property]:
         """Select and instantiate a set of properties from candidates.
 
         The method:
@@ -349,9 +352,8 @@ class QueryCombinationGenerator(object):
             selected_index = candidate_indices[0]
             tag_property = selected_category_properties[selected_index]
             tag_props_key = ' '.join(tag_property.descriptors)
-            # if tag_props_key in tag_properties_keys and tag_props_key not in ['cuisine', 'sport']:
-                # we keep cuisine, sport because facilities can serve multiple cuisine, and offer different sport activities
-                # continue
+            if tag_props_key == 'cuisine' and has_cuisine:
+                continue
             if tag_props_key not in tag_properties_keys: # Ensure no duplicates
                 tag_properties_keys.append(tag_props_key)
                 tag_property = self.property_generator.run(tag_property)
