@@ -171,6 +171,16 @@ class EntityAndPropertyAnalyzer:
             normalized_name = corrected_name
         return normalized_name
 
+    def lowerize(self,obj):
+        if isinstance(obj, dict):
+            return {k.lower(): self.lowerize(v) for k, v in obj.items()}
+        elif isinstance(obj, list):
+            return [self.lowerize(item) for item in obj]
+        elif isinstance(obj, str):
+            return obj.lower()
+        else:
+            return obj
+
     def pair_objects(self, predicted_objs, reference_objs):
         """
         Pair entities/properties by (normalized) names, handling duplicates.
@@ -203,11 +213,8 @@ class EntityAndPropertyAnalyzer:
             - Values are lowercased strings when present.
         """
         # create a dictionary of reference entities and predicted entities, names will be the keys
-        print('===predicted objs===')
-        print(predicted_objs)
-
-        print('===reference objs===')
-        print(reference_objs)
+        predicted_objs = self.lowerize(predicted_objs)
+        reference_objs = self.lowerize(reference_objs)
 
         reference_obj_mapping = {}
         predicted_obj_mapping = {}
@@ -241,10 +248,7 @@ class EntityAndPropertyAnalyzer:
             else:
                 reference_obj_mapping[normalized_name] = reference_obj
                 reference_obj['normalized_name'] = normalized_name
-
-
-        print('===duplicate references')
-        print(duplicate_references)
+        reference_obj['normalized_name'] = normalized_name.lower()
 
         if not predicted_objs:
             return None, None, {'prediction': [], 'reference': list(reference_obj_mapping.keys())}
@@ -416,6 +420,11 @@ class EntityAndPropertyAnalyzer:
         # hallucination check
         num_hallucinated_entity = len(unpaired_entities['prediction'])
 
+        print('===reference entities===')
+        print(reference_entities)
+        print('===predicted entities===')
+        print(predicted_entities)
+
         total_clusters = 0
         for ref_entity in reference_entities:
             if ref_entity['type'] == 'cluster':
@@ -426,6 +435,7 @@ class EntityAndPropertyAnalyzer:
                 total_properties += len(ref_properties)
 
                 for ref_property in ref_properties:
+                    print(ref_property)
                     if 'height' == ref_property['name']:
                         total_height_property += 1
 
@@ -571,7 +581,8 @@ class EntityAndPropertyAnalyzer:
             props_perfect_result = props_perfect_result
         ), full_paired_entities
 
-    def sort_entities(self, entities1, entities2):        """
+    def sort_entities(self, entities1, entities2):
+        """
         Sort two entity lists by case-insensitive 'name'.
 
         Args:

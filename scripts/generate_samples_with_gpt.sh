@@ -1,4 +1,4 @@
-VERSION=v19_updatebundles_100
+VERSION=v19_updatebundles_500
 
 
 #python -m datageneration.gpt_data_generator \
