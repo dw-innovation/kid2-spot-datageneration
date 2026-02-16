@@ -387,7 +387,26 @@ Think step-by-step, but only output the query, nothing else.
         """
         finished_instructions = self.instruction_template.format(persona=persona, style=writing_style, rules=rules, typos=typos, input=input)
         seps = [["comma", "period", "10,000.00"], ["period", "comma", "10.000,00"]][np.random.choice([0, 1])]
-        finished_instructions = finished_instructions.format(thousands=seps[0], decimal=seps[1], example=seps[2])
+        try:
+            finished_instructions = finished_instructions.format(thousands=seps[0], decimal=seps[1], example=seps[2])
+        except ValueError as e:
+            safe_text = (
+                finished_instructions
+                .replace("{", "{{")
+                .replace("}", "}}")
+            )
+
+            # Restore real placeholders
+            safe_text = safe_text.replace("{{thousands}}", "{thousands}")
+            safe_text = safe_text.replace("{{decimal}}", "{decimal}")
+            safe_text = safe_text.replace("{{example}}", "{example}")
+
+            # Retry formatting
+            finished_instructions = safe_text.format(
+                thousands=seps[0],
+                decimal=seps[1],
+                example=seps[2]
+            )
         return finished_instructions
 
     def typo(self, prob_of_typos: float) -> str:
