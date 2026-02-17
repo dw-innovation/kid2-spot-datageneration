@@ -962,16 +962,20 @@ class GPTDataGenerator:
         """
         generated_sentences = []
         for generated_prompt in tqdm(generated_prompts, total=len(generated_prompts)):
-            generated_sentence = self.generate_sentence(generated_prompt)
+            try:
+                generated_sentence = self.generate_sentence(generated_prompt)
 
-            generated_imr_sentence = dict(
-                query=generated_prompt["query"],
-                prompt=generated_prompt["prompt"],
-                style=generated_prompt["style"],
-                persona=generated_prompt["persona"],
-                sentence=generated_sentence
-            )
-            generated_sentences.append(generated_imr_sentence)
+                generated_imr_sentence = dict(
+                    query=generated_prompt["query"],
+                    prompt=generated_prompt["prompt"],
+                    style=generated_prompt["style"],
+                    persona=generated_prompt["persona"],
+                    sentence=generated_sentence
+                )
+                generated_sentences.append(generated_imr_sentence)
+            except AttributeError:
+                print('Attribution Error')
+                continue
 
             write_dict_output(generated_sentences, output_gpt_generations_temp, True)
         return generated_sentences
