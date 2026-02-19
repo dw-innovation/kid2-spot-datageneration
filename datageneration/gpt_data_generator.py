@@ -103,12 +103,12 @@ def chatcompletions_with_backoff(**kwargs):
 
 
 # OpenAI parameters
-MODEL = os.getenv('MODEL', 'azure-gpt-4.1')# #gpt-4.1-mini  #gpt-4.1-nano
+MODEL = os.getenv('MODEL', 'GPT-5')# #gpt-4.1-mini  #gpt-4.1-nano
 # MODEL = os.getenv('MODEL', 'gpt-4.1-mini')
     # https://openai.com/index/gpt-4-1/
 TEMPERATURE = float(os.getenv('TEMPERATURE', 0.4))
-TOP_P = float(os.getenv('TEMPERATURE', 0.9))
-MAX_TOKENS = int(os.getenv('MAX_TOKENS', 4096))
+TOP_P = float(os.getenv('TOP_P', 0.9))
+MAX_TOKENS = int(os.getenv('MAX_TOKENS', 16384))
 
 # CLIENT = OpenAI(
 #     api_key=os.environ["OPENAI_API_KEY"], organization=os.environ["OPENAI_ORG"]
@@ -962,16 +962,20 @@ class GPTDataGenerator:
         """
         generated_sentences = []
         for generated_prompt in tqdm(generated_prompts, total=len(generated_prompts)):
-            generated_sentence = self.generate_sentence(generated_prompt)
+            try:
+                generated_sentence = self.generate_sentence(generated_prompt)
 
-            generated_imr_sentence = dict(
-                query=generated_prompt["query"],
-                prompt=generated_prompt["prompt"],
-                style=generated_prompt["style"],
-                persona=generated_prompt["persona"],
-                sentence=generated_sentence
-            )
-            generated_sentences.append(generated_imr_sentence)
+                generated_imr_sentence = dict(
+                    query=generated_prompt["query"],
+                    prompt=generated_prompt["prompt"],
+                    style=generated_prompt["style"],
+                    persona=generated_prompt["persona"],
+                    sentence=generated_sentence
+                )
+                generated_sentences.append(generated_imr_sentence)
+            except AttributeError:
+                print('Attribution Error')
+                continue
 
             write_dict_output(generated_sentences, output_gpt_generations_temp, True)
         return generated_sentences
