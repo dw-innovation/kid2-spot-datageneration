@@ -103,12 +103,12 @@ def chatcompletions_with_backoff(**kwargs):
 
 
 # OpenAI parameters
-MODEL = os.getenv('MODEL', 'azure-gpt-4.1')# #gpt-4.1-mini  #gpt-4.1-nano
+MODEL = os.getenv('MODEL', 'GPT-5')# #gpt-4.1-mini  #gpt-4.1-nano
 # MODEL = os.getenv('MODEL', 'gpt-4.1-mini')
     # https://openai.com/index/gpt-4-1/
 TEMPERATURE = float(os.getenv('TEMPERATURE', 0.4))
-TOP_P = float(os.getenv('TEMPERATURE', 0.9))
-MAX_TOKENS = int(os.getenv('MAX_TOKENS', 4096))
+TOP_P = float(os.getenv('TOP_P', 0.9))
+MAX_TOKENS = int(os.getenv('MAX_TOKENS', 16384))
 
 # CLIENT = OpenAI(
 #     api_key=os.environ["OPENAI_API_KEY"], organization=os.environ["OPENAI_ORG"]
