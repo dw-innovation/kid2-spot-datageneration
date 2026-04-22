@@ -1,5 +1,5 @@
 VERSION=v19
-SUFFIX=_newBundles_25k
+SUFFIX=_newBundles_10k_1ent
 
 ## create non-roman samples with prob 1.0, increase prob_of_entities_with_props from 0.2 to 0.5
 #python -m datageneration.generate_combination_table \
@@ -175,8 +175,8 @@ python -m datageneration.generate_combination_table \
 --output_file datageneration/results/${VERSION}${SUFFIX}/dataset_${VERSION}${SUFFIX}.jsonl \
 --write_output \
 --max_distance_digits 5 \
---max_number_of_entities_in_prompt 3 \
---max_number_of_props_in_entity 3 \
+--max_number_of_entities_in_prompt 1 \
+--max_number_of_props_in_entity 1 \
 --prob_of_entities_with_props 0.5 \
 --prob_of_two_word_areas 0.5 \
 --prob_generating_contain_rel 0.5 \
@@ -188,8 +188,8 @@ python -m datageneration.generate_combination_table \
 --prob_adding_brand_names_as_entity 0.035 \
 --prob_of_non_roman_areas 0.3 \
 --prob_of_cluster_entities 0.3 \
---samples 25000 \
---filter datageneration/data/tag_bundles_diff.csv
+--samples 10000 \
+#--filter datageneration/data/tag_bundles_diff.csv
 #
 #--ent_peak 3 \
 #--ent_decay_rate_right 0.7 \

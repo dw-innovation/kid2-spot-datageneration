@@ -16,7 +16,7 @@
 
 
 
-FNAME=spot_Mistral-Small-24B-Base-2501-unsloth_ep10_training_ds_v16_3-17_1_2-18_3_param-4_prompt-v2-descriptor_updates_02022026_remote
+FNAME=spot_mistralai_Mistral-Small-3.2-24B-Instruct-2506_ep5_training_ds_v18_120fix_75_v19_25k_35k_param-7_prompt-v2
 KEY_TABLE_PATH=SPOT_OSM-tag-bundles-UPDATED.xlsx
 GOLD_FILE_PATH=benchmarking/data/goldstandard_testing_dataset.xlsx
 PRED_FILE_PATH=benchmarking/results/${FNAME}.jsonl

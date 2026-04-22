@@ -53,6 +53,9 @@ if __name__ == '__main__':
     for idx, sample in samples_df.iterrows():
         sentence = sample["sentence"]
 
+        if not sentence:
+            continue
+
         # Skip samples with "sorry" or missing sentences
         if '''sorry''' in sentence.lower():
             continue
