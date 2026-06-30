@@ -1,14 +1,16 @@
 import copy
 import json
 import os
-import re
 import random
-import torch
-import pandas as pd
+import re
+
 import numpy as np
-from rapidfuzz import process, fuzz
-from sklearn.metrics.pairwise import cosine_similarity
+import pandas as pd
+import torch
+from rapidfuzz import fuzz, process
 from sentence_transformers import SentenceTransformer
+from sklearn.metrics.pairwise import cosine_similarity
+
 from datageneration.utils import split_descriptors
 
 model = SentenceTransformer("cross-encoder/nli-deberta-v3-base")
@@ -20,8 +22,9 @@ DIST_LOOKUP = {
     "inches": "in",
     "feet": "ft",
     "yards": "yd",
-    "miles": "mi"
+    "miles": "mi",
 }
+
 
 def write_output(generated_combs, output_file):
     """
@@ -36,7 +39,8 @@ def write_output(generated_combs, output_file):
     with open(output_file, "w") as out_file:
         for generated_comb in generated_combs:
             json.dump(generated_comb.model_dump(mode="json"), out_file)
-            out_file.write('\n')
+            out_file.write("\n")
+
 
 def find_pairs_fuzzy(list1, list2, threshold=80):
     """
@@ -65,11 +69,14 @@ def find_pairs_fuzzy(list1, list2, threshold=80):
 
     return paired, unpaired
 
+
 np.random.seed(0)
 random.seed(0)
 torch.manual_seed(0)
 if torch.cuda.is_available():
     torch.cuda.manual_seed_all(0)
+
+
 def find_pairs_semantic(reference_list, prediction_list, threshold=0.7):
     """
     Find best semantic matches between two lists using SentenceTransformer embeddings.
@@ -85,7 +92,10 @@ def find_pairs_semantic(reference_list, prediction_list, threshold=0.7):
             unpaired (dict): Items in reference and prediction lists not matched.
     """
     paired = []
-    unpaired = {"reference": reference_list.copy(), "prediction": prediction_list.copy()}
+    unpaired = {
+        "reference": reference_list.copy(),
+        "prediction": prediction_list.copy(),
+    }
 
     # Compute embeddings
     embeddings1 = model.encode(reference_list, convert_to_numpy=True)
@@ -108,14 +118,17 @@ def find_pairs_semantic(reference_list, prediction_list, threshold=0.7):
             matched_item_ref = reference_list[i]
             paired.append((reference_list[i], matched_item_pred))
             matched_predictions.add(best_match_idx)
-            if matched_item_pred in unpaired['prediction']:
-                unpaired["prediction"].remove(matched_item_pred)  # Remove matched item from unpaired list
-            if matched_item_ref in unpaired['reference']:
-                unpaired['reference'].remove(matched_item_ref)
+            if matched_item_pred in unpaired["prediction"]:
+                unpaired["prediction"].remove(
+                    matched_item_pred
+                )  # Remove matched item from unpaired list
+            if matched_item_ref in unpaired["reference"]:
+                unpaired["reference"].remove(matched_item_ref)
         else:
-            if reference_list[i] not in unpaired['reference']:
+            if reference_list[i] not in unpaired["reference"]:
                 unpaired["reference"].append(reference_list[i])
     return paired, unpaired
+
 
 def load_key_table(path):
     """
@@ -128,17 +141,18 @@ def load_key_table(path):
     Returns:
         dict: Mapping from descriptor to full list of related descriptors (bundle).
     """
-    primary_key_table = pd.read_excel(path, engine='openpyxl')
+    primary_key_table = pd.read_excel(path, engine="openpyxl")
 
     descriptors = {}
-    for row in primary_key_table.to_dict(orient='records'):
-        descriptors_str = row['descriptors']
+    for row in primary_key_table.to_dict(orient="records"):
+        descriptors_str = row["descriptors"]
 
         descriptors_lst = list(split_descriptors(descriptors_str))
 
         for desc in descriptors_lst:
             descriptors[desc] = descriptors_lst
     return descriptors
+
 
 def normalize(obj):
     """
@@ -154,26 +168,30 @@ def normalize(obj):
         Normalized version of the input object.
     """
     if isinstance(obj, dict):
-        if 'name' in obj:
-            obj['name'] = obj['name'].lower()
-        if 'minPoints' in obj:
-            obj['minpoints'] = obj.pop('minPoints')
-            obj['maxdistance'] = obj.pop('maxDistance')
-        if 'minpoints' in obj or 'maxdistance' in obj:
-            obj['minpoints'] = str(obj['minpoints'])
-            obj['maxdistance'] = str(obj['maxdistance'])
-        if 'value' in obj:
-            if isinstance(obj['value'], int):
-                obj['value'] = str(obj['value'])
-            obj['value']= obj['value'].lower()
-        if obj['name'] == 'height':
-            dist, metric = compose_metric(obj['value'])
+        if "name" in obj:
+            obj["name"] = obj["name"].lower()
+        if "minPoints" in obj:
+            obj["minpoints"] = obj.pop("minPoints")
+            obj["maxdistance"] = obj.pop("maxDistance")
+        if "minpoints" in obj:
+            obj["minpoints"] = str(obj["minpoints"])
+        if "maxdistance" in obj:
+            obj["maxdistance"] = str(obj["maxdistance"])
+        if "value" in obj:
+            if isinstance(obj["value"], int):
+                obj["value"] = str(obj["value"])
+            obj["value"] = obj["value"].lower()
+        if obj["name"] == "height":
+            dist, metric = compose_metric(obj["value"])
             if dist:
-                obj['value'] = f'{dist} {metric}'
-        return {k: normalize(v) for k, v in sorted(obj.items()) if k != "id" and k!="name"}  # Exclude 'id' key
+                obj["value"] = f"{dist} {metric}"
+        return {
+            k: normalize(v) for k, v in sorted(obj.items()) if k != "id" and k != "name"
+        }  # Exclude 'id' key
     elif isinstance(obj, list):
         return sorted((normalize(item) for item in obj), key=lambda x: repr(x))
     return obj
+
 
 def are_dicts_equal(dict1, dict2):
     """
@@ -189,13 +207,14 @@ def are_dicts_equal(dict1, dict2):
     normalized_dict_1 = normalize(dict1)
     normalized_dict_2 = normalize(dict2)
 
-    print('normalized dict 1')
+    print("normalized dict 1")
     print(normalized_dict_1)
 
-    print('normalized dict 2')
+    print("normalized dict 2")
     print(normalized_dict_2)
 
     return normalized_dict_1 == normalized_dict_2
+
 
 def compose_metric(height):
     """
@@ -209,11 +228,11 @@ def compose_metric(height):
             dist (str | None): Extracted numeric part of the height.
             metric (str | None): Standardized unit (e.g., "m", "ft").
     """
-    dist = re.findall(r'\d+', height)
+    dist = re.findall(r"\d+", height)
     if not dist:
         return None, None
     dist = dist[0]
-    metric = height.replace(dist, '').replace(' ', '')
-    metric = metric.replace('.', '').replace(',', '')
+    metric = height.replace(dist, "").replace(" ", "")
+    metric = metric.replace(".", "").replace(",", "")
     metric = DIST_LOOKUP.get(metric, metric)
     return dist, metric
