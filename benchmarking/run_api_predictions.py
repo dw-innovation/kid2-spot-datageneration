@@ -61,6 +61,12 @@ if __name__ == "__main__":
     for item in tqdm(gold_ds, total=len(gold_ds)):
         sentence = item["sentence"]
 
+        # Skip None/NaN/empty sentences
+        if sentence is None or pd.isna(sentence) or (
+            isinstance(sentence, str) and sentence.strip() == ""
+        ):
+            continue
+
         for attempt in range(1, MAX_RETRIES + 1):
             try:
                 request_start = time.perf_counter()
@@ -74,10 +80,14 @@ if __name__ == "__main__":
 
                 request_end = time.perf_counter()
                 latency = request_end - request_start
-                raw_output = response.json()["rawOutput"]["content"]
+                raw_output = response.json()
 
-                if not raw_output:
-                    raise ValueError("None value got")
+                # If API returned None, skip writing it
+                if raw_output is None:
+                    print(
+                        f"\nReceived None result for sentence {sentence!r} — skipping entry."
+                    )
+                    break
 
                 responses.append(
                     {
@@ -89,23 +99,15 @@ if __name__ == "__main__":
                 break  # success — move on to the next item
 
             except Exception as e:
-                print(
-                    f"\n[Attempt {attempt}/{MAX_RETRIES}] Error on sentence: {sentence!r}"
-                )
+                print(f"\n[Attempt {attempt}/{MAX_RETRIES}] Error on sentence: {sentence!r}")
                 print(f"  {type(e).__name__}: {e}")
                 if attempt < MAX_RETRIES:
                     print(f"  Retrying in {RETRY_DELAY}s...")
                     time.sleep(RETRY_DELAY)
                 else:
                     print("  Max retries reached — skipping this sentence.")
-                    responses.append(
-                        {
-                            "sentence": sentence,
-                            "model_result": None,
-                            "latency_seconds": None,
-                            "error": str(e),
-                        }
-                    )
+                    # Do not append a placeholder with None values; just skip this entry
+                    pass
 
     with jsonlines.open(output_file, mode="w") as writer:
         writer.write_all(responses)
