@@ -227,9 +227,15 @@ def compare_yaml(
             - relation_* (from RelationAnalyzer)
     """
     _, ref_data = is_parsable_yaml(yaml_true_string)
-    print("!!!!", yaml_pred_string)
-    yaml_pred_string = yaml_pred_string.replace("</s>", "")
-    _is_parsable_yaml, generated_data = is_parsable_yaml(yaml_pred_string)
+
+    if isinstance(yaml_pred_string, dict):
+        print("!!!!", yaml_pred_string)
+        generated_data = yaml_pred_string["imr"]
+        print(generated_data)
+
+    else:
+        yaml_pred_string = yaml_pred_string.replace("</s>", "")
+        _is_parsable_yaml, generated_data = is_parsable_yaml(yaml_pred_string)
 
     is_perfect_match = False
     ref_area = ref_data["area"]
