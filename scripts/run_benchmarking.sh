@@ -52,10 +52,10 @@
 FNAME=gpt_oss_remote_14072026
 KEY_TABLE_PATH=/home/barisschlichti/Dokumente/Codes/kid2-spot-datageneration/benchmarking/data/SPOT_OSM-tag-bundles-UPDATED-workInProgress.xlsx
 GOLD_FILE_PATH=benchmarking/data/goldstandard_testing_dataset.xlsx
-PRED_FILE_PATH=benchmarking/results/${FNAME}.jsonl
+PRED_FILE_PATH=benchmarking/results/${FNAME}_2.jsonl
 GOLD_SHEET_NAME=descriptor_updates_13052026
-OUT_FILE_PATH=benchmarking/results/${FNAME}_eval.xlsx
-OUT_FILE_PATH_SUM=benchmarking/results/${FNAME}_eval-summary.xlsx
+OUT_FILE_PATH=benchmarking/results/${FNAME}_eval_2.xlsx
+OUT_FILE_PATH_SUM=benchmarking/results/${FNAME}_eval-summary_2.xlsx
 
 python -m benchmarking.evaluate_results  \
 --key_table_path $KEY_TABLE_PATH \

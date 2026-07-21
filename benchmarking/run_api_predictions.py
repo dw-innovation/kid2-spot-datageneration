@@ -82,6 +82,8 @@ if __name__ == "__main__":
                 latency = request_end - request_start
                 raw_output = response.json()
 
+                print(raw_output)
+
                 # If API returned None, skip writing it
                 if raw_output is None:
                     print(
@@ -92,7 +94,7 @@ if __name__ == "__main__":
                 responses.append(
                     {
                         "sentence": sentence,
-                        "model_result": raw_output,
+                        "model_result": raw_output["rawOutput"]["content"],
                         "latency_seconds": latency,
                     }
                 )

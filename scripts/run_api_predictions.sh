@@ -1,7 +1,7 @@
 FNAME=gpt_oss_remote
 GOLD_SHEET_NAME=descriptor_updates_13052026
 BENCHMARKING_FILE=benchmarking/data/goldstandard_testing_dataset.xlsx
-OUTPUT_FILE=benchmarking/results/${FNAME}_14072026.jsonl
+OUTPUT_FILE=benchmarking/results/${FNAME}_14072026_2.jsonl
 ENVIRONMENT=development
 
 python -m benchmarking.run_api_predictions \

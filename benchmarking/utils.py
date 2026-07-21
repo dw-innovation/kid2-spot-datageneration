@@ -10,10 +10,13 @@ import torch
 from rapidfuzz import fuzz, process
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
+from dotenv import load_dotenv
+
+load_dotenv()
 
 from datageneration.utils import split_descriptors
 
-model = SentenceTransformer("cross-encoder/nli-deberta-v3-base")
+model = SentenceTransformer(os.getenv("SENTENCE_TRANSFORMER", "cross-encoder/nli-deberta-v3-base"))
 
 DIST_LOOKUP = {
     "centimeter": "cm",
